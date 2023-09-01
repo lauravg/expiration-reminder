@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+{% endblock %}
+
+{% block body %}
+<div class="wasted_list">
+    <h1>Wasted list</h1>
+    {% if products|length < 1 %}
+    <h4>There are no products in the wasted list.</h4>
+    {% else %}
+    <table border="1">
+        <tr>
+            <th>Name</th>
+            <th>Expiration Date</th>
+            <th>Creation Date</th>
+            <!-- <th>Status</th> -->
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.product_name }}</td>
+            <td>{{ product.expiration_date }}</td>
+            <td>{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+            <!-- <td>{{ product.status }}</td> -->
+            <td>
+                <a href="/delete_product/{{product.id}}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+{% endblock %}
