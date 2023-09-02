@@ -19,6 +19,7 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_name = db.Column(db.String(200), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_wasted = db.Column(db.DateTime, default=datetime.utcnow)
     expiration_date = db.Column(db.Date)
     status = db.Column(db.Boolean, default=True)
 
@@ -36,12 +37,11 @@ def index():
         expiration_date_str = request.form['expiration_date']
          # Convert to Python date object
         item_expiration_date = datetime.utcnow().strptime(expiration_date_str, '%Y-%m-%d').date()
-        # True = Active and False = Wasted
-        item_status = request.form['status']
         
-        if item_expiration_date <=  datetime.utcnow().date():
-           flash('The expiration date must be in the future.', 'alert-danger')
-        new_product = Product(product_name=item_content, expiration_date=item_expiration_date, status=item_status)
+        if item_expiration_date >  datetime.utcnow().date():
+            new_product = Product(product_name=item_content, expiration_date=item_expiration_date)
+        else:
+            return 'The expiration date must be in the future.'
 
         try:
             db.session.add(new_product)
@@ -50,10 +50,10 @@ def index():
         except:
             return 'There was an issue adding your product'
     else:
-        products = Product.query.order_by(Product.date_created).all()
+        products = Product.query.filter_by(status=True).order_by(Product.date_created).all()
         current_date = datetime.utcnow().strftime('%Y-%m-%d')
         return render_template("index.html", products=products, current_date=current_date)
-
+        
 if __name__ == '__main__':
     app.run(debug=True, port=8011)
 
@@ -69,6 +69,16 @@ def delete_product(id):
     except:
         return 'There was a problem deleting this product'
 
+@app.route('/waste_product/<int:id>')
+def waste_product(id):
+    product = Product.query.get_or_404(id)
+    product.status = False
+    try:
+        db.session.add(product)
+        db.session.commit()
+        return redirect('/')
+    except:
+        return 'There was an issue wasting your product'
 
 @app.route('/update_product/<int:id>', methods=['GET', 'POST'])
 def update_product(id):
@@ -88,21 +98,7 @@ def update_product(id):
         return render_template('update_product.html', product=product)
 
 
-@app.route('/waste_product/<int:id>', methods=['GET', 'POST'])
-def waste_product(id):
-    product = Product.query.get_or_404(id)
-    product.status = False
-    
-    try:
-        db.session.commit()
-        return redirect('/')
-        
-    except:
-        return 'There was an issue updating your product'
-
-
-# @app.route('/move_to_wasted/<int:id>', methods=['GET'])
-# def move_to_wasted(id):
-#     product = Product.query.get_or_404(id)
-#     # TODO
-
+@app.route('/wasted_product_list', methods=['GET','POST'])
+def wasted_product_list():
+    products = Product.query.filter_by(status=False).order_by(Product.date_created).all()
+    return render_template("wasted_product_list.html", products=products)

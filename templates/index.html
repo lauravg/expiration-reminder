@@ -28,12 +28,13 @@
                 <br>
                 <a href="/update_product/{{product.id}}">Update</a>
                 <br>
-                <a href="/waste_product/{{product.id}}">Wasted</a>
+                <a href="/waste_product/{{product.id}}">Waste Product</a>
             </td>
         </tr>
         {% endfor %}
     </table>
     {% endif %}
+    <a href="/wasted_product_list">Wasted Products</a>
     <form action="/" method="POST">
         <input type="text" name="product_name">
         <input type="date" name="expiration_date" value="{{ current_date }}">
