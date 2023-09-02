@@ -39,24 +39,25 @@ def index():
         # Get the expiration date as a string
         expiration_date_str = request.form['expiration_date']
         # Convert to Python date object
-        item_expiration_date = datetime.utcnow().strptime(
-            expiration_date_str, '%Y-%m-%d').date()
+        item_expiration_date = datetime.utcnow().strptime(expiration_date_str, '%Y-%m-%d').date()
 
         if item_expiration_date > datetime.utcnow().date():
-            new_product = Product(product_name=item_content,
-                                  expiration_date=item_expiration_date)
+            new_product = Product(product_name=item_content, expiration_date=item_expiration_date)
             db.session.add(new_product)
             db.session.commit()
             return redirect('/')
         else:
-            return 'The expiration date must be in the future.'
+            show_alert = True
+            # Render the template with the show_alert flag
+            products = Product.query.filter_by(status=True).order_by(Product.date_created).all()
+            current_date = datetime.utcnow().strftime('%Y-%m-%d')
+            return render_template("index.html", products=products, current_date=current_date, show_alert=show_alert)
+
 
     else:
-        products = Product.query.filter_by(
-            status=True).order_by(Product.date_created).all()
+        products = Product.query.filter_by(status=True).order_by(Product.date_created).all()
         current_date = datetime.utcnow().strftime('%Y-%m-%d')
         return render_template("index.html", products=products, current_date=current_date)
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=8011)
@@ -107,6 +108,5 @@ def update_product(id):
 
 @app.route('/wasted_product_list', methods=['GET', 'POST'])
 def wasted_product_list():
-    products = Product.query.filter_by(
-        status=False).order_by(Product.date_created).all()
+    products = Product.query.filter_by(status=False).order_by(Product.date_created).all()
     return render_template("wasted_product_list.html", products=products)
