@@ -1,35 +1,70 @@
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("myForm");
 
-    // Add an event listener for the form submit event
-    form.addEventListener("submit", function (event) {
-        event.preventDefault();
+    // Initialize the page
+    updateExpirationStatus();
+    setupExpirationStatusUpdateTimer();
+    setupFormSubmitHandler();
 
-        // Get the expiration date value from the input field
-        const expirationDate = document.getElementById("input-expiration-date").value;
-
-        // Create a FormData object and add the "expiration-date" field
-        const formData = new FormData();
-        formData.append('expiration-date', expirationDate);
-
-        // Make a POST request to the /get_expiration_date route with form data
-        fetch('/get_expiration_date', {
-            method: 'POST',
-            body: formData,
-        })
+    function updateExpirationStatus() {
+        fetch('/check_expiration_status')
             .then(response => response.json())
             .then(data => {
-                // Check if 'valid' is false in the JSON response
-                if (data.valid === false) {
-                    // Show an alert indicating that the expiration date is not valid
-                    alert('The expiration date is not valid.');
-                } else {
-                    // Submit the form if the expiration date is valid
-                    form.submit();
+                for (const productId in data) {
+                    const productStatusElement = findStatusElement(productId);
+                    if (productStatusElement) {
+                        productStatusElement.textContent = data[productId];
+                        if (productStatusElement.textContent === 'Expired') {
+                            productStatusElement.classList.add('expired');
+                            productStatusElement.classList.remove('not-expired');
+                        } else {
+                            productStatusElement.classList.add('not-expired');
+                            productStatusElement.classList.remove('expired');
+                        }
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
             });
-    });
+    }
+
+    function findStatusElement(productId) {
+        return document.querySelector(`[data-product-id="${productId}"]`);
+    }
+
+    function setupExpirationStatusUpdateTimer() {
+        // Set up a periodic timer to update the expiration status (e.g., every minute)
+        setInterval(updateExpirationStatus, 60000); // 60000 milliseconds = 1 minute
+    }
+
+    function setupFormSubmitHandler() {
+        if (window.location.pathname === '/') {
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+
+                const expirationDate = document.getElementById("input-expiration-date").value;
+                const formData = new FormData();
+                formData.append('expiration-date', expirationDate);
+
+                fetch('/expired_date_input', {
+                    method: 'POST',
+                    body: formData,
+                })
+                    .then(response => response.json())
+                    .then(handleFormResponse)
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            });
+        }
+    }
+
+    function handleFormResponse(data) {
+        if (data.valid === false) {
+            alert('The expiration date is not valid.');
+        } else {
+            form.submit();
+        }
+    }
 });

@@ -21,14 +21,14 @@
             </tr>
             {% for product in products %}
             <tr>
-                <td>{{ product.product_name }}</td>
-                <td>{{ product.expiration_date }}</td>
-                <td>{{ product.date_created.strftime('%Y-%m-%d') }}</td>
-                <td>{{ product.status }}</td>
+                <td class="product-name">{{ product.product_name }}</td>
+                <td class="expiration-date">{{ product.expiration_date }}</td>
+                <td class="creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+                <td class="wasted-status" data-product-id="{{ product.id }}"></td>
                 <td>
-                    <a href="/delete_product/{{product.id}}">Delete</a>
-                    <br>
                     <a href="/update_product/{{product.id}}">Update</a>
+                    <br>
+                    <a href="/delete_product/{{product.id}}">Delete</a>
                     <br>
                     <a href="/waste_product/{{product.id}}">Waste Product</a>
                 </td>

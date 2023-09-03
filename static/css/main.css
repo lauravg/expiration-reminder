@@ -1,0 +1,7 @@
+.expired {
+    color: red;
+}
+
+.not-expired {
+    color: green;
+}

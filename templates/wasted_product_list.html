@@ -19,16 +19,16 @@
             </tr>
             {% for product in products %}
             <tr>
-                <td>{{ product.product_name }}</td>
-                <td>{{ product.expiration_date }}</td>
-                <td>{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+                <td class="product-name">{{ product.product_name }}</td>
+                <td class="expiration-date">{{ product.expiration_date }}</td>
+                <td class="creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
                 {% if product.date_wasted != None %}
-                <td>{{ product.date_wasted.strftime('%Y-%m-%d') }}</td>
+                    <td class="wasted-date">{{ product.date_wasted.strftime('%Y-%m-%d') }}</td>
                 {% endif %}
                 {% if product.date_wasted == None %}
-                <td>None</td>
+                    <td class="wasted-date">None</td>
                 {% endif %}
-                <td>{{ product.status }}</td>
+                <td class="wasted-status" data-product-id="{{ product.id }}"></td>
                 <td>
                     <a href="/delete_product/{{product.id}}">Delete</a>
                 </td>
