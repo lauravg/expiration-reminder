@@ -7,36 +7,35 @@
 {% block body %}
 <div class="content">
     <h1>Wasted list</h1>
-    {% if products|length < 1 %}
-    <h4>There are no products.</h4>
-    {% else %}
-    <table border="1">
-        <tr>
-            <th>Name</th>
-            <th>Expiration Date</th>
-            <th>Creation Date</th>
-            <th>Wasted Date</th>
-            <th>Status</th>
-        </tr>
-        {% for product in products %}
-        <tr>
-            <td>{{ product.product_name }}</td>
-            <td>{{ product.expiration_date }}</td>
-            <td>{{ product.date_created.strftime('%Y-%m-%d') }}</td>
-            {% if product.date_wasted != None %}
+    {% if products|length < 1 %} <h4>There are no products.</h4>
+        {% else %}
+        <table border="1">
+            <tr>
+                <th>Name</th>
+                <th>Expiration Date</th>
+                <th>Creation Date</th>
+                <th>Wasted Date</th>
+                <th>Status</th>
+            </tr>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.product_name }}</td>
+                <td>{{ product.expiration_date }}</td>
+                <td>{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+                {% if product.date_wasted != None %}
                 <td>{{ product.date_wasted.strftime('%Y-%m-%d') }}</td>
-            {% endif %}
-            {% if product.date_wasted == None %}
+                {% endif %}
+                {% if product.date_wasted == None %}
                 <td>None</td>
-            {% endif %}
-            <td>{{ product.status }}</td>
-            <td>
-                <a href="/delete_product/{{product.id}}">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% endif %}
-    <a href="/">Back to Homepage</a>
+                {% endif %}
+                <td>{{ product.status }}</td>
+                <td>
+                    <a href="/delete_product/{{product.id}}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+        <a href="/">Back to Homepage</a>
 </div>
 {% endblock %}
