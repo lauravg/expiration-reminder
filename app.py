@@ -1,5 +1,4 @@
-from curses import flash
-from flask import Flask, redirect, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
@@ -35,32 +34,45 @@ class Product(db.Model):
 @app.route('/', methods=['POST', 'GET'])
 def index():
     if request.method == 'POST':
-        item_content = request.form['product_name']
+        item_content = request.form['product-name']
         # Get the expiration date as a string
-        expiration_date_str = request.form['expiration_date']
+        expiration_date_str = request.form['expiration-date']
         # Convert to Python date object
         item_expiration_date = datetime.utcnow().strptime(expiration_date_str, '%Y-%m-%d').date()
 
-        if item_expiration_date > datetime.utcnow().date():
-            new_product = Product(product_name=item_content, expiration_date=item_expiration_date)
-            db.session.add(new_product)
-            db.session.commit()
-            return redirect('/')
-        else:
-            show_alert = True
-            # Render the template with the show_alert flag
-            products = Product.query.filter_by(status=True).order_by(Product.date_created).all()
-            current_date = datetime.utcnow().strftime('%Y-%m-%d')
-            return render_template("index.html", products=products, current_date=current_date, show_alert=show_alert)
+        if item_expiration_date <= datetime.utcnow().date():
+            # Redirect to get_expiration_date route
+            return redirect(url_for('get_expiration_date'))
 
+        new_product = Product(product_name=item_content, expiration_date=item_expiration_date)
+        db.session.add(new_product)
+        db.session.commit()
+        return redirect('/')
 
     else:
         products = Product.query.filter_by(status=True).order_by(Product.date_created).all()
         current_date = datetime.utcnow().strftime('%Y-%m-%d')
         return render_template("index.html", products=products, current_date=current_date)
 
-if __name__ == '__main__':
-    app.run(debug=True, port=8011)
+
+@app.route('/get_expiration_date', methods=['POST'])
+def get_expiration_date():
+    try:
+        # Get the expiration date as a string from the form data
+        expiration_date_str = request.form['expiration-date']
+
+        # Convert the expiration date string to a Python date object
+        item_expiration_date = datetime.utcnow().strptime(expiration_date_str, '%Y-%m-%d').date()
+
+        # Check if the item's expiration date is not valid
+        if item_expiration_date <= datetime.utcnow().date():
+            return jsonify({'valid': False})
+
+        # Handle the case when the expiration date is valid
+        return jsonify({'valid': True})
+
+    except:
+        return 'There was an issue with your expiration date'
 
 
 @app.route('/delete_product/<int:id>')
@@ -78,10 +90,10 @@ def delete_product(id):
 
 @app.route('/waste_product/<int:id>')
 def waste_product(id):
-    product = Product.query.get_or_404(id)
-    product.status = False
+    waste_product = Product.query.get_or_404(id)
+    waste_product.status = False
     try:
-        db.session.add(product)
+        db.session.add(waste_product)
         db.session.commit()
         return redirect('/')
     except:
@@ -90,10 +102,10 @@ def waste_product(id):
 
 @app.route('/update_product/<int:id>', methods=['GET', 'POST'])
 def update_product(id):
-    product = Product.query.get_or_404(id)
+    update_product = Product.query.get_or_404(id)
 
     if request.method == 'POST':
-        product.product_name = request.form['product_name']
+        update_product.product_name = request.form['product-name']
 
         try:
             db.session.commit()
@@ -103,10 +115,14 @@ def update_product(id):
             return 'There was an issue updating your product'
 
     else:
-        return render_template('update_product.html', product=product)
+        return render_template('update_product.html', product=update_product)
 
 
 @app.route('/wasted_product_list', methods=['GET', 'POST'])
 def wasted_product_list():
     products = Product.query.filter_by(status=False).order_by(Product.date_created).all()
     return render_template("wasted_product_list.html", products=products)
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=8011)
