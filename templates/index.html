@@ -12,7 +12,7 @@
     <h1>Product list</h1>
     {% if products|length < 1 %} <h4>There are no products. Create one below!</h4>
         {% else %}
-        <table border="1">
+        <table>
             <tr>
                 <th>Name</th>
                 <th>Expiration Date</th>
@@ -26,12 +26,11 @@
                 <td class="creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
                 <td class="wasted-status" data-product-id="{{ product.id }}"></td>
                 <td>
-                    <a href="/update_product/{{product.id}}">Update</a>
-                    <br>
-                    <a href="/delete_product/{{product.id}}">Delete</a>
-                    <br>
-                    <a href="/waste_product/{{product.id}}">Waste Product</a>
+                    <button class="update-button" data-product-id="{{ product.id }}">Update</button>
+                    <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
+                    <button class="waste-button" data-product-id="{{ product.id }}">Waste Product</button>
                 </td>
+                
             </tr>
             {% endfor %}
         </table>
@@ -39,18 +38,17 @@
         <a href="/wasted_product_list">Wasted Products</a>
 
         <form action="/" method="POST" id="myForm">
-            <input type="text" name="product-name" id="input-product-name">
+            <input type="text" name="product-name" id="input-product-name" placeholder="Product Name">
             <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}">
+            <input type="text" name="barcode-number" id="input-barcode-number" placeholder="Barcode Number">
             <button type="submit" id="submit-button">Submit</button>
+            <button type="button" id="scan-barcode">Scan Barcode</button>
+            <div id="barcode-scanner" class="closed">
+                <div id="reader"></div>
+                <div id="result"></div>
+            </div>
         </form>
 </div>
-<h2>QR Code Scanner</h2>
-<div id="reader"></div>
-<div id="result"></div>
-
-<script type="text/javascript" src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='scanner.js') }}"></script>
 
     
 {% endblock %}

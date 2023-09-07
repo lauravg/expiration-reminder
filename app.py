@@ -26,9 +26,25 @@ class Product(db.Model):
     # Not Wasted = True and Wasted = False
     active_status = db.Column(db.Boolean, default=True)
 
+    # Add a foreign key relationship to the new table
+    barcode_id = db.Column(db.Integer, db.ForeignKey('barcode.id'))
+    barcode = db.relationship('Barcode', back_populates='products')
+
     # Create a string when a new element is created
     def __repr__(self):
         return f'<Product {self.id}>'
+
+class Barcode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    barcode_value = db.Column(db.String(100), unique=True, nullable=False)
+    barcode_item_name = db.Column(db.String(200))
+
+    # Define a one-to-many relationship with the Product table
+    products = db.relationship('Product', back_populates='barcode')
+
+    def __repr__(self):
+        return f'<Barcode {self.id}>'
+
 
 
 # Route to display the index page
@@ -41,19 +57,70 @@ def index():
         # Convert to Python date object
         item_expiration_date = datetime.utcnow().strptime(expiration_date_str, '%Y-%m-%d').date()
 
+        barcode_number = request.form['barcode-number']
+        barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
+        
         if item_expiration_date <= datetime.utcnow().date():
             # Redirect to expired_date_input route
             return redirect(url_for('expired_date_input'))
+        
+        if barcode is None:
+            # If barcode doesn't exist, add it to the barcode db
+            new_barcode = Barcode(barcode_value=barcode_number, barcode_item_name=item_content)
+            db.session.add(new_barcode)
+            db.session.commit()
+            
+            # Now that the barcode is added, retrieve it from the database
+            barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
 
-        new_product = Product(product_name=item_content, expiration_date=item_expiration_date)
+        # Create a new product and associate it with the barcode
+        new_product = Product(product_name=item_content, expiration_date=item_expiration_date, barcode_id=barcode.id)
         db.session.add(new_product)
         db.session.commit()
-        return redirect('/')
+        
+        # Fetch the updated list of products
+        products = Product.query.filter_by(active_status=True).order_by(Product.date_created).all()
+        current_date = datetime.utcnow().strftime('%Y-%m-%d')
+        
+        return render_template("index.html", products=products, current_date=current_date)
 
     else:
         products = Product.query.filter_by(active_status=True).order_by(Product.date_created).all()
         current_date = datetime.utcnow().strftime('%Y-%m-%d')
         return render_template("index.html", products=products, current_date=current_date)
+                               
+@app.route('/check_barcode', methods=['POST'])
+def check_barcode():
+    try:
+        data = request.json
+        barcode_value = data.get('barcode')
+
+        # Query the Barcode table to check if the scanned barcode exists
+        barcode = Barcode.query.filter_by(barcode_value=barcode_value).first()
+
+        if barcode:
+            # If the barcode exists, return the product name
+            return jsonify({'exists': True, 'productName': barcode.barcode_item_name})
+        else:
+            return jsonify({'exists': False})
+
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/add_barcode', methods=['POST'])
+def add_barcode():
+    try:
+        item_name = request.form['barcode-item-name']
+        barcode_number = request.form['barcode-number']
+
+        new_item = Barcode(barcode_value=barcode_number, barcode_item_name=item_name)
+        db.session.add(new_item)
+        db.session.commit()
+        return redirect('/')
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 
 
 @app.route('/expired_date_input', methods=['POST'])

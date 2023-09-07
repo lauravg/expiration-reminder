@@ -1,5 +1,5 @@
-document.addEventListener("DOMContentLoaded", function () {
-    const form = document.getElementById("myForm");
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('myForm');
 
     // Initialize the page
     updateExpirationStatus();
@@ -30,20 +30,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function findStatusElement(productId) {
-        return document.querySelector(`[data-product-id="${productId}"]`);
+        return document.querySelector(`[data-product-id='${productId}']`);
     }
 
     function setupExpirationStatusUpdateTimer() {
         // Set up a periodic timer to update the expiration status (e.g., every minute)
         setInterval(updateExpirationStatus, 60000); // 60000 milliseconds = 1 minute
     }
+    
 
     function setupFormSubmitHandler() {
         if (window.location.pathname === '/') {
-            form.addEventListener("submit", function (event) {
+            form.addEventListener('submit', function (event) {
                 event.preventDefault();
 
-                const expirationDate = document.getElementById("input-expiration-date").value;
+                const expirationDate = document.getElementById('input-expiration-date').value;
                 const formData = new FormData();
                 formData.append('expiration-date', expirationDate);
 
@@ -68,3 +69,37 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 });
+
+
+
+
+// Get all buttons with class "update-button" and add click event listener
+const updateButtons = document.querySelectorAll('.update-button');
+updateButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        // Redirect to the update_product route with the product ID
+        window.location.href = `/update_product/${productId}`;
+    });
+});
+
+// Get all buttons with class "delete-button" and add click event listener
+const deleteButtons = document.querySelectorAll('.delete-button');
+deleteButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        // Redirect to the delete_product route with the product ID
+        window.location.href = `/delete_product/${productId}`;
+    });
+});
+
+// Get all buttons with class "waste-button" and add click event listener
+const wasteButtons = document.querySelectorAll('.waste-button');
+wasteButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        // Redirect to the waste_product route with the product ID
+        window.location.href = `/waste_product/${productId}`;
+    });
+});
+

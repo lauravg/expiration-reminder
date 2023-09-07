@@ -10,4 +10,7 @@
 <body>
     {% block body %} {% endblock %}
 </body>
+    <script type="text/javascript" src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scanner.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
 </html>

@@ -1,7 +1,19 @@
+#reader {
+    width: 400px;
+} 
+
 .expired {
     color: red;
 }
 
 .not-expired {
     color: green;
+}
+
+.open {
+    display: block;
+}
+
+.closed {
+    display: none;
 }
