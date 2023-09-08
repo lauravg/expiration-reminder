@@ -5,50 +5,75 @@
 {% endblock %}
 
 {% block body %}
-{% if show_alert %}
-{% endif %}
-
 <div class="content">
-    <h1>Product list</h1>
-    {% if products|length < 1 %} <h4>There are no products. Create one below!</h4>
+    <form class="product-form" action="/" method="POST" id="product-form">
+        <label for="input-product-name">Product Name</label>
+        <input type="text" name="product-name" id="input-product-name" placeholder="Enter the product name" required>
+
+        <label for="input-expiration-date">Expiration Date</label>
+        <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}" required>
+
+        <label for="input-barcode-number">Barcode Number</label>
+        <input type="text" name="barcode-number" id="input-barcode-number" placeholder="Enter the barcode number">
+
+        <button type="submit" id="submit-button">Submit</button>
+
+        <div class="scan-barcode-container">
+            <button type="button" id="scan-barcode">Scan Barcode</button>
+            <div class="closed" id="barcode-scanner">
+                <div id="reader"></div>
+                <div id="result"></div>
+            </div>
+        </div>
+    </form>
+
+    <a class="wasted-products-link" href="/wasted_product_list">Wasted Products</a>
+
+    <h1 class="headline">Product List</h1>
+    {% if products|length < 1 %} <h4 class="no-products-msg">There are no products. Create one below!</h4>
         {% else %}
-        <table>
+        <!-- Mobile -->
+        <div class="mobile">
+            {% for product in products %}
+            <div class="product-container">
+                <div class="attribute-label">Product Name</div>
+                <div class="product product-name">{{ product.product_name }}</div>
+            </div>
+            <div class="product-container">
+                <div class="attribute-label">Expiration Date</div>
+                <div class="product expiration-date {{ product.expiration_status }}">{{ product.expiration_date }}</div>
+            </div>
+            <div class="button-container">
+                <button class="update-button" data-product-id="{{ product.id }}">Update</button>
+                <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
+                <button class="waste-button" data-product-id="{{ product.id }}">Waste</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Desktop -->
+        <table class="desktop">
             <tr>
-                <th>Name</th>
-                <th>Expiration Date</th>
-                <th>Creation Date</th>
-                <th>Status</th>
+                <td class="attribute-label">Name</th>
+                <td class="attribute-label">Expiration Date</th>
+                <td class="attribute-label">Creation Date</th>
+                <td class="attribute-label">Status</th>
             </tr>
             {% for product in products %}
             <tr>
-                <td class="product-name">{{ product.product_name }}</td>
-                <td class="expiration-date">{{ product.expiration_date }}</td>
-                <td class="creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
-                <td class="wasted-status" data-product-id="{{ product.id }}"></td>
-                <td>
+                <td class="product product-name">{{ product.product_name }}</td>
+                <td class="product expiration-date">{{ product.expiration_date }}</td>
+                <td class="product creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+                <td class="product expiration-status {{ product.expiration_status }}"
+                    data-product-id="{{ product.id }}"></td>
+                <td class="button-container">
                     <button class="update-button" data-product-id="{{ product.id }}">Update</button>
                     <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
-                    <button class="waste-button" data-product-id="{{ product.id }}">Waste Product</button>
+                    <button class="waste-button" data-product-id="{{ product.id }}">Waste</button>
                 </td>
-                
             </tr>
             {% endfor %}
         </table>
         {% endif %}
-        <a href="/wasted_product_list">Wasted Products</a>
-
-        <form action="/" method="POST" id="myForm">
-            <input type="text" name="product-name" id="input-product-name" placeholder="Product Name">
-            <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}">
-            <input type="text" name="barcode-number" id="input-barcode-number" placeholder="Barcode Number">
-            <button type="submit" id="submit-button">Submit</button>
-            <button type="button" id="scan-barcode">Scan Barcode</button>
-            <div id="barcode-scanner" class="closed">
-                <div id="reader"></div>
-                <div id="result"></div>
-            </div>
-        </form>
 </div>
-
-    
 {% endblock %}

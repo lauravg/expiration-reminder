@@ -36,7 +36,6 @@ function success(result) {
 }
 
 scanBarcode = document.getElementById('scan-barcode');
-console.log('scanBrcode: ', scanBarcode)
 scanBarcode.addEventListener('click', function () {
     barcodeScanner = document.getElementById('barcode-scanner');
     console.log('barcodeScanner: ', barcodeScanner)

@@ -6,36 +6,58 @@
 
 {% block body %}
 <div class="content">
-    <h1>Wasted list</h1>
-    {% if products|length < 1 %} <h4>There are no products.</h4>
+    <h1 class="headline">Wasted Product List</h1>
+    {% if products|length < 1 %} <h4 class="no-products-msg">There are no products. Create one below!</h4>
         {% else %}
-        <table border="1">
+        <!-- Mobile -->
+        <div class="mobile">
+            {% for product in products %}
+            <div class="product-container">
+                <div class="attribute-label">Product Name</div>
+                <div class="product product-name">{{ product.product_name }}</div>
+            </div>
+            <div class="product-container">
+                <div class="attribute-label">Expiration Date</div>
+                <div class="product expiration-date {{ product.expiration_status }}">{{ product.expiration_date }}</div>
+            </div>
+            <div class="button-container">
+                <button class="update-button" data-product-id="{{ product.id }}">Update</button>
+                <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
+                <button class="waste-button" data-product-id="{{ product.id }}">Waste</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Desktop -->
+        <table class="desktop">
             <tr>
-                <th>Name</th>
-                <th>Expiration Date</th>
-                <th>Creation Date</th>
-                <th>Wasted Date</th>
-                <th>Status</th>
+                <td class="attribute-label">Name</th>
+                <td class="attribute-label">Expiration Date</th>
+                <td class="attribute-label">Wasted Date</th>
+                <td class="attribute-label">Status</th>
             </tr>
             {% for product in products %}
             <tr>
-                <td class="product-name">{{ product.product_name }}</td>
-                <td class="expiration-date">{{ product.expiration_date }}</td>
-                <td class="creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+                <td class="product product-name">{{ product.product_name }}</td>
+                <td class="product expiration-date">{{ product.expiration_date }}</td>
                 {% if product.date_wasted != None %}
-                    <td class="wasted-date">{{ product.date_wasted.strftime('%Y-%m-%d') }}</td>
+                <td class="product wasted-date">{{ product.date_wasted.strftime('%Y-%m-%d') }}</td>
                 {% endif %}
                 {% if product.date_wasted == None %}
-                    <td class="wasted-date">None</td>
+                <td class="product wasted-date">None</td>
                 {% endif %}
-                <td class="wasted-status" data-product-id="{{ product.id }}"></td>
-                <td>
-                    <a href="/delete_product/{{product.id}}">Delete</a>
+                <td class="product expiration-status {{ product.expiration_status }}"
+                    data-product-id="{{ product.id }}"></td>
+                <td class="button-container">
+                    <button class="update-button" data-product-id="{{ product.id }}">Update</button>
+                    <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
+                    <button class="waste-button" data-product-id="{{ product.id }}">Waste</button>
                 </td>
             </tr>
             {% endfor %}
         </table>
         {% endif %}
-        <a href="/">Back to Homepage</a>
+        <a class="wasted-products-link" href="/">Back to Homepage</a>
+</div>
 </div>
 {% endblock %}

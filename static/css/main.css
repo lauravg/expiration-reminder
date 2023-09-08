@@ -1,13 +1,111 @@
-#reader {
-    width: 400px;
-} 
-
-.expired {
-    color: red;
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0 auto;
 }
 
-.not-expired {
-    color: green;
+.content {
+    max-width: 1200px;
+    padding: 20px;
+}
+
+h1.headline {
+    font-size: 28px;
+    color: #333;
+    margin: 30px 0;
+}
+
+h4.no-products-msg {
+    font-size: 18px;
+    color: #555;
+    margin-top: 10px;
+}
+
+.product-form label {
+    display: block;
+    font-size: 16px;
+    color: #333;
+    margin: 10px 0 5px;
+}
+
+.product-form input[type="text"],
+.product-form input[type="date"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.product-name {
+    font-weight: bold;
+}
+
+.expiration-date.True {
+    color: #bf1234;
+}
+
+.expiration-date.False {
+    color: #3cb371;
+}
+
+.product-container {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.button-container {
+    display: flex;
+    margin: 10px 0 25px 0;
+}
+
+#submit-button {
+    background-color: #28a745;
+}
+
+#submit-button:hover {
+    background-color: #218838;
+}
+
+.wasted-products-link {
+    display: block;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+    margin: 30px 0;
+}
+
+.wasted-products-link:hover {
+    color: #0056b3;
+}
+
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 5px;
+    width: 100%;
+}
+
+button:last-child {
+    margin-right: 0;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.product,
+.attribute-label {
+    width: 100%;
+}
+
+.desktop {
+    display: none;
 }
 
 .open {
@@ -16,4 +114,97 @@
 
 .closed {
     display: none;
+}
+
+.scan-barcode-container {
+    margin-top: 10px;
+    position: relative;
+}
+
+#scan-barcode:hover {
+    background-color: #0056b3;
+}
+
+#barcode-scanner {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+}
+
+/* Media Query for Tablets and Desktops */
+@media (min-width: 768px) {
+    .mobile {
+        display: none;
+    }
+
+    .desktop {
+        display: table;
+    }
+
+    .product,
+    .attribute-label {
+        width: auto;
+    }
+
+    #submit-button,
+    .scan-barcode-container {
+        display: inline;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th,
+    td {
+        padding: 12px;
+    }
+
+    th.attribute-label {
+        background-color: #007bff;
+        color: #fff;
+        font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    button {
+        width: auto;
+    }
+
+    .button-container {
+        text-align: center;
+        display: block;
+    }
+
+    .attribute-label {
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .expiration-status.True {
+        background: rgba(191, 18, 52, 0.5);
+    }
+
+    .expiration-status.False {
+        background: rgba(60, 179, 113, 0.5);
+    }
+
+    #barcode-scanner {
+        right: unset;
+    }
+
+    #reader {
+        width: 400px;
+    }
+
 }
