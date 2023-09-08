@@ -124,7 +124,6 @@ def add_barcode():
         db.session.add(new_item)
         db.session.commit()
         return redirect('/')
-
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -162,8 +161,8 @@ def expired_date_input():
         # Handle the case when the expiration date is valid
         return jsonify({'valid': True})
 
-    except:
-        return 'There was an issue with your expiration date'
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 
 # Route to update a product's information
@@ -176,8 +175,9 @@ def update_product(id):
         try:
             db.session.commit()
             return redirect('/')
-        except:
-            return 'There was an issue updating your product'
+        
+        except Exception as e:
+            return jsonify({'error': str(e)})
     else:
         return render_template('update_product.html', product=update_product)
 
@@ -192,8 +192,8 @@ def delete_product(id):
         db.session.commit()
         # Redirect to the previous page
         return redirect(request.referrer)
-    except:
-        return 'There was a problem deleting this product'
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 
 # Route to mark a product as wasted
@@ -205,16 +205,16 @@ def waste_product(id):
         db.session.add(waste_product)
         db.session.commit()
         return redirect('/')
-    except:
-        return 'There was an issue wasting your product'
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 
 # Route to diplay the wasted products in the wasted product list
 @app.route('/wasted_product_list', methods=['GET', 'POST'])
 def wasted_product_list():
-    products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
+    products = Product.query.filter_by(wasted_status=True).order_by(Product.date_created).all()
     return render_template("wasted_product_list.html", products=products)
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8011)
+    app.run(debug=True, port=8080)

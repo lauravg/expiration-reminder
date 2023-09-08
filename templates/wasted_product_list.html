@@ -21,9 +21,7 @@
                 <div class="product expiration-date {{ product.expiration_status }}">{{ product.expiration_date }}</div>
             </div>
             <div class="button-container">
-                <button class="update-button" data-product-id="{{ product.id }}">Update</button>
                 <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
-                <button class="waste-button" data-product-id="{{ product.id }}">Waste</button>
             </div>
             {% endfor %}
         </div>
@@ -49,9 +47,7 @@
                 <td class="product expiration-status {{ product.expiration_status }}"
                     data-product-id="{{ product.id }}"></td>
                 <td class="button-container">
-                    <button class="update-button" data-product-id="{{ product.id }}">Update</button>
                     <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
-                    <button class="waste-button" data-product-id="{{ product.id }}">Waste</button>
                 </td>
             </tr>
             {% endfor %}
