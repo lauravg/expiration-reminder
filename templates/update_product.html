@@ -11,6 +11,7 @@
         <form action="/update_product/{{product.id}}" method="POST">
             <label for="input-product-name">Product Name</label>
             <input type="text" name="product-name" id="input-product-name" value="{{product.product_name}}" required>
+            <input type="date" name="expiration-date" id="input-expiration-date" value="{{product.expiration_date}}" required>
             <button type="submit" id="update-button">Update Product</button>
         </form>
     </div>

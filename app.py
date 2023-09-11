@@ -129,18 +129,19 @@ def add_barcode():
 
 
 # Route to update the expiration status of products
-@app.route('/set_expiration_status', methods=['POST', 'GET'])
-def set_expiratio_status():
+@app.route('/check_expiration_status')
+def check_expiration_status():
     products = Product.query.all()
     current_date = datetime.utcnow().date()
+
+    # Create a dictionary to store the expiration status of each product
+    expiration_status = {}
     for product in products:
         if product.expiration_date <= current_date:
-            # Update the expiration status for products that have expired
-            new_expiration_status = Product(expiration_status=True)
-            db.session.add(new_expiration_status)
-            db.session.commit()
+            expiration_status[product.id] = True
         else:
-            return 'Where was an issue with your expiration status'
+            expiration_status[product.id] = False
+    return jsonify(expiration_status)
 
 
 # Route to handle expired date input

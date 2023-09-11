@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('product-form');
 
     setupFormSubmitHandler();
+    updateExpirationStatus();
 
     // Set Up Form Submission Handler
     function setupFormSubmitHandler() {
@@ -34,8 +35,33 @@ document.addEventListener('DOMContentLoaded', function () {
             form.submit();
         }
     }
-});
 
+    function updateExpirationStatus() {
+        fetch('/check_expiration_status')
+            .then(response => response.json())
+            .then(data => {
+                // Select all elements with the class "expiration-status"
+                const productStatusElements = document.querySelectorAll('.expiration-status');
+
+                // Loop through each element and update its class based on the data
+                productStatusElements.forEach(element => {
+                    const productId = element.getAttribute('data-product-id');
+
+                    if (data[productId] === true) {
+                        element.classList.add('expired');
+                    } else {
+                        element.classList.remove('expired');
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    setInterval(updateExpirationStatus, 60000); // 60000 milliseconds = 1 minute
+
+});
 
 // Eventlistener for updateButtons
 const updateButtons = document.querySelectorAll('.update-button');
@@ -47,7 +73,7 @@ updateButtons.forEach(button => {
     });
 });
 
-// Eventlistener for delete-button
+// Event listener for delete-button
 const deleteButtons = document.querySelectorAll('.delete-button');
 deleteButtons.forEach(button => {
     button.addEventListener('click', function () {
@@ -57,7 +83,7 @@ deleteButtons.forEach(button => {
     });
 });
 
-// Eventlistener for wasteButton
+// Event listener for wasteButton
 const wasteButtons = document.querySelectorAll('.waste-button');
 wasteButtons.forEach(button => {
     button.addEventListener('click', function () {
@@ -66,4 +92,3 @@ wasteButtons.forEach(button => {
         window.location.href = `/waste_product/${productId}`;
     });
 });
-

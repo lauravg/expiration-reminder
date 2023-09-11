@@ -6,6 +6,7 @@ body {
 .content {
     max-width: 1200px;
     padding: 20px;
+    margin: 0 auto;
 }
 
 h1.headline {
@@ -41,11 +42,11 @@ h4.no-products-msg {
     font-weight: bold;
 }
 
-.expiration-date.True {
+.expiration-status.expired {
     color: #bf1234;
 }
 
-.expiration-date.False {
+.expiration-status {
     color: #3cb371;
 }
 
@@ -191,12 +192,13 @@ button:hover {
         font-weight: bold;
     }
 
-    .expiration-status.True {
-        background: rgba(191, 18, 52, 0.5);
+    .expiration-status {
+        color: #000;
+        background: rgba(60, 179, 113, 0.5);
     }
 
-    .expiration-status.False {
-        background: rgba(60, 179, 113, 0.5);
+    .expiration-status.expired {
+        background: rgba(191, 18, 52, 0.5);
     }
 
     #barcode-scanner {
