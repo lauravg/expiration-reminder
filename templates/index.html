@@ -41,7 +41,7 @@
             </div>
             <div class="product-container">
                 <div class="attribute-label">Expiration Date</div>
-                <div class="product expiration-date expiration-status" data-product-id="{{ product.id }}">{{ product.expiration_date }}</div>
+                <div class="product expiration-date expiration-status" data-product-id="{{ product.id }}">{{ product.expiration_date.strftime('%b %d %Y') }}</div>
             </div>
             <div class="button-container">
                 <button class="update-button" data-product-id="{{ product.id }}">Update</button>
@@ -62,8 +62,8 @@
             {% for product in products %}
             <tr data-product-id="{{ product.id }}">
                 <td class="product product-name" contenteditable="true">{{ product.product_name }}</td>
-                <td class="product expiration-date" contenteditable="true">{{ product.expiration_date }}</td>
-                <td class="product creation-date">{{ product.date_created.strftime('%Y-%m-%d') }}</td>
+                <td class="product expiration-date" contenteditable="true">{{ product.expiration_date.strftime('%b %d %Y') }}</td>
+                <td class="product creation-date">{{ product.date_created.strftime('%b %d %Y') }}</td>
                 <td class="product expiration-status" data-product-id="{{ product.id }}"></td>                
                 <td class="button-container">
                     <button class="update-button" data-product-id="{{ product.id }}">Update</button>

@@ -38,7 +38,6 @@ function success(result) {
 scanBarcode = document.getElementById('scan-barcode');
 scanBarcode.addEventListener('click', function () {
     barcodeScanner = document.getElementById('barcode-scanner');
-    console.log('barcodeScanner: ', barcodeScanner)
     if ((barcodeScanner.classList == 'closed')) {
         barcodeScanner.classList.add('open');
         barcodeScanner.classList.remove('closed')

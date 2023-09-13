@@ -63,6 +63,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+// Function to format a date in Pacific Time (PT)
+function formatToPacificTime(dateString) {
+    const options = {
+        timeZone: 'America/Los_Angeles',
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    return new Date(dateString).toLocaleString(undefined, options);
+}
+
 // Eventlistener for updateButtons
 const updateButtons = document.querySelectorAll('.update-button');
 updateButtons.forEach(button => {
