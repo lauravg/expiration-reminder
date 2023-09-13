@@ -61,8 +61,8 @@
             </tr>
             {% for product in products %}
             <tr data-product-id="{{ product.id }}">
-                <td class="product product-name" contenteditable="true">{{ product.product_name }}</td>
-                <td class="product expiration-date" contenteditable="true">{{ product.expiration_date.strftime('%b %d %Y') }}</td>
+                <td class="product product-name">{{ product.product_name }}</td>
+                <td class="product expiration-date">{{ product.expiration_date.strftime('%b %d %Y') }}</td>
                 <td class="product creation-date">{{ product.date_created.strftime('%b %d %Y') }}</td>
                 <td class="product expiration-status" data-product-id="{{ product.id }}"></td>                
                 <td class="button-container">

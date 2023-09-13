@@ -25,13 +25,11 @@ def convert_to_pt(dt):
 # Add more items:
 # flask db migrate
 # flask db upgrade
-
-
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_name = db.Column(db.String(200), nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    date_wasted = db.Column(db.DateTime, default=datetime.utcnow)
+    date_created = db.Column(db.DateTime, default=lambda: datetime.now(pt_timezone))
+    date_wasted = db.Column(db.DateTime, default=lambda: datetime.now(pt_timezone))
     expiration_date = db.Column(db.Date)
     expiration_status = db.Column(db.Boolean, default=False)
     # Not Wasted = True and Wasted = False
@@ -82,30 +80,25 @@ def index():
 
         if barcode is None:
             # Add a new barcode if it doesn't exist in the database
-            new_barcode = Barcode(
-                barcode_value=barcode_number, barcode_item_name=item_content)
+            new_barcode = Barcode(barcode_value=barcode_number, barcode_item_name=item_content)
             db.session.add(new_barcode)
             db.session.commit()
-            barcode = Barcode.query.filter_by(
-                barcode_value=barcode_number).first()
+            barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
 
         # Create a new product and associate it with the barcode
-        new_product = Product(product_name=item_content,
-                              expiration_date=item_expiration_date, barcode_id=barcode.id)
+        new_product = Product(product_name=item_content, expiration_date=item_expiration_date, barcode_id=barcode.id)
         db.session.add(new_product)
         db.session.commit()
 
         # Fetch the updated list of products
-        products = Product.query.filter_by(
-            wasted_status=False).order_by(Product.date_created).all()
+        products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
         current_date = datetime.now(pt_timezone)
 
-        return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'))
+        return redirect(url_for('index'))
 
     else:
         # Display the list of products on the index page
-        products = Product.query.filter_by(
-            wasted_status=False).order_by(Product.date_created).all()
+        products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
         current_date = datetime.now(pt_timezone)
         return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'))
 
@@ -235,8 +228,7 @@ def waste_product(id):
 # Route to diplay the wasted products in the wasted product list
 @app.route('/wasted_product_list', methods=['GET', 'POST'])
 def wasted_product_list():
-    products = Product.query.filter_by(
-        wasted_status=True).order_by(Product.date_created).all()
+    products = Product.query.filter_by(wasted_status=True).order_by(Product.date_created).all()
     return render_template("wasted_product_list.html", products=products)
 
 
