@@ -1,10 +1,14 @@
-self.addEventListener('activate', async () => {
-    // This will be called only once when the service worker is activated.
-    try {
-      const options = {}
-      const subscription = await self.registration.pushManager.subscribe(options)
-      console.log(JSON.stringify(subscription))
-    } catch (err) {
-      console.log('Error', err)
-    }
-  })
+self.addEventListener('push', function(event) {
+  const title = 'Push Notification';
+  const options = {
+    body: event.data.text()
+  };
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  // Handle the click event (e.g., open a specific URL)
+});
