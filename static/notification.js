@@ -1,4 +1,4 @@
-// Function to check for Service Worker and Push API support
+// Check for Service Worker and Push API support
 const check = () => {
   if (!('serviceWorker' in navigator)) {
     throw new Error('No Service Worker support!');
@@ -8,7 +8,7 @@ const check = () => {
   }
 };
 
-// Function to register the service worker
+// Register the service worker
 const registerServiceWorker = async () => {
   try {
     const swRegistration = await navigator.serviceWorker.register('static/sw.js');
@@ -16,11 +16,11 @@ const registerServiceWorker = async () => {
     return swRegistration;
   } catch (error) {
     console.error('Service Worker registration failed:', error);
-    throw error; // Rethrow the error for error handling
+    throw error;
   }
 };
 
-// Function to request notification permission
+// Request notification permission
 const requestNotificationPermission = async () => {
   const permission = await window.Notification.requestPermission();
   if (permission !== 'granted') {
@@ -28,21 +28,18 @@ const requestNotificationPermission = async () => {
   }
 };
 
-// Function to show a local notification
+// Show a local notification
 const showLocalNotification = (title, body, swRegistration) => {
   console.log('Showing notification:', title, body);
   const options = {
     body,
-    // Add more properties like icon, image, vibrate, etc. here.
   };
   swRegistration.showNotification(title, options);
 };
 
-
-// Function to check and notify about product expiration in PT at 2 PM
+// Check and notify about product expiration
 const checkAndNotifyProduct = async (product, swRegistration) => {
   const expirationDate = new Date(product.expiration_date);
-  // Get the UTC time of the expiration date
   const expirationDateUTC = Date.UTC(
     expirationDate.getUTCFullYear(),
     expirationDate.getUTCMonth(),
@@ -51,23 +48,21 @@ const checkAndNotifyProduct = async (product, swRegistration) => {
     expirationDate.getUTCMinutes(),
     expirationDate.getUTCSeconds()
   );
-  
-  // Apply the 'America/Los_Angeles' timezone offset (-7 hours)
-  const offset = +7 * 60; // 7 hours * 60 minutes
+  const offset = +7 * 60; // Offset for 'America/Los_Angeles' timezone
   const notificationDate = new Date(expirationDateUTC + offset * 60 * 1000);
-    
+
   if (notificationDate !== null) {
+    // Prepare notification content
     const title = `Product Expiration Reminder: ${product.product_name}`;
     const body = `The product '${product.product_name}' is about to expire on ${expirationDate.toDateString()}. Please check its expiration date.`;
     const notificationTag = `product-expiration-${product.product_name}-${product.id}`;
-
+    
     // Show a separate notification for each product
     showLocalNotification(title, body, swRegistration, notificationTag);
   }
 };
 
-
-
+// Main function
 const main = async () => {
   try {
     // Check for Service Worker and Push API support
@@ -79,11 +74,12 @@ const main = async () => {
     // Request notification permission
     await requestNotificationPermission();
 
-    // Define the updateExpirationStatus function
+    // Define a function to update product expiration status
     const updateExpirationStatus = () => {
       // Get the current date
       const currentDate = new Date();
       currentDate.setHours(0, 0, 0, 0);
+
       // Fetch the list of products
       fetch('/get_products_data') // Assuming this endpoint provides product data
         .then(response => response.json())
@@ -92,7 +88,6 @@ const main = async () => {
             data.products.forEach(product => {
               // Convert the expiration date from the data to a Date object
               const expirationDate = new Date(product.expiration_date);
-              // Get the UTC time of the expiration date
               const expirationDateUTC = Date.UTC(
                 expirationDate.getUTCFullYear(),
                 expirationDate.getUTCMonth(),
@@ -102,17 +97,16 @@ const main = async () => {
                 expirationDate.getUTCSeconds()
               );
               
-              // Apply the 'America/Los_Angeles' timezone offset (-7 hours)
+              // Apply the 'America/Los_Angeles' timezone offset
               const offset = 7 * 60; // 7 hours * 60 minutes
               const expirationDatePT = new Date(expirationDateUTC + offset * 60 * 1000);
-              // expirationDate.setHours(0, 0, 0, 0);
+              
               // Calculate the date difference in days between the current date and the expiration date
               const dateDifference = Math.floor((expirationDatePT - currentDate) / (24 * 60 * 60 * 1000));
+              
               // Check if the product expires in exactly 2 days
               if (dateDifference <= 2) {
-                console.log('yes!')
-                // Update the product's expiration status or trigger a notification here
-                // You can call your checkAndNotifyProduct function here or perform any other actions
+                // Update the product's expiration status or trigger a notification
                 checkAndNotifyProduct(product, swRegistration);
               }
             });
