@@ -68,12 +68,10 @@ const startDailyCheck = async () => {
 
 // Create an array to store expiring products
 const expiringProducts = [];
-console.log('expiringProducts: ', expiringProducts)
 
 
 // Define a function to update product expiration status
 const scheduleDailyNotifications = (swRegistration) => {
-  console.log('scheduleDailyNotifications')
   // Get the current date
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
@@ -127,7 +125,6 @@ const scheduleDailyNotifications = (swRegistration) => {
 };
 // Check and notify about product expiration
 const checkAndNotifyProduct = async (product, swRegistration) => {
-  console.log('####### checkAndNotifyProduct #######')
   const expirationDate = new Date(product.expiration_date);
   const expirationDateUTC = Date.UTC(
     expirationDate.getUTCFullYear(),
@@ -140,9 +137,7 @@ const checkAndNotifyProduct = async (product, swRegistration) => {
   const offset = 7 * 60; // Offset for 'America/Los_Angeles' timezone
   const notificationDate = new Date(expirationDateUTC + offset * 60 * 1000);
 
-  console.log('notificationDate:', notificationDate)
   if (notificationDate !== null) {
-    console.log('notificationDate !== null')
     // Calculate the number of days until expiration
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
@@ -151,15 +146,10 @@ const checkAndNotifyProduct = async (product, swRegistration) => {
 
     // Check if the product expires in exactly 2 days and hasn't been notified yet
     if (daysUntilExpiration <= 2 && !expiringProducts.includes(product)) {
-      console.log('daysUntilExpiration', daysUntilExpiration)
-      console.log('expiringProducts', expiringProducts)
-      console.log('!expiringProducts.includes(product): ', !expiringProducts.includes(product))
       // Add the product to the list of expiring products
       expiringProducts.push(product);
       // Check if the service worker is active
-      console.log('swRegistration')
-      console.log('swRegistration:', swRegistration)
-
+      
       if (swRegistration) {
         // Notify about the expiring product
         showLocalNotification('Expiring Product', `Product ${product.product_name} is expiring soon.`, swRegistration);
@@ -172,11 +162,9 @@ const checkAndNotifyProduct = async (product, swRegistration) => {
 
 // Show a local notification
 const showLocalNotification = (title, body, swRegistration) => {
-  console.log('showLocalNotification');
   const options = {
     body,
   };
-  console.log('2expiringProducts.length: ', expiringProducts.length)
   // if (expiringProducts.length <= 0) {
   if (swRegistration) {
     swRegistration.showNotification(title, options);
@@ -189,9 +177,6 @@ const showLocalNotification = (title, body, swRegistration) => {
 
 // Show a notification for all expiring products
 const showExpiringProductsNotification = (expiringProducts, swRegistration) => {
-  console.log('showExpiringProductsNotification')
-  console.log('expiringProducts.length: ', expiringProducts.length)
-  console.log('swRegistration', swRegistration)
   if (expiringProducts.length > 0) {
     // Prepare a summary message for all expiring products
     const title = 'Expiring Products Reminder';
