@@ -38,6 +38,39 @@ h4.no-products-msg {
     font-size: 16px;
 }
 
+/* Add styles for the select element */
+.product-form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* Style the dropdown label */
+.product-form label[for="select-location"] {
+    display: block;
+    font-size: 16px;
+    color: #333;
+    margin: 10px 0 5px;
+}
+
+/* Style the dropdown options */
+.product-form select option {
+    font-size: 16px;
+    color: #333;
+    padding: 5px;
+    background-color: #fff;
+}
+
+/* Style the dropdown when it's focused */
+.product-form select:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
 .product-name {
     font-weight: bold;
 }

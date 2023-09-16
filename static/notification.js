@@ -1,5 +1,6 @@
+// Register the service worker
 // Check for Service Worker and Push API support
-const check = () => {
+const checkServiceWorkerAndPushSupport = () => {
   if (!('serviceWorker' in navigator)) {
     throw new Error('No Service Worker support!');
   }
@@ -20,25 +21,113 @@ const registerServiceWorker = async () => {
   }
 };
 
+
 // Request notification permission
 const requestNotificationPermission = async () => {
   const permission = await window.Notification.requestPermission();
-  if (permission !== 'granted') {
-    throw new Error('Permission not granted for Notification');
+  if (permission === 'granted') {
+    console.log('Permission granted for notifications.');
+  } else {
+    console.error('Permission not granted for notifications.');
   }
 };
 
-// Show a local notification
-const showLocalNotification = (title, body, swRegistration) => {
-  console.log('Showing notification:', title, body);
-  const options = {
-    body,
-  };
-  swRegistration.showNotification(title, options);
+// Define a function to calculate the time until the next
+const scheduleDailyCheck = () => {
+  const now = new Date();
+  const scheduledTime = new Date(now);
+  scheduledTime.setHours(17, 0, 0, 0);
+  let timeUntilDailyCheck = scheduledTime - now;
+  // If the scheduled time has already passed for today, schedule it for tomorrow
+  if (timeUntilDailyCheck < 0) {
+    timeUntilDailyCheck += 24 * 60 * 60 * 1000; // Add 24 hours
+  }
+  return timeUntilDailyCheck;
 };
 
+// Define a function to start the daily check
+const startDailyCheck = async () => {
+  try {
+    // Check for Service Worker and Push API support
+    checkServiceWorkerAndPushSupport();
+
+    // Register the service worker
+    const swRegistration = await registerServiceWorker();
+
+    requestNotificationPermission();
+
+    // Schedule the next daily check
+    setTimeout(() => {
+      scheduleDailyNotifications(swRegistration);
+      startDailyCheck(); // Schedule the next daily check
+    }, scheduleDailyCheck());
+  } catch (error) {
+    console.error('An error occurred:', error);
+  }
+};
+
+// Create an array to store expiring products
+const expiringProducts = [];
+console.log('expiringProducts: ', expiringProducts)
+
+
+// Define a function to update product expiration status
+const scheduleDailyNotifications = (swRegistration) => {
+  console.log('scheduleDailyNotifications')
+  // Get the current date
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+
+  // Fetch the list of products
+  fetch('/get_products_data') // Assuming this endpoint provides product data
+    .then((response) => response.json())
+    .then((data) => {
+      if (Array.isArray(data.products)) {
+        data.products.forEach((product) => {
+          let dateDifference;
+          if (product.product_name) {
+            // Convert the expiration date from the data to a Date object
+            const expirationDate = new Date(product.expiration_date);
+            const expirationDateUTC = Date.UTC(
+              expirationDate.getUTCFullYear(),
+              expirationDate.getUTCMonth(),
+              expirationDate.getUTCDate(),
+              expirationDate.getUTCHours(),
+              expirationDate.getUTCMinutes(),
+              expirationDate.getUTCSeconds()
+            );
+
+            // Apply the 'America/Los_Angeles' timezone offset
+            const offset = 7 * 60; // 7 hours * 60 minutes
+            const expirationDatePT = new Date(expirationDateUTC + offset * 60 * 1000);
+
+            // Calculate the date difference in days between the current date and the expiration date
+            dateDifference = Math.floor((expirationDatePT - currentDate) / (24 * 60 * 60 * 1000));
+
+          } else {
+            console.error('Invalid product data:', product);
+          }
+          if (dateDifference <= 2) {
+
+            // Add the product to the list of expiring products
+            checkAndNotifyProduct(product, swRegistration);
+          }
+        });
+
+        // Show a notification for all expiring products
+        showExpiringProductsNotification(expiringProducts, swRegistration);
+
+      } else {
+        console.error('Invalid response format. Expected an array of products.');
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+};
 // Check and notify about product expiration
 const checkAndNotifyProduct = async (product, swRegistration) => {
+  console.log('####### checkAndNotifyProduct #######')
   const expirationDate = new Date(product.expiration_date);
   const expirationDateUTC = Date.UTC(
     expirationDate.getUTCFullYear(),
@@ -48,84 +137,87 @@ const checkAndNotifyProduct = async (product, swRegistration) => {
     expirationDate.getUTCMinutes(),
     expirationDate.getUTCSeconds()
   );
-  const offset = +7 * 60; // Offset for 'America/Los_Angeles' timezone
+  const offset = 7 * 60; // Offset for 'America/Los_Angeles' timezone
   const notificationDate = new Date(expirationDateUTC + offset * 60 * 1000);
 
+  console.log('notificationDate:', notificationDate)
   if (notificationDate !== null) {
-    // Prepare notification content
-    const title = `Product Expiration Reminder: ${product.product_name}`;
-    const body = `The product '${product.product_name}' is about to expire on ${expirationDate.toDateString()}. Please check its expiration date.`;
-    const notificationTag = `product-expiration-${product.product_name}-${product.id}`;
-    
-    // Show a separate notification for each product
-    showLocalNotification(title, body, swRegistration, notificationTag);
+    console.log('notificationDate !== null')
+    // Calculate the number of days until expiration
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    const timeDifference = notificationDate - currentDate;
+    const daysUntilExpiration = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+    // Check if the product expires in exactly 2 days and hasn't been notified yet
+    if (daysUntilExpiration <= 2 && !expiringProducts.includes(product)) {
+      console.log('daysUntilExpiration', daysUntilExpiration)
+      console.log('expiringProducts', expiringProducts)
+      console.log('!expiringProducts.includes(product): ', !expiringProducts.includes(product))
+      // Add the product to the list of expiring products
+      expiringProducts.push(product);
+      // Check if the service worker is active
+      console.log('swRegistration')
+      console.log('swRegistration:', swRegistration)
+
+      if (swRegistration) {
+        // Notify about the expiring product
+        showLocalNotification('Expiring Product', `Product ${product.product_name} is expiring soon.`, swRegistration);
+      } else {
+        console.error('Service Worker not active.');
+      }
+    }
   }
 };
+
+// Show a local notification
+const showLocalNotification = (title, body, swRegistration) => {
+  console.log('showLocalNotification');
+  const options = {
+    body,
+  };
+  console.log('2expiringProducts.length: ', expiringProducts.length)
+  // if (expiringProducts.length <= 0) {
+  if (swRegistration) {
+    swRegistration.showNotification(title, options);
+  } else {
+    console.error('Service Worker registration not found.');
+  }
+  // }
+};
+
+
+// Show a notification for all expiring products
+const showExpiringProductsNotification = (expiringProducts, swRegistration) => {
+  console.log('showExpiringProductsNotification')
+  console.log('expiringProducts.length: ', expiringProducts.length)
+  console.log('swRegistration', swRegistration)
+  if (expiringProducts.length > 0) {
+    // Prepare a summary message for all expiring products
+    const title = 'Expiring Products Reminder';
+
+    // Create a list of expiring products with their names and expiration dates
+    const productDetails = expiringProducts.map((product) => {
+      const expirationDate = new Date(product.expiration_date);
+      const currentDate = new Date();
+      const timeDifference = expirationDate - currentDate;
+      const daysUntilExpiration = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+      const formattedDate = expirationDate.toLocaleDateString();
+      return `${product.product_name} (Expires in ${daysUntilExpiration} days on ${formattedDate})`;
+    });
+
+    // Show a single notification for all expiring products
+    const body = `You have ${expiringProducts.length} products expiring soon:\n${productDetails.join('\n')}`;
+    showLocalNotification(title, body, swRegistration);
+  }
+};
+
 
 // Main function
 const main = async () => {
   try {
-    // Check for Service Worker and Push API support
-    check();
+    startDailyCheck();
 
-    // Register the service worker
-    const swRegistration = await registerServiceWorker();
-
-    // Request notification permission
-    await requestNotificationPermission();
-
-    // Define a function to update product expiration status
-    const updateExpirationStatus = () => {
-      // Get the current date
-      const currentDate = new Date();
-      currentDate.setHours(0, 0, 0, 0);
-
-      // Fetch the list of products
-      fetch('/get_products_data') // Assuming this endpoint provides product data
-        .then(response => response.json())
-        .then(data => {
-          if (Array.isArray(data.products)) {
-            data.products.forEach(product => {
-              // Convert the expiration date from the data to a Date object
-              const expirationDate = new Date(product.expiration_date);
-              const expirationDateUTC = Date.UTC(
-                expirationDate.getUTCFullYear(),
-                expirationDate.getUTCMonth(),
-                expirationDate.getUTCDate(),
-                expirationDate.getUTCHours(),
-                expirationDate.getUTCMinutes(),
-                expirationDate.getUTCSeconds()
-              );
-              
-              // Apply the 'America/Los_Angeles' timezone offset
-              const offset = 7 * 60; // 7 hours * 60 minutes
-              const expirationDatePT = new Date(expirationDateUTC + offset * 60 * 1000);
-              
-              // Calculate the date difference in days between the current date and the expiration date
-              const dateDifference = Math.floor((expirationDatePT - currentDate) / (24 * 60 * 60 * 1000));
-              
-              // Check if the product expires in exactly 2 days
-              if (dateDifference <= 2) {
-                // Update the product's expiration status or trigger a notification
-                checkAndNotifyProduct(product, swRegistration);
-              }
-            });
-          } else {
-            console.error('Invalid response format. Expected an array of products.');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-    };
-
-    // Run the initial check when the page loads
-    updateExpirationStatus();
-
-    // Schedule a daily check for product expiration at 2 PM PT
-    setInterval(() => {
-      updateExpirationStatus(); // Call the defined function to update product expiration status
-    }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
   } catch (error) {
     console.error('An error occurred:', error);
   }

@@ -34,7 +34,7 @@ class Product(db.Model):
     expiration_status = db.Column(db.Boolean, default=False)
     # Not Wasted = True and Wasted = False
     wasted_status = db.Column(db.Boolean, default=False)
-
+    location = db.Column(db.String(200), nullable=False)
     # Add a foreign key relationship to the new table
     barcode_id = db.Column(db.Integer, db.ForeignKey('barcode.id'))
     barcode = db.relationship('Barcode', back_populates='products')
@@ -64,13 +64,16 @@ def index():
         # Get the expiration date as a string
         expiration_date_str = request.form['expiration-date']
         # Convert expiration_date_str to a datetime object in UTC
-        item_expiration_datetime_utc = datetime.strptime(
-            expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
+        item_expiration_datetime_utc = datetime.strptime(expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
 
         # Convert item_expiration_datetime_utc to Pacific Time (PT)
         item_expiration_datetime_pt = item_expiration_datetime_utc
         # Extract the date part for item_expiration_date
         item_expiration_date = item_expiration_datetime_pt.date()
+        
+         # Get the location from the form data
+        location = request.form['locations']
+        
         barcode_number = request.form['barcode-number']
         barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
         current_date = datetime.now(pt_timezone).date()
@@ -86,7 +89,12 @@ def index():
             barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
 
         # Create a new product and associate it with the barcode
-        new_product = Product(product_name=item_content, expiration_date=item_expiration_date, barcode_id=barcode.id)
+        new_product = Product(
+            product_name=item_content, 
+            expiration_date=item_expiration_date, 
+            barcode_id=barcode.id,
+            location=location
+        )
         db.session.add(new_product)
         db.session.commit()
 
@@ -237,10 +245,13 @@ def get_products_data():
     products = Product.query.all()
     product_data = [{
         'product_name': product.product_name,
-        'expiration_date': product.expiration_date.strftime('%Y-%m-%d')
+        'expiration_date': product.expiration_date.strftime('%Y-%m-%d'),
+        'location': product.location
     } for product in products]
     return jsonify({'products': product_data})
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    # app.run(debug=True, port=8080)
+    app.run(host='192.168.1.28', port=5000, debug=True, threaded=False)
+

@@ -13,6 +13,14 @@
         <label for="input-expiration-date">Expiration Date</label>
         <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}" required>
 
+        <label for="select-location">Choose a location:</label>
+        <select name="locations" id="locations">
+            <option value="Fridge">Fridge</option>
+            <option value="Freezer (Kitchen)">Freezer (Kitchen)</option>
+            <option value="Freezer (Downstairs)">Freezer (Downstairs)</option>
+            <option value="Pantry">Pantry</option>
+        </select>
+
         <label for="input-barcode-number">Barcode Number</label>
         <input type="text" name="barcode-number" id="input-barcode-number" placeholder="Enter the barcode number">
 
@@ -43,6 +51,10 @@
                 <div class="attribute-label">Expiration Date</div>
                 <div class="product expiration-date expiration-status" data-product-id="{{ product.id }}">{{ product.expiration_date.strftime('%b %d %Y') }}</div>
             </div>
+            <div class="product-container">
+                <div class="attribute-label">Location</div>
+                <div class="product location">{{ product.location }}</div>
+            </div>
             <div class="button-container">
                 <button class="update-button" data-product-id="{{ product.id }}">Update</button>
                 <button class="delete-button" data-product-id="{{ product.id }}">Delete</button>
@@ -57,6 +69,7 @@
                 <td class="attribute-label">Name</th>
                 <td class="attribute-label">Expiration Date</th>
                 <td class="attribute-label">Creation Date</th>
+                <td class="attribute-label">Location</th>
                 <td class="attribute-label">Status</th>
             </tr>
             {% for product in products %}
@@ -64,6 +77,7 @@
                 <td class="product product-name">{{ product.product_name }}</td>
                 <td class="product expiration-date">{{ product.expiration_date.strftime('%b %d %Y') }}</td>
                 <td class="product creation-date">{{ product.date_created.strftime('%b %d %Y') }}</td>
+                <td class="product location">{{ product.location }}</td>                
                 <td class="product expiration-status" data-product-id="{{ product.id }}"></td>                
                 <td class="button-container">
                     <button class="update-button" data-product-id="{{ product.id }}">Update</button>
