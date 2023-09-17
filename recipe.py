@@ -1,8 +1,14 @@
 import openai
 
-# Set your OpenAI API key here
-api_key = "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"
+def read_api_key(filename='openai_api_key.txt'):
+    try:
+        with open(filename, 'r') as file:
+            api_key = file.read().strip()
+        return api_key
+    except FileNotFoundError:
+        raise Exception(f'The file {filename} containing the API key was not found.')
 
+api_key = read_api_key()
 
 def generate_recipe(product_names):
     messages = [

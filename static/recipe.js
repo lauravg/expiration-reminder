@@ -6,15 +6,9 @@ document.addEventListener('DOMContentLoaded', function () {
         recipeList.innerHTML = '';
 
         if (recipe) {
-            // If there is a recipe suggestion, display it in a <pre> element using innerHTML
-            const item = document.createElement('pre');
-            item.innerHTML = recipe;
-            recipeList.appendChild(item);
+            recipeList.textContent = recipe;
         } else {
-            // If there is no recipe suggestion, display a message
-            const item = document.createElement('div');
-            item.textContent = 'No recipe suggestion available.';
-            recipeList.appendChild(item);
+            recipeList.textContent = 'No recipe suggestion available.';
         }
 
         // Call toggleRegenerateButton to show the button whenever there's content
@@ -25,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to display or hide the "Regenerate Recipe" button based on content
     function toggleRegenerateButton(display) {
         const regenerateButton = document.getElementById('regenerate-button');
-        const recipeResultElement = document.getElementById('recipe-result');
 
         if (display) {
             // If display is true, show the button
@@ -70,11 +63,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 const recipeSuggestion = data.recipe_suggestion;
-                console.log("Recipe:", recipeSuggestion);
-
-                // const recipeResultElement = document.getElementById('recipe-result');
-                // Display the recipe suggestion or message
-                // recipeResultElement.innerHTML = `<strong>Recipe:</strong><br><p>${recipeSuggestion}</p>`;
                 const recipeResultElement = document.getElementById('recipe-result');
                 recipeResultElement.textContent = recipeSuggestion; // Set the content as-is
 
