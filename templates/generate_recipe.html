@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+{% endblock %}
+
+{% block body %}
+<div class="content">
+    <form id="recipe-form">
+        <label for="user-input">Enter Ingredients:</label>
+        <input type="text" id="user-input" required>
+        <button type="submit">Generate Recipe</button> <!-- Add this button -->
+    </form>
+    <!-- Add a button to generate a recipe from database products -->
+    <button id="generate-from-database">Generate Recipe from Database</button>
+
+    <div id="recipe-result">
+    </div>
+
+    <button id="regenerate-button">Regenerate Recipe</button> <!-- Add this button -->
+    <a class="homepage-link" href="/">Back to Homepage</a>
+
+</div>
+{% endblock %}

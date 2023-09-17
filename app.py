@@ -2,6 +2,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
+from recipe import generate_recipe
 import pytz
 import signal
 import sys
@@ -18,7 +19,6 @@ migrate = Migrate(app, db)
 # Define the Pacific Time (PT) timezone
 pt_timezone = pytz.timezone('US/Pacific')
 
-
 # Function to convert a datetime.datetime object to Pacific Time (PT)
 def convert_to_pt(dt):
     return dt.astimezone(pt_timezone).replace(tzinfo=None)
@@ -30,8 +30,10 @@ def convert_to_pt(dt):
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_name = db.Column(db.String(200), nullable=False)
-    date_created = db.Column(db.DateTime, default=lambda: datetime.now(pt_timezone))
-    date_wasted = db.Column(db.DateTime, default=lambda: datetime.now(pt_timezone))
+    date_created = db.Column(
+        db.DateTime, default=lambda: datetime.now(pt_timezone))
+    date_wasted = db.Column(
+        db.DateTime, default=lambda: datetime.now(pt_timezone))
     expiration_date = db.Column(db.Date)
     expiration_status = db.Column(db.Boolean, default=False)
     # Not Wasted = True and Wasted = False
@@ -58,7 +60,6 @@ class Barcode(db.Model):
         return f'<Barcode {self.id}>'
 
 
-# Route to display the index page
 @app.route('/', methods=['POST', 'GET'])
 def index():
     if request.method == 'POST':
@@ -66,16 +67,17 @@ def index():
         # Get the expiration date as a string
         expiration_date_str = request.form['expiration-date']
         # Convert expiration_date_str to a datetime object in UTC
-        item_expiration_datetime_utc = datetime.strptime(expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
+        item_expiration_datetime_utc = datetime.strptime(
+            expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
 
         # Convert item_expiration_datetime_utc to Pacific Time (PT)
         item_expiration_datetime_pt = item_expiration_datetime_utc
         # Extract the date part for item_expiration_date
         item_expiration_date = item_expiration_datetime_pt.date()
-        
-         # Get the location from the form data
+
+        # Get the location from the form data
         location = request.form['locations']
-        
+
         barcode_number = request.form['barcode-number']
         barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
         current_date = datetime.now(pt_timezone).date()
@@ -85,15 +87,17 @@ def index():
 
         if barcode is None:
             # Add a new barcode if it doesn't exist in the database
-            new_barcode = Barcode(barcode_value=barcode_number, barcode_item_name=item_content)
+            new_barcode = Barcode(
+                barcode_value=barcode_number, barcode_item_name=item_content)
             db.session.add(new_barcode)
             db.session.commit()
-            barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
+            barcode = Barcode.query.filter_by(
+                barcode_value=barcode_number).first()
 
         # Create a new product and associate it with the barcode
         new_product = Product(
-            product_name=item_content, 
-            expiration_date=item_expiration_date, 
+            product_name=item_content,
+            expiration_date=item_expiration_date,
             barcode_id=barcode.id,
             location=location
         )
@@ -101,14 +105,16 @@ def index():
         db.session.commit()
 
         # Fetch the updated list of products
-        products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
+        products = Product.query.filter_by(
+            wasted_status=False).order_by(Product.date_created).all()
         current_date = datetime.now(pt_timezone)
 
         return redirect(url_for('index'))
 
     else:
         # Display the list of products on the index page
-        products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
+        products = Product.query.filter_by(
+            wasted_status=False).order_by(Product.date_created).all()
         current_date = datetime.now(pt_timezone)
         return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'))
 
@@ -238,25 +244,36 @@ def waste_product(id):
 # Route to diplay the wasted products in the wasted product list
 @app.route('/wasted_product_list', methods=['GET', 'POST'])
 def wasted_product_list():
-    products = Product.query.filter_by(wasted_status=True).order_by(Product.date_created).all()
+    products = Product.query.filter_by(
+        wasted_status=True).order_by(Product.date_created).all()
     return render_template("wasted_product_list.html", products=products)
 
 
-@app.route('/get_products_data', methods=['GET'])
-def get_products_data():
+# Route for generating a recipe based on user input
+@app.route('/generate_recipe', methods=['POST', 'GET'])
+def generate_recipe_user_input():
+    if request.method == 'POST':
+        user_input = request.form.get('user-input')
+        recipe_suggestion = generate_recipe([user_input])  # Assuming generate_recipe accepts a list
+        return jsonify({'recipe_suggestion': recipe_suggestion})
+    else:
+        return render_template("generate_recipe.html")
+
+
+@app.route('/generate_recipe_from_database', methods=['GET'])
+def generate_recipe_from_database():
     products = Product.query.all()
-    product_data = [{
-        'product_name': product.product_name,
-        'expiration_date': product.expiration_date.strftime('%Y-%m-%d'),
-        'location': product.location
-    } for product in products]
-    return jsonify({'products': product_data})
+    product_names = [product.product_name for product in products]
+    recipe_suggestion = generate_recipe(product_names)
+    return jsonify({'recipe_suggestion': recipe_suggestion})
 
 
 def on_terminate(signal,frame):
     print("Received terminate signal at %s" % datetime.now())
     sys.exit(0)
 
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
 
+    app.run(debug=True, port=8111)

@@ -101,7 +101,9 @@ h4.no-products-msg {
     background-color: #218838;
 }
 
-.wasted-products-link {
+.homepage-link,
+.wasted-products-link,
+.generate-recipe-link {
     display: block;
     color: #007bff;
     text-decoration: none;
@@ -109,7 +111,9 @@ h4.no-products-msg {
     margin: 30px 0;
 }
 
-.wasted-products-link:hover {
+.homepage-link:hover,
+.wasted-products-link:hover,
+.generate-recipe-link:hover {
     color: #0056b3;
 }
 

@@ -1,0 +1,62 @@
+/* Style the recipe suggestions */
+#recipe-result {
+    margin-top: 30px;
+    list-style-type: none;
+    padding: 0;
+}
+
+.recipe-suggestion {
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 50px;
+    /* Add 50px space between each recipe */
+    padding: 20px;
+}
+
+/* Highlight the headlines */
+.recipe-suggestion h3 {
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.recipe-suggestion p {
+    color: #555;
+    font-size: 16px;
+}
+
+/* Style the form similar to your other forms */
+#recipe-form {
+    margin-top: 20px;
+}
+
+#user-input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#submit-button {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    font-size: 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+}
+
+#submit-button:hover {
+    background-color: #218838;
+}
+
+#regenerate-button {
+    margin-top: 30px;
+}

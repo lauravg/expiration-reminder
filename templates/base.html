@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css')}}">
+
     <title>PantryGuardian</title>
     {% block head %} {% endblock %}
 </head>
@@ -15,6 +17,7 @@
     <script type="text/javascript" src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='scanner.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='recipe.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='notification.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='sw.js') }}"></script>
 </html>
