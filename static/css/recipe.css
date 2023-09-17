@@ -32,6 +32,11 @@
     margin-top: 20px;
 }
 
+#ingrediens-input-label {
+    display: block;
+    margin-bottom: 15px;
+}
+
 #user-input {
     width: calc(100% - 20px);
     padding: 10px;
@@ -59,4 +64,8 @@
 
 #regenerate-button {
     margin-top: 30px;
+}
+
+#generate-from-database {
+    margin-top: 15px;
 }
