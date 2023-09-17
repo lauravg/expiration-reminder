@@ -7,7 +7,7 @@ services:
     image: expiration-reminder:latest
     container_name: expiration-reminder
     ports:
-      - "4242:4242"
+      - "5000:5000"
     volumes:
       - expiration-reminder-storage:/storage
     restart: always
