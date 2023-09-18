@@ -12,7 +12,7 @@ api_key = read_api_key()
 
 def generate_recipe(product_names):
     messages = [
-        {"role": "system", "content": "You’re a kind helpful assistant that generates a recipe using the provided ingredients. However no need to include all the ingredians."},
+        {"role": "system", "content": "You’re a kind helpful assistant that generates a recipe using the provided ingredients. However no need to include all the ingredients."},
         # Convert product names to a comma-separated string
         {"role": "user", "content": ', '.join(product_names)}
     ]

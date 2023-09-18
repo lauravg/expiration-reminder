@@ -93,14 +93,6 @@ h4.no-products-msg {
     margin: 10px 0 25px 0;
 }
 
-#submit-button {
-    background-color: #28a745;
-}
-
-#submit-button:hover {
-    background-color: #218838;
-}
-
 .homepage-link,
 .wasted-products-link,
 .generate-recipe-link {
@@ -189,9 +181,8 @@ button:hover {
         width: auto;
     }
 
-    #submit-button,
-    .scan-barcode-container {
-        display: inline;
+    #submit-button {
+        display: inline-flex;
     }
 
     table {
@@ -224,6 +215,9 @@ button:hover {
         display: block;
     }
 
+    .scan-barcode-container {
+        display: inline-flex;
+    }
     .attribute-label {
         font-size: 20px;
         font-weight: bold;
