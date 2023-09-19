@@ -36,7 +36,7 @@ const requestNotificationPermission = async () => {
 const scheduleDailyCheck = () => {
   const now = new Date();
   const scheduledTime = new Date(now);
-  scheduledTime.setHours(17, 0, 0, 0);
+  scheduledTime.setHours(17, 30, 0, 0);
   let timeUntilDailyCheck = scheduledTime - now;
   // If the scheduled time has already passed for today, schedule it for tomorrow
   if (timeUntilDailyCheck < 0) {

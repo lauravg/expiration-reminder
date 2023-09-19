@@ -136,6 +136,7 @@ def check_barcode():
             return jsonify({'exists': False})
 
     except Exception as e:
+
         return jsonify({'error': str(e)})
 
 
@@ -207,7 +208,6 @@ def update_product(id):
         try:
             db.session.commit()
             return redirect('/')
-
         except Exception as e:
             return jsonify({'error': str(e)})
     else:
@@ -247,6 +247,16 @@ def wasted_product_list():
     products = Product.query.filter_by(
         wasted_status=True).order_by(Product.date_created).all()
     return render_template("wasted_product_list.html", products=products)
+
+@app.route('/get_products_data', methods=['GET'])
+def get_products_data():
+    products = Product.query.all()
+    product_data = [{
+        'product_name': product.product_name,
+        'expiration_date': product.expiration_date.strftime('%Y-%m-%d'),
+        'location': product.location
+    } for product in products]
+    return jsonify({'products': product_data})
 
 
 # Route for generating a recipe based on user input
