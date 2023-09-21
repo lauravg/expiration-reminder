@@ -1,65 +1,32 @@
+import time
 from flask import Flask, jsonify, redirect, render_template, request, url_for
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
+
+import schedule
 
 from recipe import generate_recipe
 import pytz
 import signal
 import sys
 
-
-app = Flask(__name__)
-
-# Configure the SQLite database URI
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-
-# Initialize the database with the settings from our app
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+from send_email import SendMail
+from models import db, Product, Barcode, Queries
 
 # Define the Pacific Time (PT) timezone
 pt_timezone = pytz.timezone('US/Pacific')
 
+app = Flask(__name__)
+# Configure the SQLite database URI
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+db.init_app(app)
+
+migrate = Migrate(app, db)
+send_mail = SendMail(app, pt_timezone)
+
 # Function to convert a datetime.datetime object to Pacific Time (PT)
 def convert_to_pt(dt):
     return dt.astimezone(pt_timezone).replace(tzinfo=None)
-
-# Create a Model
-# Add more items:
-# flask db migrate
-# flask db upgrade
-class Product(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    product_name = db.Column(db.String(200), nullable=False)
-    date_created = db.Column(
-        db.DateTime, default=lambda: datetime.now(pt_timezone))
-    date_wasted = db.Column(
-        db.DateTime, default=lambda: datetime.now(pt_timezone))
-    expiration_date = db.Column(db.Date)
-    expiration_status = db.Column(db.Boolean, default=False)
-    # Not Wasted = True and Wasted = False
-    wasted_status = db.Column(db.Boolean, default=False)
-    location = db.Column(db.String(200), nullable=False)
-    # Add a foreign key relationship to the new table
-    barcode_id = db.Column(db.Integer, db.ForeignKey('barcode.id'))
-    barcode = db.relationship('Barcode', back_populates='products')
-
-    # Create a string when a new element is created
-    def __repr__(self):
-        return f'<Product {self.id}>'
-
-
-class Barcode(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    barcode_value = db.Column(db.String(100), unique=True, nullable=False)
-    barcode_item_name = db.Column(db.String(200))
-
-    # Define a one-to-many relationship with the Product table
-    products = db.relationship('Product', back_populates='barcode')
-
-    def __repr__(self):
-        return f'<Barcode {self.id}>'
 
 
 @app.route('/', methods=['POST', 'GET'])
@@ -273,9 +240,7 @@ def generate_recipe_user_input():
 
 @app.route('/generate_recipe_from_database', methods=['GET'])
 def generate_recipe_from_database():
-    products = Product.query.all()
-    product_names = [product.product_name for product in products]
-    recipe_suggestion = generate_recipe(product_names)
+    recipe_suggestion = generate_recipe(Queries.get_all_product_names())
     return jsonify({'recipe_suggestion': recipe_suggestion})
 
 
@@ -283,6 +248,8 @@ def on_terminate(signal,frame):
     print("Received terminate signal at %s" % datetime.now())
     sys.exit(0)
 
+send_mail.init_schedule_thread()
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5010, debug=True, threaded=False)
+    # app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
     app.run(debug=True, port=8111)
