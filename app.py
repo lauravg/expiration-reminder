@@ -2,10 +2,12 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
+
 from recipe import generate_recipe
 import pytz
 import signal
 import sys
+
 
 app = Flask(__name__)
 
@@ -258,7 +260,6 @@ def get_products_data():
     } for product in products]
     return jsonify({'products': product_data})
 
-
 # Route for generating a recipe based on user input
 @app.route('/generate_recipe', methods=['POST', 'GET'])
 def generate_recipe_user_input():
@@ -282,8 +283,6 @@ def on_terminate(signal,frame):
     print("Received terminate signal at %s" % datetime.now())
     sys.exit(0)
 
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
-
+    app.run(host='0.0.0.0', port=5010, debug=True, threaded=False)
     app.run(debug=True, port=8111)

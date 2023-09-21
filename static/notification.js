@@ -105,7 +105,7 @@ const scheduleDailyNotifications = (swRegistration) => {
           } else {
             console.error('Invalid product data:', product);
           }
-          if (dateDifference <= 2) {
+          if (dateDifference <= 5) {
 
             // Add the product to the list of expiring products
             checkAndNotifyProduct(product, swRegistration);
@@ -145,7 +145,7 @@ const checkAndNotifyProduct = async (product, swRegistration) => {
     const daysUntilExpiration = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
 
     // Check if the product expires in exactly 2 days and hasn't been notified yet
-    if (daysUntilExpiration <= 2 && !expiringProducts.includes(product)) {
+    if (daysUntilExpiration <= 5 && !expiringProducts.includes(product)) {
       // Add the product to the list of expiring products
       expiringProducts.push(product);
       // Check if the service worker is active
