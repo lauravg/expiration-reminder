@@ -21,7 +21,8 @@ h4.no-products-msg {
     margin-top: 10px;
 }
 
-.product-form label {
+.product-form label,
+.filter-form label {
     display: block;
     font-size: 16px;
     color: #333;
@@ -39,7 +40,8 @@ h4.no-products-msg {
 }
 
 /* Add styles for the select element */
-.product-form select {
+.product-form select,
+.filter-form select {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
@@ -49,7 +51,8 @@ h4.no-products-msg {
 }
 
 /* Style the dropdown label */
-.product-form label[for="select-location"] {
+.product-form label[for="select-location"],
+.filter-form label[for="select-location-filter"] {
     display: block;
     font-size: 16px;
     color: #333;
@@ -57,7 +60,8 @@ h4.no-products-msg {
 }
 
 /* Style the dropdown options */
-.product-form select option {
+.product-form select option,
+.filter-form select option {
     font-size: 16px;
     color: #333;
     padding: 5px;
@@ -65,7 +69,8 @@ h4.no-products-msg {
 }
 
 /* Style the dropdown when it's focused */
-.product-form select:focus {
+.product-form select:focus,
+.filter-form select:focus {
     border-color: #007bff;
     outline: none;
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
@@ -221,15 +226,6 @@ button:hover {
     .attribute-label {
         font-size: 20px;
         font-weight: bold;
-    }
-
-    .expiration-status {
-        color: #000;
-        background: rgba(60, 179, 113, 0.5);
-    }
-
-    .expiration-status.expired {
-        background: rgba(191, 18, 52, 0.5);
     }
 
     #barcode-scanner {

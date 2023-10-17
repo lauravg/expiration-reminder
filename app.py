@@ -1,13 +1,9 @@
-import time
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_migrate import Migrate
 from datetime import datetime
 
-import schedule
-
 from recipe import generate_recipe
 import pytz
-import signal
 import sys
 
 from send_email import SendMail
@@ -47,6 +43,9 @@ def index():
         # Get the location from the form data
         location = request.form['locations']
 
+        # Get the category from the form data
+        category = request.form['category']
+
         barcode_number = request.form['barcode-number']
         barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
         current_date = datetime.now(pt_timezone).date()
@@ -68,7 +67,8 @@ def index():
             product_name=item_content,
             expiration_date=item_expiration_date,
             barcode_id=barcode.id,
-            location=location
+            location=location,
+            category=category
         )
         db.session.add(new_product)
         db.session.commit()
@@ -81,12 +81,17 @@ def index():
         return redirect(url_for('index'))
 
     else:
-        # Display the list of products on the index page
-        products = Product.query.filter_by(
-            wasted_status=False).order_by(Product.date_created).all()
-        current_date = datetime.now(pt_timezone)
-        return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'))
+        # Get the selected location filter from the query parameters, defaulting to "all" if not provided
+        location_filter = request.args.get('location-filter', 'all')
 
+        # Query the products based on the location filter
+        if location_filter == 'all':
+            products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
+        else:
+            products = Product.query.filter_by(location=location_filter, wasted_status=False).order_by(Product.date_created).all()
+
+        current_date = datetime.now(pt_timezone)
+        return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'), selected_location=location_filter)
 
 # Route to check if a barcode exists
 @app.route('/check_barcode', methods=['POST'])
@@ -223,7 +228,8 @@ def get_products_data():
     product_data = [{
         'product_name': product.product_name,
         'expiration_date': product.expiration_date.strftime('%Y-%m-%d'),
-        'location': product.location
+        'location': product.location,
+        'category': product.category
     } for product in products]
     return jsonify({'products': product_data})
 

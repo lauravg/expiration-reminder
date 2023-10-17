@@ -24,7 +24,7 @@ class SendMail:
         class ScheduleThread(threading.Thread):
             @classmethod
             def run(cls):
-                schedule.every().day.at("17:00").do(send_mail.send_daily_email)
+                schedule.every().day.at("17:30").do(send_mail.send_daily_email)
                 # Run the scheduled tasks in a loop
                 while True:
                     schedule.run_pending()

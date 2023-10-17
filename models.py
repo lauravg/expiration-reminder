@@ -25,6 +25,7 @@ class Product(db.Model):
     # Not Wasted = True and Wasted = False
     wasted_status = db.Column(db.Boolean, default=False)
     location = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(200), nullable=False, default='Food')
     # Add a foreign key relationship to the new table
     barcode_id = db.Column(db.Integer, db.ForeignKey('barcode.id'))
     barcode = db.relationship('Barcode', back_populates='products')
