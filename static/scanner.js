@@ -29,8 +29,17 @@ function success(result) {
             console.error('Error:', error);
         });
 
-    scanner.clear();
-    document.getElementById('reader').remove();
+        closeBarcode();
+}
+
+function closeBarcode() {
+    barcodeScanner.classList.remove('open');
+    barcodeScanner.classList.add('closed');
+    scanner.clear().then((ignore) => {
+        console.log('Scanning stopped successfully');
+      }).catch((err) => {
+        console.log('Failing to stop scanning.');
+      });
 }
 
 scanBarcode = document.getElementById('scan-barcode');
@@ -42,13 +51,7 @@ scanBarcode.addEventListener('click', function () {
         
         scanner.render(success, error);
     } else {
-        barcodeScanner.classList.remove('open');
-        barcodeScanner.classList.add('closed');
-        scanner.clear().then((ignore) => {
-            console.log('Scanning stopped successfully');
-          }).catch((err) => {
-            console.log('Failing to stop scanning.');
-          });
+        closeBarcode();
     }
 });
 
