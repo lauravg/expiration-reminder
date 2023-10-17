@@ -162,6 +162,7 @@ button:hover {
 
 #barcode-scanner {
     position: absolute;
+    top: 40px;
     left: 0;
     right: 0;
     background-color: #fff;
