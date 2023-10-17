@@ -6,8 +6,6 @@ const scanner = new Html5QrcodeScanner('reader', {
     fps: 20,
 });
 
-scanner.render(success, error);
-
 function success(result) {
     // Populate the barcode input field with the scanned barcode
     document.getElementById('input-barcode-number').value = result;
@@ -41,9 +39,16 @@ scanBarcode.addEventListener('click', function () {
     if ((barcodeScanner.classList == 'closed')) {
         barcodeScanner.classList.add('open');
         barcodeScanner.classList.remove('closed')
+        
+        scanner.render(success, error);
     } else {
         barcodeScanner.classList.remove('open');
         barcodeScanner.classList.add('closed');
+        scanner.clear().then((ignore) => {
+            console.log('Scanning stopped successfully');
+          }).catch((err) => {
+            console.log('Failing to stop scanning.');
+          });
     }
 });
 
