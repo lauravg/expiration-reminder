@@ -21,6 +21,10 @@ h4.no-products-msg {
     margin-top: 10px;
 }
 
+.links a {
+    width: max-content;
+}
+
 .product-form label,
 .filter-form label {
     display: block;
@@ -30,7 +34,9 @@ h4.no-products-msg {
 }
 
 .product-form input[type="text"],
-.product-form input[type="date"] {
+.product-form input[type="date"],
+.filter-form input[type="text"],
+.filter-form input[type="date"] {
     width: calc(100% - 20px);
     padding: 10px;
     margin-bottom: 15px;
@@ -156,6 +162,11 @@ button:hover {
     position: relative;
 }
 
+#clear-filter-button {
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
 #scan-barcode:hover {
     background-color: #0056b3;
 }
@@ -236,5 +247,26 @@ button:hover {
     #reader {
         width: 400px;
     }
+
+    .select-container {
+        display: inline-block;
+    }
+
+    .filter-form select {
+        width: 200px;
+    }
+
+    .filter-form input[type="text"],
+    .filter-form input[type="date"] {
+        width: 200px;
+    }
+
+    #filter-button {
+        margin: 0 10px;
+    }
+    #clear-filter-button {
+        margin: 0;
+    }
+
 
 }

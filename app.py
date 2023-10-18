@@ -27,6 +27,8 @@ def convert_to_pt(dt):
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
+    current_date = datetime.now(pt_timezone).date()
+
     if request.method == 'POST':
         item_content = request.form['product-name']
         # Get the expiration date as a string
@@ -48,7 +50,6 @@ def index():
 
         barcode_number = request.form['barcode-number']
         barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
-        current_date = datetime.now(pt_timezone).date()
         # Check if the item has already expired
         if item_expiration_date <= current_date:
             return redirect(url_for('expired_date_input'))
@@ -79,20 +80,32 @@ def index():
         current_date = datetime.now(pt_timezone)
 
         return redirect(url_for('index'))
-
     else:
-        # Get the selected location filter from the query parameters, defaulting to "all" if not provided
-        location_filter = request.args.get('location-filter', 'all')
+        location_filter = request.args.get('location-filter', 'All')
+        category_filter = request.args.get('category', 'All')
+        expiration_date_filter = request.args.get('expiration-date', '')
+        expiration_status_filter = request.args.get('expiration-status', 'all')
 
-        # Query the products based on the location filter
-        if location_filter == 'all':
-            products = Product.query.filter_by(wasted_status=False).order_by(Product.date_created).all()
-        else:
-            products = Product.query.filter_by(location=location_filter, wasted_status=False).order_by(Product.date_created).all()
+        query = Product.query.filter_by(wasted_status=False)
 
-        current_date = datetime.now(pt_timezone)
-        return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'), selected_location=location_filter)
+        if location_filter != 'All':
+            query = query.filter_by(location=location_filter)
+        if category_filter != 'All':
+            query = query.filter_by(category=category_filter)
+        if expiration_date_filter != '':
+            query = query.filter(Product.expiration_date == expiration_date_filter)
 
+        if expiration_status_filter == 'expired':
+            query = query.filter(Product.expiration_date <= current_date)
+        elif expiration_status_filter == 'not_expired':
+            query = query.filter(Product.expiration_date > current_date)
+
+        products = query.order_by(Product.date_created).all()
+
+        return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'),
+                               selected_location=location_filter, selected_category=category_filter,
+                               selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
+    
 # Route to check if a barcode exists
 @app.route('/check_barcode', methods=['POST'])
 def check_barcode():
@@ -144,6 +157,7 @@ def check_expiration_status():
             expiration_status[product.id] = True
         else:
             expiration_status[product.id] = False
+    print('expiration_status:', expiration_status)  # Add this line for debugging
     return jsonify(expiration_status)
 
 

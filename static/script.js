@@ -92,3 +92,8 @@ wasteButtons.forEach(button => {
         window.location.href = `/waste_product/${productId}`;
     });
 });
+
+document.getElementById('clear-filter-button').addEventListener('click', function () {
+    // Redirect to the same page without any filter query parameters
+    window.location.href = '/';  // Change this URL to match your route
+});

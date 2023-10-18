@@ -13,7 +13,7 @@
         <label for="input-expiration-date">Expiration Date</label>
         <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}" required>
 
-        <label for="select-location">Choose a location:</label>
+        <label for="select-location">Choose a location</label>
         <select name="locations" id="locations">
             <option value="Fridge">Fridge</option>
             <option value="Freezer (Kitchen)">Freezer (Kitchen)</option>
@@ -22,7 +22,7 @@
             <option value="Liquor Cabinet">Liquor Cabinet</option>
         </select>
 
-        <label for="select-category">Category:</label>
+        <label for="select-category">Category</label>
         <select name="category" id="category">
             <option value="Food">Food</option>
             <option value="Veggies">Veggies</option>
@@ -51,24 +51,48 @@
             </div>
         </div>
     </form>
-
-    <a class="wasted-products-link" href="/wasted_product_list">Wasted Products</a>
-    <a class="generate-recipe-link" href="/generate_recipe">Generate Recipe</a>
+    <div class="links">
+        <a class="wasted-products-link" href="/wasted_product_list">Wasted Products</a>
+        <a class="generate-recipe-link" href="/generate_recipe">Generate Recipe</a>
+    </div>
     
     <h1 class="headline">Product List</h1>
     {% if products|length < 1 %} <h4 class="no-products-msg">There are no products. Create one below!</h4>
         {% else %}
         <form class="filter-form" action="/" method="GET">
-            <label for="select-location-filter">Filter by Location:</label>
-            <select name="location-filter" id="location-filter">
-                <option value="all" {% if selected_location == 'all' %}selected{% endif %}>All</option>
-                <option value="Fridge" {% if selected_location == 'Fridge' %}selected{% endif %}>Fridge</option>
-                <option value="Freezer (Kitchen)" {% if selected_location == 'Freezer (Kitchen)' %}selected{% endif %}>Freezer (Kitchen)</option>
-                <option value="Freezer (Downstairs)" {% if selected_location == 'Freezer (Downstairs)' %}selected{% endif %}>Freezer (Downstairs)</option>
-                <option value="Pantry" {% if selected_location == 'Pantry' %}selected{% endif %}>Pantry</option>
-            </select>
+            <div class="select-container">
+                <label for="location-filter">Location</label>
+                <select name="location-filter" id="location-filter">
+                {% set locations = ['All', 'Fridge', 'Freezer (Kitchen)', 'Freezer (Downstairs)', 'Pantry'] %}
+                {% for location in locations %}
+                    <option value="{{ location }}" {% if selected_location == location %}selected{% endif %}>{{ location }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <div class="select-container">
+                <label for="category">Category</label>
+                <select name="category" id="category">
+                    {% set categories = ['All', 'Food', 'Veggies', 'Meat', 'Fish', 'Fruits', 'Juice/Beverages', 'Liquor', 'Wine', 'Beer', 'Whisky', 'Bubbly', 'Others'] %}
+                    {% for category in categories %}
+                        <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="select-container">
+                <label for="expiration-status">Expiration Status</label>
+                <select name="expiration-status" id="expiration-status">
+                    <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option>
+                    <option value="expired" {% if selected_status == 'expired' %}selected{% endif %}>Expired</option>
+                    <option value="not_expired" {% if selected_status == 'not_expired' %}selected{% endif %}>Not Expired</option>
+                </select>    
+            </div>        
+            <div class="select-container">
+                <label for="expiration-date">Expiration Date</label>
+                <input type="date" name="expiration-date" id="expiration-date">
+            </div>
             <button type="submit" id="filter-button">Filter</button>
-        </form>    
+            <button type="button" id="clear-filter-button">Clear Filter</button>
+        </form>
         <!-- Mobile -->
         <div class="mobile">
             {% for product in products %}
