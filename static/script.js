@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('product-form');
+    const expirationDateInput = document.getElementById('input-expiration-date');
+    const noExpirationCheckbox = document.getElementById('no-expiration');
 
     setupFormSubmitHandler();
     updateExpirationStatus();
@@ -26,6 +28,18 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
+
+    // Listen for changes to the "No Expiration Date" checkbox
+    noExpirationCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+            // If checked, disable the expiration date input and clear its value
+            expirationDateInput.disabled = true;
+            expirationDateInput.value = '';
+        } else {
+            // If unchecked, enable the expiration date input
+            expirationDateInput.disabled = false;
+        }
+    });
 
     // Alert for invalid date input
     function handleFormResponse(data) {

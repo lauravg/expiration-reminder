@@ -31,31 +31,29 @@ def index():
 
     if request.method == 'POST':
         item_content = request.form['product-name']
-        # Get the expiration date as a string
-        expiration_date_str = request.form['expiration-date']
-        # Convert expiration_date_str to a datetime object in UTC
-        item_expiration_datetime_utc = datetime.strptime(
-            expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
 
-        # Convert item_expiration_datetime_utc to Pacific Time (PT)
-        item_expiration_datetime_pt = item_expiration_datetime_utc
-        # Extract the date part for item_expiration_date
-        item_expiration_date = item_expiration_datetime_pt.date()
+        # Check if the "No Expiration Date" checkbox is checked
+        no_expiration = 'no-expiration' in request.form
 
-        # Get the location from the form data
+        if not no_expiration:
+            expiration_date_str = request.form['expiration-date']
+            item_expiration_datetime_utc = datetime.strptime(
+                expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
+
+            item_expiration_datetime_pt = item_expiration_datetime_utc
+            item_expiration_date = item_expiration_datetime_pt.date()
+
+            if item_expiration_date <= current_date:
+                return redirect(url_for('expired_date_input'))
+        else:
+            item_expiration_date = None  # No expiration date
+
         location = request.form['locations']
-
-        # Get the category from the form data
         category = request.form['category']
-
         barcode_number = request.form['barcode-number']
         barcode = Barcode.query.filter_by(barcode_value=barcode_number).first()
-        # Check if the item has already expired
-        if item_expiration_date <= current_date:
-            return redirect(url_for('expired_date_input'))
 
         if barcode is None:
-            # Add a new barcode if it doesn't exist in the database
             new_barcode = Barcode(
                 barcode_value=barcode_number, barcode_item_name=item_content)
             db.session.add(new_barcode)
@@ -63,7 +61,6 @@ def index():
             barcode = Barcode.query.filter_by(
                 barcode_value=barcode_number).first()
 
-        # Create a new product and associate it with the barcode
         new_product = Product(
             product_name=item_content,
             expiration_date=item_expiration_date,
@@ -74,7 +71,6 @@ def index():
         db.session.add(new_product)
         db.session.commit()
 
-        # Fetch the updated list of products
         products = Product.query.filter_by(
             wasted_status=False).order_by(Product.date_created).all()
         current_date = datetime.now(pt_timezone)
@@ -99,13 +95,22 @@ def index():
             query = query.filter(Product.expiration_date <= current_date)
         elif expiration_status_filter == 'not_expired':
             query = query.filter(Product.expiration_date > current_date)
-
+        elif expiration_status_filter == 'not_expiring':
+            query = query.filter(Product.expiration_date.is_(None))
         products = query.order_by(Product.date_created).all()
+
+        # Format the expiration date or set it to "No Expiration Date"
+        for product in products:
+            if product.expiration_date:
+                product.formatted_expiration_date = product.expiration_date.strftime('%b %d %Y')
+            else:
+                product.formatted_expiration_date = "No Expiration Date"
 
         return render_template("index.html", products=products, current_date=current_date.strftime('%Y-%m-%d'),
                                selected_location=location_filter, selected_category=category_filter,
                                selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
-    
+
+
 # Route to check if a barcode exists
 @app.route('/check_barcode', methods=['POST'])
 def check_barcode():
@@ -153,10 +158,13 @@ def check_expiration_status():
     # Create a dictionary to store the expiration status of each product
     expiration_status = {}
     for product in products:
-        if product.expiration_date <= current_date:
+        if product.expiration_date is not None and product.expiration_date <= current_date:
+            # Handle the case when the product has a valid expiration date and it's expired
             expiration_status[product.id] = True
         else:
+            # Handle the case when the product either has no expiration date or it's not expired
             expiration_status[product.id] = False
+
     print('expiration_status:', expiration_status)  # Add this line for debugging
     return jsonify(expiration_status)
 

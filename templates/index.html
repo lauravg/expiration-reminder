@@ -13,6 +13,9 @@
         <label for="input-expiration-date">Expiration Date</label>
         <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}" required>
 
+        <label for="no-expiration">No Expiration Date</label>
+        <input type="checkbox" name="no-expiration" id="no-expiration">
+
         <label for="select-location">Choose a location</label>
         <select name="locations" id="locations">
             <option value="Fridge">Fridge</option>
@@ -84,7 +87,8 @@
                     <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option>
                     <option value="expired" {% if selected_status == 'expired' %}selected{% endif %}>Expired</option>
                     <option value="not_expired" {% if selected_status == 'not_expired' %}selected{% endif %}>Not Expired</option>
-                </select>    
+                    <option value="not_expiring" {% if selected_status == 'not_expiring' %}selected{% endif %}>No Expiration Date</option>
+                </select>
             </div>        
             <div class="select-container">
                 <label for="expiration-date">Expiration Date</label>
@@ -102,7 +106,9 @@
             </div>
             <div class="product-container">
                 <div class="attribute-label">Expiration Date</div>
-                <div class="product expiration-date expiration-status" data-product-id="{{ product.id }}">{{ product.expiration_date.strftime('%b %d %Y') }}</div>
+                <div class="product expiration-date expiration-status" data-product-id="{{ product.id }}">
+                    {{ product.expiration_date | default('No Expiration Date') }}
+                </div>
             </div>
             <div class="product-container">
                 <div class="attribute-label">Location</div>
@@ -128,8 +134,9 @@
             {% for product in products %}
             <tr data-product-id="{{ product.id }}">
                 <td class="product product-name">{{ product.product_name }}</td>
-                <td class="product expiration-date expiration-status" data-product-id="{{ product.id }}">{{ product.expiration_date.strftime('%b %d %Y') }}</td>
+                <td class="product expiration-date expiration-status" data-product-id="{{ product.id }}">{{ product.expiration_date | default('No Expiration Date') }}</td>
                 <td class="product creation-date">{{ product.date_created.strftime('%b %d %Y') }}</td>
+                
                 <td class="product location">{{ product.location }}</td>               
                 <td class="product Category">{{ product.category }}</td>
                 <td class="button-container">
