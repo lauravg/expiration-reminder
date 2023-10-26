@@ -10,7 +10,13 @@ services:
       - "5000:5000"
     volumes:
       - expiration-reminder-storage:/storage
+    secrets:
+      - openai_api_key
     restart: always
+
+secrets:
+  openai_api_key:
+    file: ./openai_api_key.txt
 
 volumes:
   expiration-reminder-storage:
