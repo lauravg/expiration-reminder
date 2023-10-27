@@ -8,11 +8,14 @@
 <div class="content">
     <h1>Update Product</h1>
     <div class="form">
-        <form action="/update_product/{{product.id}}" method="POST">
+        <form action="/update_product/{{product.product_id}}" method="POST">
             <label for="input-product-name">Product Name</label>
             <input type="text" name="product-name" id="input-product-name" value="{{product.product_name}}" required>
+            <label for="input-expiration-date">Expiration Date</label>
             <input type="date" name="expiration-date" id="input-expiration-date" value="{{product.expiration_date}}" required>
-            <button type="submit" id="update-button">Update Product</button>
+            <label for="no-expiration">No Expiration Date</label>
+            <input type="checkbox" name="no-expiration" id="no-expiration">
+            <button type="submit" class="update-button">Update Product</button>
         </form>
     </div>
 </div>

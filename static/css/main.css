@@ -9,8 +9,13 @@ body {
     margin: 0 auto;
 }
 
+.logout {
+    margin-top: 20px;
+}
+
 h1.headline {
-    font-size: 28px;
+    font-size: 18px;
+    font-weight: 300;
     color: #333;
     margin: 30px 0;
 }

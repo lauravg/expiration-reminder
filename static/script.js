@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setupFormSubmitHandler();
     updateExpirationStatus();
-
+    
     // Set Up Form Submission Handler
     function setupFormSubmitHandler() {
         if (window.location.pathname === '/') {
@@ -15,31 +15,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 const expirationDate = document.getElementById('input-expiration-date').value;
                 const formData = new FormData();
                 formData.append('expiration-date', expirationDate);
+                // Send data to your server (Flask) for further processing
+                const url = `/get_products_data?expiration-date=${encodeURIComponent(expirationDate)}`;
 
-                fetch('/expired_date_input', {
-                    method: 'POST',
-                    body: formData,
+                // Send data to your server (Flask) with a GET request using query parameters
+                fetch(url, {
+                    method: 'GET',  // Use the GET method
                 })
-                    .then(response => response.json())
-                    .then(handleFormResponse)
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
+                .then(response => response.json())
+                .then(product_data => {
+                    console.log('Response:', product_data);
+                    handleFormResponse(product_data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });    
             });
         }
     }
 
-    // Listen for changes to the "No Expiration Date" checkbox
-    noExpirationCheckbox.addEventListener('change', function () {
-        if (this.checked) {
-            // If checked, disable the expiration date input and clear its value
-            expirationDateInput.disabled = true;
-            expirationDateInput.value = '';
-        } else {
-            // If unchecked, enable the expiration date input
-            expirationDateInput.disabled = false;
-        }
-    });
 
     // Alert for invalid date input
     function handleFormResponse(data) {
@@ -50,21 +44,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Function to fetch and update expiration status
     function updateExpirationStatus() {
-        fetch('/check_expiration_status')
+        fetch('/get_products_data') // Assuming this route returns product data
             .then(response => response.json())
             .then(data => {
+                const products = data.products;
+
                 // Select all elements with the class "expiration-status"
                 const productStatusElements = document.querySelectorAll('.expiration-status');
 
-                // Loop through each element and update its class based on the data
                 productStatusElements.forEach(element => {
                     const productId = element.getAttribute('data-product-id');
 
-                    if (data[productId] === true) {
-                        element.classList.add('expired');
-                    } else {
-                        element.classList.remove('expired');
+                    // Find the product by ID
+                    const product = products.find(product => product.product_id === productId);
+
+                    if (product) {
+                        if (product.expiration_status) {
+                            element.classList.add('expired');
+                        } else {
+                            element.classList.remove('expired');
+                        }
                     }
                 });
             })
@@ -74,40 +75,64 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     setInterval(updateExpirationStatus, 60000); // 60000 milliseconds = 1 minute
+    
+    // Listen for changes to the "No Expiration Date" checkbox
+    noExpirationCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+            // If checked, disable the expiration date input and clear its value
+            expirationDateInput.disabled = true;
+            expirationDateInput.value = '';
+        } else if (!this.checked) {
+            // If unchecked, enable the expiration date input
+            expirationDateInput.disabled = false;
+            // Get the current date as a string in "YYYY-MM-DD" format
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+            const day = currentDate.getDate().toString().padStart(2, '0');
+            const formattedDate = `${year}-${month}-${day}`;
 
-});
-
-// Eventlistener for updateButtons
-const updateButtons = document.querySelectorAll('.update-button');
-updateButtons.forEach(button => {
-    button.addEventListener('click', function () {
-        const productId = this.getAttribute('data-product-id');
-        // Redirect to the update_product route with the product ID
-        window.location.href = `/update_product/${productId}`;
+            // Set the value of the expirationDateInput to the current date
+            expirationDateInput.value = formattedDate;
+        } else {
+            // If unchecked, enable the expiration date input
+            expirationDateInput.disabled = false;
+        }
     });
+
 });
 
-// Event listener for delete-button
-const deleteButtons = document.querySelectorAll('.delete-button');
-deleteButtons.forEach(button => {
-    button.addEventListener('click', function () {
-        const productId = this.getAttribute('data-product-id');
-        // Redirect to the delete_product route with the product ID
-        window.location.href = `/delete_product/${productId}`;
+
+    // Eventlistener for updateButtons
+    const updateButtons = document.querySelectorAll('.update-button');
+    updateButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            window.location.href = `/update_product/${productId}`;
+        });
     });
-});
 
-// Event listener for wasteButton
-const wasteButtons = document.querySelectorAll('.waste-button');
-wasteButtons.forEach(button => {
-    button.addEventListener('click', function () {
-        const productId = this.getAttribute('data-product-id');
-        // Redirect to the waste_product route with the product ID
-        window.location.href = `/waste_product/${productId}`;
+    // Event listener for delete-button
+    const deleteButtons = document.querySelectorAll('.delete-button');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            // Redirect to the delete_product route with the product ID
+            window.location.href = `/delete_product/${productId}`;
+        });
     });
-});
 
-document.getElementById('clear-filter-button').addEventListener('click', function () {
-    // Redirect to the same page without any filter query parameters
-    window.location.href = '/';  // Change this URL to match your route
-});
+    // Event listener for wasteButton
+    const wasteButtons = document.querySelectorAll('.waste-button');
+    wasteButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            // Redirect to the waste_product route with the product ID
+            window.location.href = `/waste_product/${productId}`;
+        });
+    });
+
+    document.getElementById('clear-filter-button').addEventListener('click', function () {
+        // Redirect to the same page without any filter query parameters
+        window.location.href = '/';  // Change this URL to match your route
+    });

@@ -6,15 +6,16 @@ import smtplib
 import schedule
 import threading
 import time
-from models import Product, Queries
-
+from config import pt_timezone
 from recipe import generate_recipe
-from flask import Flask
+import firebase_admin
+from firebase_admin import credentials, db as firebase_db
+from flask import Flask, app
 
 
 class SendMail:
-
-    def __init__(self, flask_app: Flask, pt_timezone):
+    def __init__(self, app, flask_app, pt_timezone):
+        self.app = app
         self.flask_app = flask_app
         self.pt_timezone = pt_timezone
 
@@ -71,18 +72,16 @@ class SendMail:
     # Define a function to send the daily email
 
     def send_daily_email(self):
-        print('Yo yo yo email')
         with self.flask_app.app_context():
-            expiring_products = self.get_expiring_products()
+            expiring_products = self.get_expiring_products_firebase()
 
             subject = "Expiring Products Reminder"
             headline = "Expiring Products:\n"
             product_details = [
-                f"- {product.product_name} (Expires in {product.days_until_expiration} days on {product.formatted_expiration_date})" for product in expiring_products]
+                f"- {product['product_name']} (Expires in {product['days_until_expiration']} days on {product['formatted_expiration_date']})" for product in expiring_products]
             body = f"{headline}" + '\n'.join(product_details)
 
-            recipe_suggestion = generate_recipe(
-                Queries.get_all_product_names())
+            recipe_suggestion = self.generate_recipe_firebase()
 
             # Add the recipe suggestion to the email body
             if recipe_suggestion:
@@ -94,22 +93,23 @@ class SendMail:
     # Define a function to get the list of expiring products
 
     def get_expiring_products(self):
-        # Fetch the list of products
-        products = Product.query.all()
+        # Fetch products from Firebase
+        products_ref = firebase_db.reference('products')
+        products = products_ref.get()
 
-        # Get the current date
-        current_date = datetime.datetime.now(self.pt_timezone).date()
+        # Get the current date in the Pacific Time (PT) timezone
+        current_date = datetime.now(self.pt_timezone).date()
 
         # Create a list of expiring products
         expiring_products = []
-        for product in products:
-            if not product.wasted_status:
-                expiration_date = product.expiration_date
+        for key, product in products.items():
+            if 'expiration_date' in product:
+                expiration_date = datetime.strptime(product['expiration_date'], '%Y-%m-%d').date()
                 days_until_expiration = (expiration_date - current_date).days
                 if days_until_expiration <= 5:
-                    product.formatted_expiration_date = expiration_date.strftime(
-                        '%b %d %Y')
-                    product.days_until_expiration = days_until_expiration
+                    # Include the product in the list
+                    product['formatted_expiration_date'] = expiration_date.strftime('%b %d %Y')
+                    product['days_until_expiration'] = days_until_expiration
                     expiring_products.append(product)
 
         return expiring_products
