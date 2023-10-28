@@ -19,7 +19,7 @@ firebaseConfig = {
 };
 
 cred = credentials.Certificate(
-    'pantryguardian-f8381-firebase-adminsdk-8ft01-8e37d832d3.json')
+    'pantryguardian-f8381-f7d96ae72f46.json')
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://pantryguardian-f8381-default-rtdb.firebaseio.com'
 })
