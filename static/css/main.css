@@ -201,6 +201,7 @@ button:hover {
     .product,
     .attribute-label {
         width: auto;
+        text-align: center;
     }
 
     #submit-button {

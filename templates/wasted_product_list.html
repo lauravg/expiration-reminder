@@ -19,7 +19,7 @@
             </div>
             <div class="product-container">
                 <div class="attribute-label">Expiration Date</div>
-                <div class="product expiration-date">{{ product.expiration_date }}</div>
+                <div class="product expiration-date expiration-status">{{ product.expiration_date }}</div>
             </div>
             <div class="button-container">
                 <button class="delete-button" data-product-id="{{ product.product_id }}">Delete</button>
@@ -38,7 +38,7 @@
             {% for product in products %}
             <tr>
                 <td class="product product-name">{{ product.product_name }}</td>
-                <td class="product expiration-date">{{ product.expiration_date }}</td>
+                <td class="product expiration-date expiration-status">{{ product.expiration_date }}</td>
                 <td class="product wasted-date">
                     {% if product.date_wasted is defined %}
                         {{ product.date_wasted }}
