@@ -214,15 +214,23 @@ def index():
         barcodes_ref = firebase_db.reference('barcodes')
         barcode = None
 
-        # Use a loop to find the matching barcode by its 'barcode_value'
-        for barcode_id, barcode_data in barcodes_ref.get().items():
-            if 'barcode_value' in barcode_data and barcode_data['barcode_value'] == barcode_number:
-                barcode = {
-                    'id': barcode_id,
-                    'barcode_value': barcode_data['barcode_value'],
-                    'barcode_item_name': barcode_data.get('barcode_item_name', '')
-                }
-                break
+        barcodes_data = barcodes_ref.get()
+        print("barcodes_data:", barcodes_data)
+
+        if barcodes_data is not None:
+            for barcode_id, barcode_data in barcodes_data.items():            
+                if 'barcode_value' in barcode_data and barcode_data['barcode_value'] == barcode_number:
+                    barcode = {
+                        'id': barcode_id,
+                        'barcode_value': barcode_data['barcode_value'],
+                        'barcode_item_name': barcode_data.get('barcode_item_name', '')
+                    }
+                    break
+            else:
+                # Handle the case when there are no barcode data
+                error_message = "No barcode data found."
+                # You can render an error page, return a JSON response, or redirect as per your application's requirements
+                return render_template("error.html", error_message=error_message)
 
         # Add the code to handle item_expiration_date here
         if item_expiration_date is not None:
