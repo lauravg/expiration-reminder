@@ -10,7 +10,7 @@ function success(result) {
     // Populate the barcode input field with the scanned barcode
     document.getElementById('input-barcode-number').value = result;
 
-    // Send a request to check if the scanned barcode exists in the Barcode db
+    // Send a request to check if the scanned barcode exists in the Barcode database
     fetch('/check_barcode', {
         method: 'POST',
         headers: {
@@ -18,7 +18,12 @@ function success(result) {
         },
         body: JSON.stringify({ barcode: result }),
     })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.exists) {
                 // If the barcode exists in the database, set the product name input field
@@ -28,8 +33,6 @@ function success(result) {
         .catch(error => {
             console.error('Error:', error);
         });
-
-        closeBarcode();
 }
 
 function closeBarcode() {
@@ -37,18 +40,17 @@ function closeBarcode() {
     barcodeScanner.classList.add('closed');
     scanner.clear().then((ignore) => {
         console.log('Scanning stopped successfully');
-      }).catch((err) => {
+    }).catch((err) => {
         console.log('Failing to stop scanning.');
-      });
+    });
 }
 
 scanBarcode = document.getElementById('scan-barcode');
 scanBarcode.addEventListener('click', function () {
     barcodeScanner = document.getElementById('barcode-scanner');
-    if ((barcodeScanner.classList == 'closed')) {
+    if (barcodeScanner.classList == 'closed') {
         barcodeScanner.classList.add('open');
-        barcodeScanner.classList.remove('closed')
-        
+        barcodeScanner.classList.remove('closed');
         scanner.render(success, error);
     } else {
         closeBarcode();
@@ -56,5 +58,5 @@ scanBarcode.addEventListener('click', function () {
 });
 
 function error(err) {
-    console.errro(err);
+    console.error(err);
 }

@@ -1,5 +1,6 @@
 from functools import wraps
 import secrets
+import uuid
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from flask_migrate import Migrate
 from datetime import datetime
@@ -36,6 +37,8 @@ send_mail = SendMail(app, app, pt_timezone)
 def convert_to_pt(dt):
     return dt.astimezone(pt_timezone).replace(tzinfo=None)
 
+barcodes_ref = firebase_db.reference('barcodes')
+products_ref = firebase_db.reference('products')
 
 # Register route for user registration
 @app.route('/register', methods=['GET', 'POST'])
@@ -102,7 +105,6 @@ def authenticate_user(f):
 @app.route('/get_products_data', methods=['GET'])
 # @authenticate_user
 def get_products_data():
-    products_ref = firebase_db.reference('products')
     products = products_ref.get()
 
     if products is not None:
@@ -185,27 +187,54 @@ def index():
         location = request.form['locations']
         category = request.form['category']
         barcode_number = request.form['barcode-number']
-
-        # Your code to retrieve barcode information from Firebase
-        barcodes_ref = firebase_db.reference('barcodes')
         barcode = None
 
-        # Retrieve barcode data from Firebase
-        barcodes_data = barcodes_ref.get()
+        if barcode_number != '':
+            # Your code to retrieve barcode information from Firebase
+            print('barcodes_ref', barcodes_ref)
+            # Retrieve barcode data from Firebase
+            barcodes_data = barcodes_ref.get()
+            print('barcodes_data', barcodes_data)
 
-        if barcodes_data is not None:
-            for barcode_id, barcode_data in barcodes_data.items():            
-                if 'barcode_value' in barcode_data and barcode_data['barcode_value'] == barcode_number:
-                    barcode = {
-                        'id': barcode_id,
-                        'barcode_value': barcode_data['barcode_value'],
-                        'barcode_item_name': barcode_data.get('barcode_item_name', '')
-                    }
-                    break
-            else:
+            if not barcodes_ref.get():
+                # If it doesn't exist, create the 'barcodes' node with an initial entry
+                initial_entry = {
+                    'barcode_value': request.form['barcode-number'],
+                    'barcode_item_name': request.form['product-name']
+                }
+                # Generate a unique ID for the initial entry
+                barcode_id = str(uuid.uuid4())
+                barcodes_ref.child(barcode_id).set(initial_entry)
+
+
+            if barcodes_data is not None:
+                for barcode_id, barcode_data in barcodes_data.items():            
+                    if 'barcode_value' in barcode_data and barcode_data['barcode_value'] == barcode_number:
+                        barcode = {
+                            'id': barcode_id,
+                            'barcode_value': barcode_data['barcode_value'],
+                            'barcode_item_name': barcode_data.get('barcode_item_name', '')
+                        }
+                        break
+
                 # Handle the case when there are no barcode data
-                error_message = "No barcode data found."
-                return render_template("error.html", error_message=error_message)
+                if barcode is None:  
+                    # Add a new barcode entry here
+                    new_barcode_entry = {
+                        'barcode_value': barcode_number,
+                        'barcode_item_name': request.form['product-name']
+                    }
+                    # Generate a unique ID for the new barcode entry
+                    new_barcode_id = str(uuid.uuid4())
+                    barcodes_ref.child(new_barcode_id).set(new_barcode_entry)
+                    print('New barcode entry added with ID:', new_barcode_id)
+                    
+                    # Now, set the barcode with the new entry's ID
+                    barcode = {
+                        'id': new_barcode_id,
+                        'barcode_value': barcode_number,
+                        'barcode_item_name': new_barcode_entry['barcode_item_name']
+                    }
 
         # Add the code to handle item_expiration_date here
         if item_expiration_date is not None:
@@ -224,9 +253,7 @@ def index():
             'date_created': current_date.strftime('%d %b %Y')
         }
 
-        # Push the new product to the 'products' node in Firebase
-        products_ref = firebase_db.reference('products')
-        new_product_ref = products_ref.push(new_product)
+        products_ref.push(new_product)
 
         # Redirect or perform further actions as needed
         return redirect(url_for('index'))
@@ -239,7 +266,6 @@ def index():
         expiration_status_filter = request.args.get('expiration-status', 'all')
 
         # Reference the 'products' node in Firebase
-        products_ref = firebase_db.reference('products')
         products = products_ref.get()
 
         if products is not None:
@@ -289,63 +315,30 @@ def index():
                                 selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
 
 
-# Route to check if a barcode exists
 @app.route('/check_barcode', methods=['POST'])
 def check_barcode():
-    try:
-        data = request.json
-        barcode_value = data.get('barcode')
+    data = request.get_json()
+    barcode_value = data.get('barcode')
 
-        # Reference the 'barcodes' node in Firebase
-        barcodes_ref = firebase_db.reference('barcodes')
+    # Ensure a valid barcode is provided
+    if not barcode_value:
+        response = {'exists': False, 'productName': ''}
+        return jsonify(response)
+    
+    # Retrieve barcode data from Firebase
+    barcodes_data = barcodes_ref.get()
 
-        # Check if the scanned barcode exists in Firebase
-        barcode = None
-        for barcode_id, barcode_data in barcodes_ref.get().items():
+    if barcodes_data is not None:
+        for barcode_id, barcode_data in barcodes_data.items():
             if 'barcode_value' in barcode_data and barcode_data['barcode_value'] == barcode_value:
-                barcode = {
-                    'id': barcode_id,
-                    'barcode_value': barcode_data['barcode_value'],
-                    'barcode_item_name': barcode_data.get('barcode_item_name', '')
-                }
-                break
+                # If the barcode exists in the database, get the product name (barcode_item_name)
+                product_name = barcode_data.get('barcode_item_name', '')
+                response = {'exists': True, 'productName': product_name}
+                return jsonify(response)
 
-        if barcode:
-            # If the barcode exists, you can access its data using barcode['barcode_item_name']
-            product_name = barcode['barcode_item_name']
-            return jsonify({'exists': True, 'productName': product_name})
-        else:
-            return jsonify({'exists': False})
-
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-
-# Route to add a new barcode
-@app.route('/add_barcode', methods=['POST'])
-@authenticate_user
-def add_barcode():
-    try:
-        item_name = request.form['barcode-item-name']
-        barcode_number = request.form['barcode-number']
-
-        # Reference the 'barcodes' node in Firebase
-        barcodes_ref = firebase_db.reference('barcodes')
-
-        # Create a new barcode data dictionary
-        new_barcode_data = {
-            'barcode_value': barcode_number,
-            'barcode_item_name': item_name
-        }
-
-        # Push the new barcode data to the 'barcodes' node in Firebase
-        new_barcode_ref = barcodes_ref.push(new_barcode_data)
-
-        # Redirect or perform further actions as needed
-        return redirect('/')
-
-    except Exception as e:
-        return jsonify({'error': str(e)})
+    # If the barcode is not found in the database, indicate that it does not exist
+    response = {'exists': False, 'productName': ''}
+    return jsonify(response)
 
 
 # Route to check the expiration status of a product
@@ -400,8 +393,6 @@ def expired_date_input():
 # Route to update a product
 @app.route('/update_product/<string:id>', methods=['GET', 'POST'])
 def update_product(id):
-    # Reference the 'products' node in Firebase
-    products_ref = firebase_db.reference('products')
     # Retrieve the product by its ID from Firebase
     product_ref = products_ref.child(id)
     product_data = product_ref.get()
@@ -444,9 +435,6 @@ def update_product(id):
 # Route to delete a product
 @app.route('/delete_product/<string:id>')
 def delete_product(id):
-    # Reference the 'products' node in Firebase
-    products_ref = firebase_db.reference('products')
-
     # Retrieve the product by its ID from Firebase
     product_ref = products_ref.child(id)
     product_data = product_ref.get()
@@ -465,9 +453,6 @@ def delete_product(id):
 # Route to mark a product as wasted
 @app.route('/waste_product/<string:id>')
 def waste_product(id):
-    # Reference the 'products' node in Firebase
-    products_ref = firebase_db.reference('products')
-
     # Retrieve the product by its ID from Firebase
     product_ref = products_ref.child(id)
     product_data = product_ref.get()
@@ -492,8 +477,6 @@ def waste_product(id):
 # Route to view the list of wasted products
 @app.route('/wasted_product_list', methods=['GET'])
 def wasted_product_list():
-    # Reference the 'products' node in Firebase
-    products_ref = firebase_db.reference('products')
 
     # Retrieve all products that are marked as wasted from Firebase
     wasted_products = []
@@ -548,8 +531,6 @@ def generate_recipe_user_input():
 # Route to generate a recipe from the Firebase database
 @app.route('/generate_recipe_from_firebase', methods=['GET'])
 def generate_recipe_from_firebase():
-    # Reference the 'products' node in Firebase
-    products_ref = firebase_db.reference('products')
 
     # Retrieve product names from Firebase
     product_names = [product_data['product_name']
@@ -574,3 +555,4 @@ send_mail.init_schedule_thread()
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True, port=8111)
+
