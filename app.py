@@ -3,7 +3,8 @@ import secrets
 import uuid
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from flask_migrate import Migrate
-from datetime import datetime
+from datetime import datetime, timedelta
+
 from config import pt_timezone
 
 from recipe import generate_recipe
@@ -20,7 +21,6 @@ cred = credentials.Certificate(
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://pantryguardian-f8381-default-rtdb.firebaseio.com'
 })
-
 
 app = Flask(__name__)
 
@@ -74,6 +74,7 @@ def login():
             user = auth.get_user_by_email(email)
             # Assuming authentication is successful, set the user as authenticated
             session['authenticated'] = True
+            session['user_uuid'] = user.uid
             return redirect('/')
         except auth.AuthError as e:
             # Handle authentication failure
@@ -103,9 +104,11 @@ def authenticate_user(f):
 
 
 @app.route('/get_products_data', methods=['GET'])
-# @authenticate_user
+@authenticate_user
 def get_products_data():
-    products = products_ref.get()
+    user_uuid = session.get('user_uuid')
+    print("User UUID:", user_uuid)  # Add this line for debugging
+    products = products_ref.order_by_child('user_uuid').equal_to(user_uuid).get()
 
     if products is not None:
         product_data = []
@@ -113,35 +116,35 @@ def get_products_data():
         current_date = datetime.now(pt_timezone).date()
 
         for key, product in products.items():
-            expiration_date = product.get('expiration_date')
-            expiration_status = False  # Initialize it to False
+            # Check if the product belongs to the current user based on UUID
+            if 'user_uuid' in product and product['user_uuid'] == user_uuid:
+                print("Product belongs to user:", product)  # Add this line for debugging
+                expiration_date = product.get('expiration_date')
+                expiration_status = False  # Initialize it to False here
 
-            if expiration_date and expiration_date != 'None':
-                try:
-                    expiration_date = datetime.strptime(expiration_date, '%d %b %Y').date()
-                    if expiration_date <= current_date:
-                        expiration_status = True
-                    expiration_date = expiration_date.strftime('%d %b %Y')
-                except ValueError as e:
-                    print(f"Error parsing expiration date for product {key}: {e}")
+                if expiration_date and expiration_date != 'None':
+                    try:
+                        expiration_date = datetime.strptime(expiration_date, '%d %b %Y').date()
+                        if expiration_date <= current_date:
+                            expiration_status = True
+                        expiration_date = expiration_date.strftime('%d %b %Y')
+                    except ValueError as e:
+                        print(f"Error parsing expiration date for product {key}: {e}")
+                else:
+                    print("Product does not belong to user:", product)  # Add this line for debugging
 
-            product_info = {
-                'product_id': key,
-                'product_name': product['product_name'],
-                'expiration_date': expiration_date,
-                'location': product['location'],
-                'category': product['category'],
-                'wasted_status': product['wasted_status'],
-                'expiration_status': expiration_status
-            }
+                product_info = {
+                    'product_id': key,
+                    'product_name': product['product_name'],
+                    'expiration_date': expiration_date,
+                    'location': product['location'],
+                    'category': product['category'],
+                    'wasted_status': product['wasted_status'],
+                    'expiration_status': expiration_status
+                }
 
-            product_data.append(product_info)
-            product_ids.append(key)
-            wasted_statuses = []
-            for product in product_data:
-                if 'wasted_status' in product:
-                    wasted_status = product['wasted_status']
-                    wasted_statuses.append(wasted_status)
+                product_data.append(product_info)
+                product_ids.append(key)
 
         return jsonify({'products': product_data, 'product_ids': product_ids})
     else:
@@ -152,6 +155,8 @@ def get_products_data():
 @app.route('/', methods=['POST', 'GET'])
 @authenticate_user
 def index():
+    user_uuid = session.get('user_uuid')
+
     # Get the current date in the PT timezone
     current_date = datetime.now(pt_timezone).date()
 
@@ -242,7 +247,7 @@ def index():
         else:
             expiration_date_str = ''
 
-        # Create a new product dictionary with relevant information
+         # Create a new product dictionary with relevant information
         new_product = {
             'product_name': item_content,
             'expiration_date': expiration_date_str,
@@ -250,7 +255,8 @@ def index():
             'category': category,
             'barcode_id': barcode['id'] if barcode else None,
             'wasted_status': False,
-            'date_created': current_date.strftime('%d %b %Y')
+            'date_created': current_date.strftime('%d %b %Y'),
+            'user_uuid': user_uuid
         }
 
         products_ref.push(new_product)
@@ -266,7 +272,8 @@ def index():
         expiration_status_filter = request.args.get('expiration-status', 'all')
 
         # Reference the 'products' node in Firebase
-        products = products_ref.get()
+        products = products_ref.order_by_child('user_uuid').equal_to(user_uuid).get()
+
 
         if products is not None:
             filtered_products = []
@@ -316,6 +323,7 @@ def index():
 
 
 @app.route('/check_barcode', methods=['POST'])
+@authenticate_user
 def check_barcode():
     data = request.get_json()
     barcode_value = data.get('barcode')
@@ -343,6 +351,7 @@ def check_barcode():
 
 # Route to check the expiration status of a product
 @app.route('/check_expiration_status', methods=['GET'])
+@authenticate_user
 def check_expiration_status():
     current_date = datetime.now(pt_timezone).date()
 
@@ -371,6 +380,7 @@ def check_expiration_status():
 
 # Route to handle expired date input
 @app.route('/expired_date_input', methods=['POST'])
+@authenticate_user
 def expired_date_input():
     try:
         # Get the expiration date as a string from the form data
@@ -392,6 +402,7 @@ def expired_date_input():
 
 # Route to update a product
 @app.route('/update_product/<string:id>', methods=['GET', 'POST'])
+@authenticate_user
 def update_product(id):
     # Retrieve the product by its ID from Firebase
     product_ref = products_ref.child(id)
@@ -434,6 +445,7 @@ def update_product(id):
 
 # Route to delete a product
 @app.route('/delete_product/<string:id>')
+@authenticate_user
 def delete_product(id):
     # Retrieve the product by its ID from Firebase
     product_ref = products_ref.child(id)
@@ -452,6 +464,7 @@ def delete_product(id):
 
 # Route to mark a product as wasted
 @app.route('/waste_product/<string:id>')
+@authenticate_user
 def waste_product(id):
     # Retrieve the product by its ID from Firebase
     product_ref = products_ref.child(id)
@@ -476,6 +489,7 @@ def waste_product(id):
 
 # Route to view the list of wasted products
 @app.route('/wasted_product_list', methods=['GET'])
+@authenticate_user
 def wasted_product_list():
 
     # Retrieve all products that are marked as wasted from Firebase
@@ -518,6 +532,7 @@ def wasted_product_list():
 
 # Route for generating a recipe based on user input
 @app.route('/generate_recipe', methods=['POST', 'GET'])
+@authenticate_user
 def generate_recipe_user_input():
     if request.method == 'POST':
         user_input = request.form.get('user-input')
@@ -530,6 +545,7 @@ def generate_recipe_user_input():
 
 # Route to generate a recipe from the Firebase database
 @app.route('/generate_recipe_from_firebase', methods=['GET'])
+@authenticate_user
 def generate_recipe_from_firebase():
 
     # Retrieve product names from Firebase
