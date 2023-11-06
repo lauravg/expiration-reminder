@@ -31,7 +31,8 @@ h4.no-products-msg {
 }
 
 .product-form label,
-.filter-form label {
+.filter-form label,
+.registration-form label {
     display: block;
     font-size: 16px;
     color: #333;
@@ -41,7 +42,9 @@ h4.no-products-msg {
 .product-form input[type="text"],
 .product-form input[type="date"],
 .filter-form input[type="text"],
-.filter-form input[type="date"] {
+.filter-form input[type="date"],
+.registration-form input[type="text"],
+.registration-form input[type="password"] {
     width: calc(100% - 20px);
     padding: 10px;
     margin-bottom: 15px;
@@ -201,7 +204,6 @@ button:hover {
     .product,
     .attribute-label {
         width: auto;
-        text-align: center;
     }
 
     #submit-button {
@@ -273,6 +275,5 @@ button:hover {
     #clear-filter-button {
         margin: 0;
     }
-
 
 }

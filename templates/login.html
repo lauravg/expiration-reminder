@@ -7,17 +7,15 @@
 {% block body %}
 <div class="content">
     <h1 class="headline">Login</h1>
-    <form action="/login" method="POST" class="product-form">
-        <label for="email">Email</label>
-        <input type="text" name="email" id="email" required>
-
-        <label for="password">Password</label>
-        <input type="password" name="password" id="password" required>
-
+    <form action="/login" method="POST" class="registration-form">
+        <label for="email" class="attribute-label">Email</label>
+        <input type="text" name="email" id="email" required class="product">
+        <label for="password" class="attribute-label">Password</label>
+        <input type="password" name="password" id="password" required class="product">
         <button type="submit" class="login-button">Login</button>
     </form>
     <p class="links">
-        Don't have an account? <a href="/register">Register</a>
+        Don't have an account? <a href="/register" class="wasted-products-link">Register</a>
     </p>
 </div>
 {% endblock %}
