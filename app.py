@@ -107,7 +107,6 @@ def authenticate_user(f):
 @authenticate_user
 def get_products_data():
     user_uuid = session.get('user_uuid')
-    print("User UUID:", user_uuid)  # Add this line for debugging
     products = products_ref.order_by_child('user_uuid').equal_to(user_uuid).get()
 
     if products is not None:
@@ -118,7 +117,6 @@ def get_products_data():
         for key, product in products.items():
             # Check if the product belongs to the current user based on UUID
             if 'user_uuid' in product and product['user_uuid'] == user_uuid:
-                print("Product belongs to user:", product)  # Add this line for debugging
                 expiration_date = product.get('expiration_date')
                 expiration_status = False  # Initialize it to False here
 
@@ -130,9 +128,7 @@ def get_products_data():
                         expiration_date = expiration_date.strftime('%d %b %Y')
                     except ValueError as e:
                         print(f"Error parsing expiration date for product {key}: {e}")
-                else:
-                    print("Product does not belong to user:", product)  # Add this line for debugging
-
+                
                 product_info = {
                     'product_id': key,
                     'product_name': product['product_name'],
@@ -195,11 +191,7 @@ def index():
         barcode = None
 
         if barcode_number != '':
-            # Your code to retrieve barcode information from Firebase
-            print('barcodes_ref', barcodes_ref)
-            # Retrieve barcode data from Firebase
             barcodes_data = barcodes_ref.get()
-            print('barcodes_data', barcodes_data)
 
             if not barcodes_ref.get():
                 # If it doesn't exist, create the 'barcodes' node with an initial entry
@@ -210,7 +202,6 @@ def index():
                 # Generate a unique ID for the initial entry
                 barcode_id = str(uuid.uuid4())
                 barcodes_ref.child(barcode_id).set(initial_entry)
-
 
             if barcodes_data is not None:
                 for barcode_id, barcode_data in barcodes_data.items():            
@@ -232,7 +223,6 @@ def index():
                     # Generate a unique ID for the new barcode entry
                     new_barcode_id = str(uuid.uuid4())
                     barcodes_ref.child(new_barcode_id).set(new_barcode_entry)
-                    print('New barcode entry added with ID:', new_barcode_id)
                     
                     # Now, set the barcode with the new entry's ID
                     barcode = {

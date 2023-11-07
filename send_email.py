@@ -1,4 +1,3 @@
-import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import json
@@ -11,6 +10,7 @@ from recipe import generate_recipe
 import firebase_admin
 from firebase_admin import credentials, db as firebase_db
 from flask import Flask, app
+from datetime import datetime
 
 
 class SendMail:
@@ -20,12 +20,13 @@ class SendMail:
         self.pt_timezone = pt_timezone
 
     def init_schedule_thread(self):
+        print('#### inside init_schedule_thread')
         send_mail = self
 
         class ScheduleThread(threading.Thread):
             @classmethod
             def run(cls):
-                schedule.every().day.at("17:30").do(send_mail.send_daily_email)
+                schedule.every().day.at("17:27").do(send_mail.send_daily_email)
                 # Run the scheduled tasks in a loop
                 while True:
                     schedule.run_pending()
@@ -36,6 +37,7 @@ class SendMail:
     # Define a function to send the email notification
 
     def email_notification(self, subject, body):
+        print('### inside email_notification')
         # Load email configuration from the JSON file
         with open('config.json', 'r') as config_file:
             email_config = json.load(config_file)
@@ -70,18 +72,20 @@ class SendMail:
             server.quit()
 
     # Define a function to send the daily email
-
     def send_daily_email(self):
+        print("### inside send daily email")
         with self.flask_app.app_context():
             expiring_products = self.get_expiring_products_firebase()
 
             subject = "Expiring Products Reminder"
             headline = "Expiring Products:\n"
             product_details = [
-                f"- {product['product_name']} (Expires in {product['days_until_expiration']} days on {product['formatted_expiration_date']})" for product in expiring_products]
+                f"- {product['product_name']} (Expires in {product['days_until_expiration']} days on {product['formatted_expiration_date']})"
+                for product in expiring_products]
             body = f"{headline}" + '\n'.join(product_details)
 
-            recipe_suggestion = self.generate_recipe_firebase()
+            # Call the generate_recipe function from the recipe module
+            recipe_suggestion = generate_recipe([product['product_name'] for product in expiring_products])
 
             # Add the recipe suggestion to the email body
             if recipe_suggestion:
@@ -91,25 +95,24 @@ class SendMail:
             self.email_notification(subject, body)
 
     # Define a function to get the list of expiring products
+    def get_expiring_products_firebase(self):
+        print('### inside get expiring products firebase')
+        expiring_products = []
 
-    def get_expiring_products(self):
-        # Fetch products from Firebase
+        # Query your Firebase database to retrieve product information
         products_ref = firebase_db.reference('products')
-        products = products_ref.get()
-
-        # Get the current date in the Pacific Time (PT) timezone
         current_date = datetime.now(self.pt_timezone).date()
 
-        # Create a list of expiring products
-        expiring_products = []
-        for key, product in products.items():
-            if 'expiration_date' in product:
-                expiration_date = datetime.strptime(product['expiration_date'], '%Y-%m-%d').date()
+        for key, product_data in products_ref.get().items():
+            print(f"Type of product_data: {type(product_data)}")
+            expiration_date_str = product_data.get('expiration_date', '')  # Get expiration date or an empty string if it doesn't exist
+            if expiration_date_str:
+                expiration_date = datetime.strptime(expiration_date_str, '%d %b %Y').date()
                 days_until_expiration = (expiration_date - current_date).days
                 if days_until_expiration <= 5:
-                    # Include the product in the list
-                    product['formatted_expiration_date'] = expiration_date.strftime('%b %d %Y')
-                    product['days_until_expiration'] = days_until_expiration
-                    expiring_products.append(product)
+                    # Include the product in the list of expiring products
+                    product_data['formatted_expiration_date'] = expiration_date.strftime('%d %b %Y')
+                    product_data['days_until_expiration'] = days_until_expiration
+                    expiring_products.append(product_data)
 
         return expiring_products
