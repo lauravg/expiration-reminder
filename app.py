@@ -7,6 +7,7 @@ from datetime import datetime
 from config import pt_timezone
 
 from recipe import generate_recipe
+import os
 import pytz
 import sys
 
@@ -15,8 +16,19 @@ import firebase_admin
 from firebase_admin import credentials, auth
 from firebase_admin import db as firebase_db
 
+FIREBASE_KEY_FILE = "firebase_api_key.json"
+OPEN_AI_KEY_FILE = "openai_api_key"
+
+def check_file(filename: str):
+    if not os.path.exists(filename) or not os.access(filename, os.R_OK):
+      print(f'Error: File {filename} does not exist or is not readable.')
+      sys.exit(1)
+
+check_file(FIREBASE_KEY_FILE)
+check_file(OPEN_AI_KEY_FILE)
+
 cred = credentials.Certificate(
-    'firebase_api_key.json')
+    FIREBASE_KEY_FILE)
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://pantryguardian-f8381-default-rtdb.firebaseio.com'
 })
