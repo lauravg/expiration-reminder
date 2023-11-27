@@ -17,7 +17,7 @@ from firebase_admin import credentials, auth
 from firebase_admin import db as firebase_db
 
 FIREBASE_KEY_FILE = "firebase_api_key.json"
-OPEN_AI_KEY_FILE = "openai_api_key"
+OPEN_AI_KEY_FILE = "openai_api_key.txt"
 
 def check_file(filename: str):
     if not os.path.exists(filename) or not os.access(filename, os.R_OK):
