@@ -11,6 +11,5 @@ RUN pip install -r requirements.txt
 RUN rm -fr /app/instance
 RUN ln -s /storage /app/instance
 
-# Ensure the database has the most recent schema.
-# Will also create a DB if none exists yet.
-CMD gunicorn -w 4 -b127.0.0.1:5000 app:app
+# Start production WSGI server, bind to all IPs and port 5000.
+CMD gunicorn -w 4 -b0.0.0.0:5000 app:app
