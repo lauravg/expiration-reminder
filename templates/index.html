@@ -10,7 +10,7 @@
         <label for="input-product-name">Product Name</label>
         <input type="text" name="product-name" id="input-product-name" placeholder="Enter the product name" required>
 
-        <label for="input-expiration-date">Expiration Date</label>
+        <label for="input-expiration-date">Expiration Date (MM/DD/YYYY)</label>
         <input type="date" name="expiration-date" id="input-expiration-date" value="{{ current_date }}" required>
 
         <label for="no-expiration">No Expiration Date</label>
@@ -18,20 +18,23 @@
 
         <label for="select-location">Choose a location</label>
         <select name="locations" id="locations">
+            <option value="Pantry">Pantry</option>
             <option value="Fridge">Fridge</option>
             <option value="Freezer (Kitchen)">Freezer (Kitchen)</option>
             <option value="Freezer (Downstairs)">Freezer (Downstairs)</option>
-            <option value="Pantry">Pantry</option>
             <option value="Liquor Cabinet">Liquor Cabinet</option>
         </select>
 
         <label for="select-category">Category</label>
         <select name="category" id="category">
             <option value="Food">Food</option>
+            <option value="Baby Food">Baby Food</option>
             <option value="Veggies">Veggies</option>
             <option value="Meat">Meat</option>
             <option value="Fish">Fish</option>
             <option value="Fruits">Fruits</option>
+            <option value="Sauce">Sauce/Dressing</option>
+            <option value="Spices">Spices</option>
             <option value="Juice/Beverages">Juice/Beverages</option>
             <option value="Liquor">Liquor</option>
             <option value="Wine">Wine</option>
@@ -104,7 +107,7 @@
                 <div class="product product-name">{{ product.product_name }}</div>
             </div>
             <div class="product-container">
-                <div class="attribute-label">Expiration Date</div>
+                <div class="attribute-label">Expiration Date (MM/DD/YYYY)</div>
                 <div class="product expiration-date expiration-status" data-product-id="{{ product.product_id }}">
                     {{ product.expiration_date | default('No Expiration Date') }}
                 </div>

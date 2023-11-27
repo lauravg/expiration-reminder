@@ -174,9 +174,6 @@ def index():
                 # Get the date part of the expiration date
                 item_expiration_date = item_expiration_datetime_pt.date()
 
-                # Check if the item is already expired
-                if item_expiration_date <= current_date:
-                    return redirect(url_for('expired_date_input'))
             except ValueError:
                 # Handle invalid date format here
                 return render_template("error.html", error_message="Invalid date format")
