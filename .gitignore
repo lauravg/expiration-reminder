@@ -2,5 +2,6 @@ __pycache__/
 venv/
 logs/
 openai_api_key.txt
-config.json
+firebase_api_key.json
 pantryguardian-f8381-f7d96ae72f46.json
+config.json
