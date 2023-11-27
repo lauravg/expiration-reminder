@@ -10,7 +10,15 @@ services:
       - "5000:5000"
     volumes:
       - expiration-reminder-storage:/storage
+    secrets:
+      - openai_api_key
     restart: always
+
+secrets:
+  openai_api_key:
+    file: ./openai_api_key.txt
+  firebase_api_key:
+    file: ./firebase_api_key.json
 
 volumes:
   expiration-reminder-storage:
