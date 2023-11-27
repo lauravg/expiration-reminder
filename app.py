@@ -2,8 +2,7 @@ from functools import wraps
 import secrets
 import uuid
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
-from flask_migrate import Migrate
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from config import pt_timezone
 
@@ -17,7 +16,7 @@ from firebase_admin import credentials, auth
 from firebase_admin import db as firebase_db
 
 cred = credentials.Certificate(
-    'pantryguardian-f8381-f7d96ae72f46.json')
+    'firebase_api_key.json')
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://pantryguardian-f8381-default-rtdb.firebaseio.com'
 })
@@ -46,13 +45,14 @@ def register():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
+
         try:
             # Create a new user with provided email and password
             user = auth.create_user(
                 email=email,
                 password=password
             )
+            # TODO: Should we check the returned user item here?
             # Registration successful, set the user as authenticated
             session['authenticated'] = True
             return redirect('/')
@@ -68,7 +68,8 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-
+        # FIXME: The password isn't used
+        # TODO: Display logged-in user on top, plus a logout button
         try:
             # Authenticate the user using email and password
             user = auth.get_user_by_email(email)
@@ -128,7 +129,7 @@ def get_products_data():
                         expiration_date = expiration_date.strftime('%d %b %Y')
                     except ValueError as e:
                         print(f"Error parsing expiration date for product {key}: {e}")
-                
+
                 product_info = {
                     'product_id': key,
                     'product_name': product['product_name'],
@@ -201,7 +202,7 @@ def index():
                 barcodes_ref.child(barcode_id).set(initial_entry)
 
             if barcodes_data is not None:
-                for barcode_id, barcode_data in barcodes_data.items():            
+                for barcode_id, barcode_data in barcodes_data.items():
                     if 'barcode_value' in barcode_data and barcode_data['barcode_value'] == barcode_number:
                         barcode = {
                             'id': barcode_id,
@@ -211,7 +212,7 @@ def index():
                         break
 
                 # Handle the case when there are no barcode data
-                if barcode is None:  
+                if barcode is None:
                     # Add a new barcode entry here
                     new_barcode_entry = {
                         'barcode_value': barcode_number,
@@ -220,7 +221,7 @@ def index():
                     # Generate a unique ID for the new barcode entry
                     new_barcode_id = str(uuid.uuid4())
                     barcodes_ref.child(new_barcode_id).set(new_barcode_entry)
-                    
+
                     # Now, set the barcode with the new entry's ID
                     barcode = {
                         'id': new_barcode_id,
@@ -250,7 +251,7 @@ def index():
 
         # Redirect or perform further actions as needed
         return redirect(url_for('index'))
-    
+
     else:
         # Get filters and parameters from the request
         location_filter = request.args.get('location-filter', 'All')
@@ -319,7 +320,7 @@ def check_barcode():
     if not barcode_value:
         response = {'exists': False, 'productName': ''}
         return jsonify(response)
-    
+
     # Retrieve barcode data from Firebase
     barcodes_data = barcodes_ref.get()
 
@@ -494,8 +495,8 @@ def wasted_product_list():
                         # Handle invalid date format by marking as 'Unknown'
                         expiration_date = None
             else:
-                expiration_date = None  # No expiration date provided  
-                         
+                expiration_date = None  # No expiration date provided
+
             if expiration_date:
                 formatted_expiration_date = expiration_date.strftime('%d %b %Y')
             else:

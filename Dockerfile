@@ -13,4 +13,4 @@ RUN ln -s /storage /app/instance
 
 # Ensure the database has the most recent schema.
 # Will also create a DB if none exists yet.
-CMD flask db upgrade && python app.py
+CMD gunicorn -w 4 -b127.0.0.1:5000 app:app
