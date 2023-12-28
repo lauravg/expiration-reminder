@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 const products = data.products;
 
-                // Select all elements with the class "expiration-status"
+                // Select all elements with the class 'expiration-status'
                 const productStatusElements = document.querySelectorAll('.expiration-status');
 
                 productStatusElements.forEach(element => {
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setInterval(updateExpirationStatus, 60000); // 60000 milliseconds = 1 minute
     
-    // Listen for changes to the "No Expiration Date" checkbox
+    // Listen for changes to the 'No Expiration Date' checkbox
     noExpirationCheckbox.addEventListener('change', function () {
         if (this.checked) {
             // If checked, disable the expiration date input and clear its value
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (!this.checked) {
             // If unchecked, enable the expiration date input
             expirationDateInput.disabled = false;
-            // Get the current date as a string in "YYYY-MM-DD" format
+            // Get the current date as a string in 'YYYY-MM-DD' format
             const currentDate = new Date();
             const year = currentDate.getFullYear();
             const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');

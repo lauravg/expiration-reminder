@@ -69,7 +69,7 @@ def register():
             session['authenticated'] = True
             return redirect('/')
         except Exception as e:
-            return "Registration failed: " + str(e)
+            return 'Registration failed: ' + str(e)
 
     return render_template('register.html')
 
@@ -91,7 +91,7 @@ def login():
             return redirect('/')
         except auth.AuthError as e:
             # Handle authentication failure
-            return "Login failed: " + str(e)
+            return 'Login failed: ' + str(e)
 
     return render_template('login.html')
 
@@ -173,7 +173,7 @@ def index():
         # Get the item content from the form
         item_content = request.form['product-name']
 
-        # Check if the "No Expiration Date" checkbox is checked
+        # Check if the 'No Expiration Date' checkbox is checked
         no_expiration = 'no-expiration' in request.form
 
         if not no_expiration:
@@ -189,7 +189,7 @@ def index():
 
             except ValueError:
                 # Handle invalid date format here
-                return render_template("error.html", error_message="Invalid date format")
+                return render_template('error.html', error_message='Invalid date format')
 
         else:
             item_expiration_date = None  # No expiration date
@@ -311,13 +311,13 @@ def index():
                 if product_info['wasted_status'] is False:
                     filtered_products.append(product_info)
 
-            return render_template("index.html", products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
+            return render_template('index.html', products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
                                 selected_location=location_filter, selected_category=category_filter,
                                 selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
 
         else:
             # Handle the case when there is no product data
-            return render_template("index.html", products=[], current_date=current_date.strftime('%Y-%m-%d'),
+            return render_template('index.html', products=[], current_date=current_date.strftime('%Y-%m-%d'),
                                 selected_location=location_filter, selected_category=category_filter,
                                 selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
 
@@ -365,17 +365,17 @@ def check_expiration_status():
                 product, '%Y-%m-%d').date()
         except ValueError as e:
             # Handle parsing errors and log them
-            print(f"Error parsing product expiration date: {e}")
+            print(f'Error parsing product expiration date: {e}')
 
         if product_expiration_date is not None and product_expiration_date <= current_date:
             # Handle the case where the product has expired
-            return "Expired"
+            return 'Expired'
         else:
             # Handle the case where the product has not expired
-            return "Not Expired"
+            return 'Not Expired'
 
     # Handle cases where 'product' is None or not provided
-    return "Unknown"
+    return 'Unknown'
 
 
 # Route to handle expired date input
@@ -410,7 +410,7 @@ def update_product(id):
 
     # Check if the product doesn't exist
     if product_data is None:
-        return "Product not found", 404
+        return 'Product not found', 404
 
     # Assign the 'product_id' to the product_data
     product_data['product_id'] = id
@@ -419,7 +419,7 @@ def update_product(id):
         # Update the product information
         product_data['product_name'] = request.form['product-name']
 
-        # Check if the "No Expiration Date Button" is checked
+        # Check if the 'No Expiration Date Button' is checked
         if 'no-expiration' in request.form and request.form['no-expiration'] == 'on':
             # Handle the case where there is no expiration date
             product_data['expiration_date'] = 'Unknown'
@@ -431,7 +431,7 @@ def update_product(id):
                 product_data['expiration_date'] = expiration_date
             except ValueError:
                 # Handle the case where the date is not in the expected format
-                return "Invalid expiration date format"
+                return 'Invalid expiration date format'
 
         try:
             # Update the product data in Firebase
@@ -452,7 +452,7 @@ def delete_product(id):
     product_data = product_ref.get()
 
     if product_data is None:
-        return "Product not found", 404
+        return 'Product not found', 404
 
     try:
         # Delete the product from Firebase
@@ -472,7 +472,7 @@ def waste_product(id):
     product_data['product_id'] = id
 
     if product_data is None:
-        return "Product not found", 404
+        return 'Product not found', 404
 
     try:
         # Update the 'wasted_status' field of the product in Firebase to mark it as wasted
@@ -527,7 +527,7 @@ def wasted_product_list():
                 'date_wasted': date_wasted,
             })
 
-    return render_template("wasted_product_list.html", products=wasted_products)
+    return render_template('wasted_product_list.html', products=wasted_products)
 
 
 # Route for generating a recipe based on user input
@@ -540,7 +540,7 @@ def generate_recipe_user_input():
         recipe_suggestion = generate_recipe([user_input])
         return jsonify({'recipe_suggestion': recipe_suggestion})
     else:
-        return render_template("generate_recipe.html")
+        return render_template('generate_recipe.html')
 
 
 # Route to generate a recipe from the Firebase database
@@ -560,7 +560,7 @@ def generate_recipe_from_firebase():
 
 # Define a signal handler to handle termination signals
 def on_terminate(signal, frame):
-    print("Received terminate signal at %s" % datetime.now())
+    print('Received terminate signal at %s' % datetime.now())
     sys.exit(0)
 
 

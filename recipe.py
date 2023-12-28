@@ -12,13 +12,13 @@ api_key = read_api_key()
 
 def generate_recipe(product_names):
     messages = [
-        {"role": "system", "content": "You’re a kind helpful assistant that generates a recipe using the provided ingredients. However no need to include all the ingredients."},
+        {'role': 'system', 'content': 'You’re a kind helpful assistant that generates a recipe using the provided ingredients. However no need to include all the ingredients.'},
         # Convert product names to a comma-separated string
-        {"role": "user", "content": ', '.join(product_names)}
+        {'role': 'user', 'content': ', '.join(product_names)}
     ]
 
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model='gpt-3.5-turbo',
         messages=messages,
         api_key=api_key
     )
