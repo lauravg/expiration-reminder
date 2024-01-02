@@ -3,5 +3,6 @@ venv/
 logs/
 openai_api_key.txt
 firebase_api_key.json
+firebase_web_api_key.txt
 pantryguardian-f8381-f7d96ae72f46.json
 config.json

@@ -5,6 +5,9 @@
 {% endblock %}
 
 {% block body %}
+<h1>Welcome, {{ display_name }}!</h1>
+<a href="{{ url_for('settings') }}">Settings</a>
+
 <div class="content">
     <form class="product-form" action="/" method="POST" id="product-form">
         <label for="input-product-name">Product Name</label>
