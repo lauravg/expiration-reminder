@@ -43,9 +43,9 @@ class SecretsManager:
         file_name = self.__mapping[id][1]
         try:
             f = open(file_name, "r")
-            key = f.readline().strip("\n")
+            key = f.read().strip("\n")
             if key is not None and not key.isspace():
-                log.info(f"Found secret '{id}' through local secrets file.'")
+                log.info(f"Found secret '{id}' through local secrets file'")
                 return key
         except:
             raise SecretNotFoundException("Unable to read secret key for '%s'.", id)

@@ -8,8 +8,6 @@ services:
     container_name: expiration-reminder
     ports:
       - "5000:5000"
-    volumes:
-      - expiration-reminder-storage:/storage
     restart: always
     secrets:
       - openai_api_key

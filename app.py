@@ -87,9 +87,6 @@ def login():
         password = request.form['password']
         firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
 
-        log.debug(f'Attempting login with email: {email}, password: {password}')
-        log.debug(firebase_web_api_key)
-
         # Make a request to Firebase Authentication REST API for sign-in
         request_data = {
             'email': email,
