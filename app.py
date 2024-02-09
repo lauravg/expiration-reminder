@@ -627,9 +627,9 @@ def generate_recipe_user_input():
 
 
 # Route to generate a recipe from the Firebase database
-@app.route('/generate_recipe_from_firebase', methods=['GET'])
+@app.route('/generate_recipe_from_database', methods=['GET'])
 @authenticate_user
-def generate_recipe_from_firebase():
+def generate_recipe_from_database():
 
     # Retrieve product names from Firebase
     product_names = [product_data['product_name']
