@@ -109,7 +109,7 @@ def login():
             return redirect('/')
         else:
             # Output the response for debugging purposes
-            print(f'Login failed. Response: {response.json()}')
+            log.warning(f'Login failed. Response: {response.json()}')
 
             # Handle authentication failure
             return 'Login failed: ' + response.json().get('error', {}).get('message', 'Unknown error')
@@ -150,7 +150,7 @@ def settings():
         display_name = user.display_name
         email = user.email
     except auth.AuthError as e:
-        print(f'Error retrieving user information: {e}')
+        log.error(f'Error retrieving user information: {e}')
         display_name = 'User'
         email = 'user@example.com'
 
@@ -207,7 +207,7 @@ def get_products_data():
                             expiration_status = True
                         expiration_date = expiration_date.strftime('%d %b %Y')
                     except ValueError as e:
-                        print(f'Error parsing expiration date for product {key}: {e}')
+                        log.error(f'Error parsing expiration date for product {key}: {e}')
 
                 product_info = {
                     'product_id': key,
@@ -250,7 +250,8 @@ def index():
         try:
             user = auth.get_user(user_uid)
         except auth.AuthError as e:
-            print(f'Error retrieving user email: {e}')
+            log.error(f'Error retrieving user email: {e}')
+            # FIXME: Should probably not continue here?
 
         if request.method == 'POST':
             # Get the item content from the form
@@ -448,7 +449,7 @@ def check_expiration_status():
                 product, '%Y-%m-%d').date()
         except ValueError as e:
             # Handle parsing errors and log them
-            print(f'Error parsing product expiration date: {e}')
+            log.error(f'Error parsing product expiration date: {e}')
 
         if product_expiration_date is not None and product_expiration_date <= current_date:
             # Handle the case where the product has expired
@@ -643,7 +644,7 @@ def generate_recipe_from_database():
 
 # Define a signal handler to handle termination signals
 def on_terminate(signal, frame):
-    print('Received terminate signal at %s' % datetime.now())
+    log.info('Received terminate signal at %s' % datetime.now())
     sys.exit(0)
 
 

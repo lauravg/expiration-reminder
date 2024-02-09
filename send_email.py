@@ -1,5 +1,6 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from absl import logging as log
 import json
 import smtplib
 import schedule
@@ -21,7 +22,7 @@ class SendMail:
         self.recipe_generator = recipe_generator
 
     def init_schedule_thread(self):
-        print('#### inside init_schedule_thread')
+        log.debug('#### inside init_schedule_thread')
         send_mail = self
 
         class ScheduleThread(threading.Thread):
@@ -38,7 +39,7 @@ class SendMail:
     # Define a function to send the email notification
 
     def email_notification(self, subject, body):
-        print('### inside email_notification')
+        log.debug('### inside email_notification')
         # Load email configuration from the JSON file
         with open('config.json', 'r') as config_file:
             email_config = json.load(config_file)
@@ -64,17 +65,17 @@ class SendMail:
             server.starttls()
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, receiver_email, message.as_string())
-            print('Email sent successfully.')
+            log.info('Email sent successfully.')
         except smtplib.SMTPException as e:
-            print(f'SMTP Exception: {str(e)}')
+            log.error(f'SMTP Exception: {str(e)}')
         except Exception as e:
-            print(f'Failed to send email: {str(e)}')
+            log.error(f'Failed to send email: {str(e)}')
         finally:
             server.quit()
 
     # Define a function to send the daily email
     def send_daily_email(self):
-        print('### inside send daily email')
+        log.debug('### inside send daily email')
         with self.flask_app.app_context():
             expiring_products = self.get_expiring_products_firebase()
 
@@ -86,7 +87,7 @@ class SendMail:
             body = f'{headline}' + '\n'.join(product_details)
 
             # Call the generate_recipe function from the recipe module
-            recipe_suggestion = self.recipe_generator.generate_recipe([product['product_name'] for product in expiring_products])
+            recipe_suggestion = self.recipe_generatorgenerate_recipe([product['product_name'] for product in expiring_products])
 
             # Add the recipe suggestion to the email body
             if recipe_suggestion:
@@ -97,7 +98,7 @@ class SendMail:
 
     # Define a function to get the list of expiring products
     def get_expiring_products_firebase(self):
-        print('### inside get expiring products firebase')
+        log.debug('### inside get expiring products firebase')
         expiring_products = []
 
         # Query your Firebase database to retrieve product information
@@ -105,7 +106,7 @@ class SendMail:
         current_date = datetime.now(self.pt_timezone).date()
 
         for key, product_data in products_ref.get().items():
-            print(f'Type of product_data: {type(product_data)}')
+            log.debug(f'Type of product_data: {type(product_data)}')
             expiration_date_str = product_data.get('expiration_date', '')  # Get expiration date or an empty string if it doesn't exist
             if expiration_date_str:
                 expiration_date = datetime.strptime(expiration_date_str, '%d %b %Y').date()
