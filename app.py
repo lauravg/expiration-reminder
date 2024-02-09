@@ -1,50 +1,42 @@
-from functools import wraps
-import secrets
-import uuid
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
-from datetime import datetime
-
 from config import pt_timezone
-
-from recipe import generate_recipe
-import os
+from datetime import datetime
+from functools import wraps
+import json
 import pytz
-import sys
 import requests
+import secrets
+import sys
+import uuid
 
-from send_email import SendMail
+from absl import logging as log
 import firebase_admin
 from firebase_admin import credentials, auth
 from firebase_admin import db as firebase_db
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
-FIREBASE_KEY_FILE = 'firebase_api_key.json'
-OPEN_AI_KEY_FILE = 'openai_api_key.txt'
+from recipe import RecipeGenerator
+from secrets_manager import SecretsManager
+from send_email import SendMail
 
-def check_file(filename: str):
-    if not os.path.exists(filename) or not os.access(filename, os.R_OK):
-      print(f'Error: File {filename} does not exist or is not readable.')
-      sys.exit(1)
+app = Flask(__name__)
+log.set_verbosity(log.DEBUG if app.debug else log.INFO)
 
-check_file(FIREBASE_KEY_FILE)
-check_file(OPEN_AI_KEY_FILE)
+secrets_mgr = SecretsManager()
+json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
+cred = credentials.Certificate(json_data)
 
-cred = credentials.Certificate(
-    FIREBASE_KEY_FILE)
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://pantryguardian-f8381-default-rtdb.firebaseio.com'
 })
 
-app = Flask(__name__)
 
 # Generate a secure secret key for the app
 secret_key = secrets.token_urlsafe(16)
 app.secret_key = secret_key
 
-with open('firebase_web_api_key.txt', 'r') as file:
-    app.config['FIREBASE_WEB_API_KEY'] = file.read().strip()
-
 # Create an instance of SendMail with the app and pt_timezone
-send_mail = SendMail(app, app, pt_timezone)
+recipe_generator = RecipeGenerator(secrets_mgr)
+send_mail = SendMail(app, app, pt_timezone, recipe_generator)
 
 
 # Create an instance of SendMail with the app and pt_timezone
@@ -93,9 +85,10 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        firebase_web_api_key = app.config['FIREBASE_WEB_API_KEY']
+        firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
 
-        print(f'Attempting login with email: {email}, password: {password}')
+        log.debug(f'Attempting login with email: {email}, password: {password}')
+        log.debug(firebase_web_api_key)
 
         # Make a request to Firebase Authentication REST API for sign-in
         request_data = {
@@ -627,7 +620,7 @@ def generate_recipe_user_input():
     if request.method == 'POST':
         user_input = request.form.get('user-input')
         # Assuming generate_recipe accepts a list
-        recipe_suggestion = generate_recipe([user_input])
+        recipe_suggestion = recipe_generator.generate_recipe([user_input])
         return jsonify({'recipe_suggestion': recipe_suggestion})
     else:
         return render_template('generate_recipe.html')
@@ -643,7 +636,7 @@ def generate_recipe_from_firebase():
                      for product_data in products_ref.get().values()]
 
     # Generate a recipe based on the product names
-    recipe_suggestion = generate_recipe(product_names)
+    recipe_suggestion = recipe_generator.generate_recipe(product_names)
 
     return jsonify({'recipe_suggestion': recipe_suggestion})
 

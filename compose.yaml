@@ -11,6 +11,15 @@ services:
     volumes:
       - expiration-reminder-storage:/storage
     restart: always
+    secrets:
+      - openai_api_key
+      - firebase_service_account_json
+      - firebase_web_api_key
 
-volumes:
-  expiration-reminder-storage:
+secrets:
+  openai_api_key:
+    file: ./secrets/OPENAI_API_KEY
+  firebase_service_account_json:
+    file: ./secrets/FIREBASE_SERVICE_ACCOUNT_JSON
+  firebase_web_api_key:
+    file: ./secrets/FIREBASE_WEB_API_KEY

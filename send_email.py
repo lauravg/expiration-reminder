@@ -6,7 +6,7 @@ import schedule
 import threading
 import time
 from config import pt_timezone
-from recipe import generate_recipe
+from recipe import RecipeGenerator
 import firebase_admin
 from firebase_admin import credentials, db as firebase_db
 from flask import Flask, app
@@ -14,10 +14,11 @@ from datetime import datetime
 
 
 class SendMail:
-    def __init__(self, app, flask_app, pt_timezone):
+    def __init__(self, app, flask_app, pt_timezone, recipe_generator: RecipeGenerator):
         self.app = app
         self.flask_app = flask_app
         self.pt_timezone = pt_timezone
+        self.recipe_generator = recipe_generator
 
     def init_schedule_thread(self):
         print('#### inside init_schedule_thread')
@@ -85,7 +86,7 @@ class SendMail:
             body = f'{headline}' + '\n'.join(product_details)
 
             # Call the generate_recipe function from the recipe module
-            recipe_suggestion = generate_recipe([product['product_name'] for product in expiring_products])
+            recipe_suggestion = self.recipe_generator.generate_recipe([product['product_name'] for product in expiring_products])
 
             # Add the recipe suggestion to the email body
             if recipe_suggestion:
