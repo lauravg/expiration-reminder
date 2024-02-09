@@ -20,23 +20,28 @@ class SendMail:
         self.flask_app = flask_app
         self.pt_timezone = pt_timezone
         self.recipe_generator = recipe_generator
+        self.stop_thread_event = threading.Event()
 
     def init_schedule_thread(self):
         log.debug('#### inside init_schedule_thread')
         send_mail = self
+        evt = self.stop_thread_event
+        evt.clear()
 
         class ScheduleThread(threading.Thread):
             @classmethod
             def run(cls):
                 schedule.every().day.at('17:27').do(send_mail.send_daily_email)
                 # Run the scheduled tasks in a loop
-                while True:
+                while not evt.is_set():
                     schedule.run_pending()
                     time.sleep(1)
+                log.info("Stopping thread")
         schedule_thread = ScheduleThread()
         schedule_thread.start()
 
-    # Define a function to send the email notification
+    def stop_schedule_thread(self):
+        self.stop_thread_event.set()
 
     def email_notification(self, subject, body):
         log.debug('### inside email_notification')
