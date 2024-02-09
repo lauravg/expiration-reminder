@@ -646,7 +646,10 @@ def on_terminate(signal, frame):
 
 
 # Initialize and start a schedule thread for sending emails
-send_mail.init_schedule_thread()
+if not app.debug:
+    send_mail.init_schedule_thread()
+else:
+    log.warning("⚠️ NOT initializing schedule thread in --debug mode ⚠️")
 
 
 # Run the Flask app
