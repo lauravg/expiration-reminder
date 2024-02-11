@@ -6,6 +6,8 @@ class SecretNotFoundException(Exception):
 
 
 class SecretsManager:
+    __cache: dict[str, str] = {}
+
     def __init__(self) -> None:
         self.__mapping = {
             "openai": ("OPENAI_API_KEY", "/run/secrets/openai_api_key"),
@@ -21,13 +23,20 @@ class SecretsManager:
         pass
 
     def get_openai_api_key(self) -> str:
-        return self.__get_internal("openai")
+        return self.__get_internal_cached("openai")
 
     def get_firebase_service_account_json(self) -> str:
-        return self.__get_internal("firebase_service_account")
+        return self.__get_internal_cached("firebase_service_account")
 
     def get_firebase_web_api_key(self) -> str:
-        return self.__get_internal("firebase_web_api_key")
+        return self.__get_internal_cached("firebase_web_api_key")
+
+    def __get_internal_cached(self, id: str) -> str:
+        if id in self.__cache:
+            return self.__cache[id]
+        value = self.__get_internal(id)
+        self.__cache[id] = value
+        return value
 
     def __get_internal(self, id: str) -> str:
         if id not in self.__mapping:
