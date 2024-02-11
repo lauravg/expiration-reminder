@@ -34,12 +34,26 @@ class SecretsManager:
             log.error("UNKNOWN secret name: '%s'", id)
             return ""
 
+        # 1) Find is as an environment variable
         env_name = self.__mapping[id][0]
         key = os.environ.get(env_name)
         if key is not None and not key.isspace():
             log.info(f"Found secret '{id}' through environment variable.'")
             return key
 
+        #2) Try to find the secret at the developer "secrets" location.
+        file_name = f"./secrets/{env_name}"
+        try:
+            f = open(file_name, "r")
+            key = f.read().strip("\n")
+            if key is not None and not key.isspace():
+                log.info(f"Found secret '{id}' through DEV secrets file'")
+                return key
+        except:
+            raise SecretNotFoundException("Unable to read secret key for '%s'.", id)
+
+
+        #3) Try to find it as the specified secrets file.
         file_name = self.__mapping[id][1]
         try:
             f = open(file_name, "r")
