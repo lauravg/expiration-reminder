@@ -8,4 +8,4 @@ done < .dockerignore
 
 # Create the tar archive with exclude options
 tar cvf pantry-guardan-docker.tar ${exclude_patterns[@]} .
-echo "pantry-guardan-docker.tar created successfully!"
+echo "pantry-guardian-docker.tar created successfully!"
