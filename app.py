@@ -6,20 +6,28 @@ import pytz
 import requests
 import secrets
 import sys
-import uuid
 
 from absl import logging as log
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from firebase_admin.auth import UserRecord
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+import flask_login
+from flask_login import LoginManager, login_user, logout_user, login_required
 
 from barcode_manager import BarcodeManager, Barcode
 from product_manager import ProductManager, Product
 from recipe import RecipeGenerator
 from secrets_manager import SecretsManager
 from send_email import SendMail
+from user_manager import UserManager, User
 
 app = Flask(__name__)
+# Generate a secure secret key for the app, required for session management.
+secret_key = secrets.token_urlsafe(16)
+app.secret_key = secret_key
+
+
 log.set_verbosity(log.DEBUG if app.debug else log.INFO)
 
 secrets_mgr = SecretsManager()
@@ -31,18 +39,26 @@ firestore = firestore.client()
 barcodes = BarcodeManager(firestore)
 product_mgr = ProductManager(firestore)
 
-# Generate a secure secret key for the app
-secret_key = secrets.token_urlsafe(16)
-app.secret_key = secret_key
-
 # Create an instance of SendMail with the app and pt_timezone
 recipe_generator = RecipeGenerator(secrets_mgr)
 send_mail = SendMail(app, app, pt_timezone, recipe_generator)
+
+user_manager = UserManager()
+
+# Used to manages sessions and user logins
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
 
 # Create an instance of SendMail with the app and pt_timezone
 def convert_to_pt(dt):
     return dt.astimezone(pt_timezone).replace(tzinfo=None)
+
+
+@login_manager.user_loader
+def load_user(uid: str) -> User:
+    return user_manager.get_user(uid)
 
 # Register route for user registration
 @app.route('/register', methods=['GET', 'POST'])
@@ -65,16 +81,13 @@ def register():
                 display_name=name
             )
 
-            # Set user_uid in the session upon successful registration
-            session['authenticated'] = True
-            session['user_uid'] = user.uid
-
-            session['authenticated'] = True
+            # TODO: Show some kind of "registration successful" message.
+            # TODO: Activate email confirmation flow?
             return redirect('/')
         except Exception as e:
-            return 'Registration failed: ' + str(e)
-
-    return render_template('register.html')
+            return 'Registration failed: ' + str(e), 500
+    else:
+        return render_template('register.html')
 
 
 # Login route for user authentication
@@ -83,6 +96,7 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+        next = request.form['next']
         firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
 
         # Make a request to Firebase Authentication REST API for sign-in
@@ -98,10 +112,14 @@ def login():
         )
 
         if response.ok:
+            # See https://cloud.google.com/identity-platform/docs/reference/rest/v1/accounts/signInWithPassword
             user_data = response.json()
-            session['authenticated'] = True
-            session['user_uid'] = user_data['localId']
-            return redirect('/')
+            user = user_manager.get_user(user_data['localId'])
+            login_user(user)
+            log.info("User successfully logged in")
+            if not is_url_safe(next):
+                next = "/"
+            return redirect(next)
         else:
             # Output the response for debugging purposes
             log.warning(f'Login failed. Response: {response.json()}')
@@ -109,41 +127,27 @@ def login():
             # Handle authentication failure
             return 'Login failed: ' + response.json().get('error', {}).get('message', 'Unknown error')
 
-    return render_template('login.html')
-
+    next = request.args.get('next')
+    if not is_url_safe(next):
+        next = "/"
+    return render_template('login.html', next_url=next)
 
 
 # Logout route to clear the user's session
 @app.route('/logout', methods=['POST'])
 def logout():
-    # Clear the user's session to log them out
-    session.clear()
-    return redirect('/login')
-
-
-# Decorator to authenticate users for protected routes
-def authenticate_user(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session.get('authenticated'):
-            return f(*args, **kwargs)
-        else:
-            # Redirect to the login page
-            return redirect(url_for('login'))
-    return decorated_function
-
+    logout_user()
+    return redirect('/')
 
 
 @app.route('/settings', methods=['GET', 'POST'])
-@authenticate_user
+@login_required
 def settings():
-    user_uid = session['user_uid']
-
+    user: User = flask_login.current_user
     try:
         # Fetch the user's display name and email from Firebase Authentication
-        user = auth.get_user(user_uid)
-        display_name = user.display_name
-        email = user.email
+        display_name = user.display_name()
+        email = user.email()
     except auth.AuthError as e:
         log.error(f'Error retrieving user information: {e}')
         display_name = 'User'
@@ -155,26 +159,31 @@ def settings():
         new_email = request.form.get('new_email')
         new_name = request.form.get('new_name')
 
+        updated = False
         # Update user details in Firebase Authentication
         if new_password:
             # Handle password update
             auth.update_user(
-                user_uid,
+                user.get_id(),
                 password=new_password
             )
+            updated = True
         if new_email:
             # Handle email update
             auth.update_user(
-                user_uid,
+                user.get_id(),
                 email=new_email
             )
+            updated = True
         if new_name:
             # Handle display name update
             auth.update_user(
-                user_uid,
+                user.get_id(),
                 display_name=new_name
             )
-
+            updated = True
+        # Go back to the main page after submitting settings.
+        return redirect("/")
     return render_template('settings.html', display_name=display_name, email=email)
 
 
@@ -226,141 +235,125 @@ def settings():
 
 # Update the route to include the display name
 @app.route('/', methods=['POST', 'GET'])
-@authenticate_user
+@login_required
 def index():
-    if 'authenticated' in session and session['authenticated']:
-        # Assuming you have the user's UID stored in session['user_uid']
-        user_uid = session['user_uid']
+    user: User = flask_login.current_user
 
-        try:
-            # Fetch the user's display name from Firebase Authentication
-            user = auth.get_user(user_uid)
-            display_name = user.display_name
-        except Exception as e:
-            display_name = 'User'
+    # Get the current date in the PT timezone
+    current_date = datetime.now(pt_timezone).date()
 
-        user_uid = session.get('user_uid')
+    if request.method == 'POST':
+        # Get the item content from the form
+        item_content = request.form['product-name']
 
-        # Get the current date in the PT timezone
-        current_date = datetime.now(pt_timezone).date()
-        try:
-            user = auth.get_user(user_uid)
-        except auth.AuthError as e:
-            log.error(f'Error retrieving user email: {e}')
-            # FIXME: Should probably not continue here?
+        # Check if the 'No Expiration Date' checkbox is checked
+        no_expiration = 'no-expiration' in request.form
 
-        if request.method == 'POST':
-            # Get the item content from the form
-            item_content = request.form['product-name']
+        if not no_expiration:
+            # Parse the expiration date from the form
+            expiration_date_str = request.form['expiration-date']
+            try:
+                # Convert the expiration date to UTC timezone
+                item_expiration_datetime_utc = datetime.strptime(expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
+                # Convert the expiration date to PT timezone
+                item_expiration_datetime_pt = item_expiration_datetime_utc
+                # Get the date part of the expiration date
+                item_expiration_date = item_expiration_datetime_pt.date()
 
-            # Check if the 'No Expiration Date' checkbox is checked
-            no_expiration = 'no-expiration' in request.form
-
-            if not no_expiration:
-                # Parse the expiration date from the form
-                expiration_date_str = request.form['expiration-date']
-                try:
-                    # Convert the expiration date to UTC timezone
-                    item_expiration_datetime_utc = datetime.strptime(expiration_date_str, '%Y-%m-%d').replace(tzinfo=pytz.utc)
-                    # Convert the expiration date to PT timezone
-                    item_expiration_datetime_pt = item_expiration_datetime_utc
-                    # Get the date part of the expiration date
-                    item_expiration_date = item_expiration_datetime_pt.date()
-
-                except ValueError:
-                    # Handle invalid date format here
-                    return render_template('error.html', error_message='Invalid date format')
-
-            else:
-                item_expiration_date = None  # No expiration date
-
-            # Get location, category, and barcode information from the form
-            location = request.form['locations']
-            category = request.form['category']
-            barcode_number = request.form['barcode-number']
-            barcode: Barcode = None
-
-            if barcode_number != '':
-                barcode = barcodes.get_barcode(barcode_number)
-
-                # Handle the case when there are no barcode data
-                if barcode is None:
-                    # Add a new barcode
-                    barcode = Barcode(barcode_number, request.form['product-name'])
-                    barcodes.add_barcode(barcode)
-
-            # Add the code to handle item_expiration_date here
-            if item_expiration_date is not None:
-                expiration_date_str = item_expiration_date.strftime('%d %b %Y')
-            else:
-                expiration_date_str = ''
-
-            product = Product(None,
-                              barcode=barcode.code if barcode else None,
-                              category=category,
-                              created=ProductManager.parse_import_date(datetime.now(pt_timezone).strftime('%d %b %Y')),
-                              expires=ProductManager.parse_import_date(expiration_date_str),
-                              location=location,
-                              product_name=item_content,
-                              uid=user_uid,
-                              wasted=False,
-                              wasted_timestamp=0)
-
-            if not product_mgr.add_product(product):
-                return "Unable to add product", 500
-            # Redirect or perform further actions as needed
-            return redirect(url_for('index'))
+            except ValueError:
+                # Handle invalid date format here
+                return render_template('error.html', error_message='Invalid date format')
 
         else:
-            # Get filters and parameters from the request
-            location_filter = request.args.get('location-filter', 'All')
-            category_filter = request.args.get('category', 'All')
-            expiration_date_filter = request.args.get('expiration-date', '')
-            expiration_status_filter = request.args.get('expiration-status', 'all')
+            item_expiration_date = None  # No expiration date
 
-            # Reference the 'products' node in Firebase
-            products = product_mgr.get_products(user_uid)
-            if products is not None:
-                filtered_products: list[Product] = []
+        # Get location, category, and barcode information from the form
+        location = request.form['locations']
+        category = request.form['category']
+        barcode_number = request.form['barcode-number']
+        barcode: Barcode = None
 
-                for product in products:
-                    expiration_date = datetime.utcfromtimestamp(product.expires / 1000).date()
+        if barcode_number != '':
+            barcode = barcodes.get_barcode(barcode_number)
 
-                    # Apply filters to select products
-                    if (location_filter == 'All' or product.location == location_filter) and \
-                    (category_filter == 'All' or product.category == category_filter) and \
-                    (expiration_date_filter == '' or (expiration_date and expiration_date.strftime('%d %b %Y') == expiration_date_filter)) and \
-                    (expiration_status_filter == 'all' or
-                        (expiration_status_filter == 'expired' and expiration_date and expiration_date <= current_date) or
-                        (expiration_status_filter == 'not_expired' and expiration_date and expiration_date > current_date) or
-                        (expiration_status_filter == 'not_expiring' and not expiration_date)):
+            # Handle the case when there are no barcode data
+            if barcode is None:
+                # Add a new barcode
+                barcode = Barcode(barcode_number, request.form['product-name'])
+                barcodes.add_barcode(barcode)
 
-                        product_info = {
-                            'product_id': product.id,
-                            'product_name': product.product_name,
-                            'expiration_date': product.expiration_str(),  # Does "Unknown" still exist?
-                            'location': product.location,
-                            'category': product.category,
-                            'wasted_status': product.wasted,
-                            'expired': (expiration_date is not None and expiration_date < current_date),
-                            'date_created': product.creation_str()
-                        }
-                        if product_info['wasted_status'] is False:
-                            filtered_products.append(product_info)
+        # Add the code to handle item_expiration_date here
+        if item_expiration_date is not None:
+            expiration_date_str = item_expiration_date.strftime('%d %b %Y')
+        else:
+            expiration_date_str = ''
 
-                return render_template('index.html',display_name=display_name, products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
-                                    selected_location=location_filter, selected_category=category_filter,
-                                    selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
+        product = Product(None,
+                            barcode=barcode.code if barcode else None,
+                            category=category,
+                            created=ProductManager.parse_import_date(datetime.now(pt_timezone).strftime('%d %b %Y')),
+                            expires=ProductManager.parse_import_date(expiration_date_str),
+                            location=location,
+                            product_name=item_content,
+                            uid=user.get_id(),
+                            wasted=False,
+                            wasted_timestamp=0)
 
-            else:
-                # Handle the case when there is no product data
-                return render_template('index.html', products=[], current_date=current_date.strftime('%Y-%m-%d'),
-                                    selected_location=location_filter, selected_category=category_filter,
-                                    selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
+        if not product_mgr.add_product(product):
+            return "Unable to add product", 500
+        # Redirect or perform further actions as needed
+        return redirect(url_for('index'))
+
+    else:
+        # Get filters and parameters from the request
+        location_filter = request.args.get('location-filter', 'All')
+        category_filter = request.args.get('category', 'All')
+        expiration_date_filter = request.args.get('expiration-date', '')
+        expiration_status_filter = request.args.get('expiration-status', 'all')
+
+        # Reference the 'products' node in Firebase
+        products = product_mgr.get_products(user.get_id())
+        if products is not None:
+            filtered_products: list[Product] = []
+
+            for product in products:
+                expiration_date = datetime.utcfromtimestamp(product.expires / 1000).date()
+
+                # Apply filters to select products
+                if (location_filter == 'All' or product.location == location_filter) and \
+                (category_filter == 'All' or product.category == category_filter) and \
+                (expiration_date_filter == '' or (expiration_date and expiration_date.strftime('%d %b %Y') == expiration_date_filter)) and \
+                (expiration_status_filter == 'all' or
+                    (expiration_status_filter == 'expired' and expiration_date and expiration_date <= current_date) or
+                    (expiration_status_filter == 'not_expired' and expiration_date and expiration_date > current_date) or
+                    (expiration_status_filter == 'not_expiring' and not expiration_date)):
+
+                    product_info = {
+                        'product_id': product.id,
+                        'product_name': product.product_name,
+                        'expiration_date': product.expiration_str(),  # Does "Unknown" still exist?
+                        'location': product.location,
+                        'category': product.category,
+                        'wasted_status': product.wasted,
+                        'expired': (expiration_date is not None and expiration_date < current_date),
+                        'date_created': product.creation_str()
+                    }
+                    if product_info['wasted_status'] is False:
+                        filtered_products.append(product_info)
+
+            return render_template('index.html',display_name=user.display_name(), products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
+                                selected_location=location_filter, selected_category=category_filter,
+                                selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
+
+        else:
+            # Handle the case when there is no product data
+            return render_template('index.html', products=[], current_date=current_date.strftime('%Y-%m-%d'),
+                                selected_location=location_filter, selected_category=category_filter,
+                                selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
 
 
 @app.route('/check_barcode', methods=['POST'])
-@authenticate_user
+@login_required
 def check_barcode():
     data = request.get_json()
     barcode_value = data.get('barcode')
@@ -384,7 +377,7 @@ def check_barcode():
 
 # Route to check the expiration status of a product
 @app.route('/check_expiration_status', methods=['GET'])
-@authenticate_user
+@login_required
 def check_expiration_status():
     current_date = datetime.now(pt_timezone).date()
 
@@ -413,7 +406,7 @@ def check_expiration_status():
 
 # Route to handle expired date input
 @app.route('/expired_date_input', methods=['POST'])
-@authenticate_user
+@login_required
 def expired_date_input():
     try:
         # Get the expiration date as a string from the form data
@@ -435,7 +428,7 @@ def expired_date_input():
 
 # Route to update a product
 @app.route('/update_product/<string:id>', methods=['GET', 'POST'])
-@authenticate_user
+@login_required
 def update_product(id):
     # Retrieve the product by its ID from Firebase
     product = product_mgr.get_product(id)
@@ -483,7 +476,7 @@ def update_product(id):
 
 # Route to delete a product
 @app.route('/delete_product/<string:id>')
-@authenticate_user
+@login_required
 def delete_product(id):
     success = product_mgr.delete_product(id)
     if not success:
@@ -493,7 +486,7 @@ def delete_product(id):
 
 # Route to mark a product as wasted
 @app.route('/waste_product/<string:id>')
-@authenticate_user
+@login_required
 def waste_product(id):
     product = product_mgr.get_product(id)
     if product is None:
@@ -511,12 +504,12 @@ def waste_product(id):
 
 # Route to view the list of wasted products
 @app.route('/wasted_product_list', methods=['GET'])
-@authenticate_user
+@login_required
 def wasted_product_list():
-    user_uid = session['user_uid']
+    user: User = flask_login.current_user
     # Retrieve all products that are marked as wasted from Firebase
     wasted_products = []
-    for product in product_mgr.get_products(user_uid):
+    for product in product_mgr.get_products(user.get_id()):
         if product.wasted:
             expiration_date_str = product.expiration_str()
             if not expiration_date_str:
@@ -542,7 +535,7 @@ def wasted_product_list():
 
 # Route for generating a recipe based on user input
 @app.route('/generate_recipe', methods=['POST', 'GET'])
-@authenticate_user
+@login_required
 def generate_recipe_user_input():
     if request.method == 'POST':
         user_input = request.form.get('user-input')
@@ -555,13 +548,13 @@ def generate_recipe_user_input():
 
 # Route to generate a recipe from the Firebase database
 @app.route('/generate_recipe_from_database', methods=['GET'])
-@authenticate_user
+@login_required
 def generate_recipe_from_database():
-    uid = session['user_uid']
+    user: User = flask_login.current_user
     today_millis = ProductManager.parse_import_date(datetime.now(pt_timezone).strftime('%d %b %Y'))
     # Retrieve product names for current user from Firestore.
     product_names = []
-    for product in product_mgr.get_products(uid):
+    for product in product_mgr.get_products(user.get_id()):
         # Ensure the product is neither wasted nor expired.
         if not product.wasted and product.expires >= today_millis:
             product_names.append(product.product_name)
@@ -570,6 +563,14 @@ def generate_recipe_from_database():
     recipe_suggestion = recipe_generator.generate_recipe(product_names)
     return jsonify({'recipe_suggestion': recipe_suggestion})
 
+def is_url_safe(url: str) -> bool:
+    return url in ["/",
+                   "/register",
+                   "/login",
+                   "/logout",
+                   "/settings",
+                   "/generate_recipe",
+                   "/wasted_product_list"]
 
 # Define a signal handler to handle termination signals
 def on_terminate(signal, frame):
