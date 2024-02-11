@@ -26,9 +26,7 @@ secrets_mgr = SecretsManager()
 json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
 cred = credentials.Certificate(json_data)
 
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://pantryguardian-f8381-default-rtdb.firebaseio.com'
-})
+firebase_admin.initialize_app(cred)
 firestore = firestore.client()
 barcodes = BarcodeManager(firestore)
 product_mgr = ProductManager(firestore)
