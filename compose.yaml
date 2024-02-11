@@ -7,7 +7,7 @@ services:
     image: expiration-reminder:latest
     container_name: expiration-reminder
     ports:
-      - "5000:5000"
+      - "8081:5000"
     restart: always
     secrets:
       - openai_api_key

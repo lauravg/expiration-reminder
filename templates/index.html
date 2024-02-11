@@ -63,7 +63,7 @@
         <a class="wasted-products-link" href="/wasted_product_list">Wasted Products</a>
         <a class="generate-recipe-link" href="/generate_recipe">Generate Recipe</a>
     </div>
-    
+
     <h1 class="headline">Product List</h1>
     {% if products|length < 1 %} <h4 class="no-products-msg">There are no products. Create one below!</h4>
         {% else %}
@@ -94,7 +94,7 @@
                     <option value="not_expired" {% if selected_status == 'not_expired' %}selected{% endif %}>Not Expired</option>
                     <option value="not_expiring" {% if selected_status == 'not_expiring' %}selected{% endif %}>No Expiration Date</option>
                 </select>
-            </div>        
+            </div>
             <div class="select-container">
                 <label for="expiration-date">Expiration Date</label>
                 <input type="date" name="expiration-date" id="expiration-date">
@@ -110,8 +110,8 @@
                 <div class="product product-name">{{ product.product_name }}</div>
             </div>
             <div class="product-container">
-                <div class="attribute-label">Expiration Date (MM/DD/YYYY)</div>
-                <div class="product expiration-date expiration-status" data-product-id="{{ product.product_id }}">
+                <div class="attribute-label">Expiration Date</div>
+                <div class="product expiration-date expiration-status{% if product.expired%} expired{% endif %}" data-product-id="{{ product.product_id }}">
                     {{ product.expiration_date | default('No Expiration Date') }}
                 </div>
             </div>
@@ -139,9 +139,9 @@
             {% for product in products %}
             <tr data-product-id="{{ product.product_id }}">
                 <td class="product product-name">{{ product.product_name }}</td>
-                <td class="product expiration-date expiration-status" data-product-id="{{ product.product_id }}">{{ product.expiration_date | default('') }}</td>
+                <td class="product expiration-date expiration-status{% if product.expired%} expired{% endif %}" data-product-id="{{ product.product_id }}">{{ product.expiration_date | default('') }}</td>
                 <td class="product creation-date">{{ product.date_created if 'date_created' in product else '' }}</td>
-                <td class="product location">{{ product.location }}</td>               
+                <td class="product location">{{ product.location }}</td>
                 <td class="product Category">{{ product.category }}</td>
                 <td class="button-container">
                     <button class="update-button" data-product-id="{{ product.product_id }}">Update</button>
