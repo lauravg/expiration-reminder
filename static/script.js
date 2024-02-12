@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // updateExpirationStatus();
 
     // // Set Up Form Submission Handler
-    // function setupFormSubmitHandler() {
     //     if (window.location.pathname === '/') {
     //         form.addEventListener('submit', function (event) {
     //             event.preventDefault();
@@ -96,28 +95,30 @@ document.addEventListener('DOMContentLoaded', function () {
     // setInterval(updateExpirationStatus, 60000); // 60000 milliseconds = 1 minute
 
     // Listen for changes to the 'No Expiration Date' checkbox
-    noExpirationCheckbox.addEventListener('change', function () {
-        if (this.checked) {
-            // If checked, disable the expiration date input and clear its value
-            expirationDateInput.disabled = true;
-            expirationDateInput.value = '';
-        } else if (!this.checked) {
-            // If unchecked, enable the expiration date input
-            expirationDateInput.disabled = false;
-            // Get the current date as a string in 'YYYY-MM-DD' format
-            const currentDate = new Date();
-            const year = currentDate.getFullYear();
-            const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-            const day = currentDate.getDate().toString().padStart(2, '0');
-            const formattedDate = `${year}-${month}-${day}`;
+    if (noExpirationCheckbox != undefined) {
+      noExpirationCheckbox.addEventListener('change', function () {
+          if (this.checked) {
+              // If checked, disable the expiration date input and clear its value
+              expirationDateInput.disabled = true;
+              expirationDateInput.value = '';
+          } else if (!this.checked) {
+              // If unchecked, enable the expiration date input
+              expirationDateInput.disabled = false;
+              // Get the current date as a string in 'YYYY-MM-DD' format
+              const currentDate = new Date();
+              const year = currentDate.getFullYear();
+              const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+              const day = currentDate.getDate().toString().padStart(2, '0');
+              const formattedDate = `${year}-${month}-${day}`;
 
-            // Set the value of the expirationDateInput to the current date
-            expirationDateInput.value = formattedDate;
-        } else {
-            // If unchecked, enable the expiration date input
-            expirationDateInput.disabled = false;
-        }
-    });
+              // Set the value of the expirationDateInput to the current date
+              expirationDateInput.value = formattedDate;
+          } else {
+              // If unchecked, enable the expiration date input
+              expirationDateInput.disabled = false;
+          }
+      });
+    }
 
 });
 
@@ -151,7 +152,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    document.getElementById('clear-filter-button').addEventListener('click', function () {
-        // Redirect to the same page without any filter query parameters
-        window.location.href = '/';  // Change this URL to match your route
-    });
+    let clearFilterBtn = document.getElementById('clear-filter-button');
+    if (clearFilterBtn != undefined) {
+      clearFilterBtn.addEventListener('click', function () {
+          // Redirect to the same page without any filter query parameters
+          window.location.href = '/';  // Change this URL to match your route
+      });
+    }
