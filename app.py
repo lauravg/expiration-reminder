@@ -16,6 +16,7 @@ import flask_login
 from flask_login import LoginManager, login_user, logout_user, login_required
 
 from barcode_manager import BarcodeManager, Barcode
+from household_manager import Household, HouseholdManager
 from product_manager import ProductManager, Product
 from recipe import RecipeGenerator
 from secrets_manager import SecretsManager
@@ -39,6 +40,7 @@ firebase_admin.initialize_app(cred)
 firestore = firestore.client()
 barcodes = BarcodeManager(firestore)
 product_mgr = ProductManager(firestore)
+household_manager = HouseholdManager(firestore)
 
 # Create an instance of SendMail with the app and pt_timezone
 recipe_generator = RecipeGenerator(secrets_mgr)
@@ -117,9 +119,20 @@ def login():
             user_data = response.json()
             user = user_manager.get_user(user_data['localId'])
             login_user(user)
-            log.info("User successfully logged in")
+            log.info("User successfully logged in: %s", user.display_name())
             if not is_url_safe(next):
                 next = "/"
+
+            # Ensure there is at least one household for the person
+            # In the future we should always create a household for the current user.
+            households = household_manager.get_households_for_user(user.get_id())
+            if len(households) == 0:
+                log.warning("No households found for user. Creating one now")
+                name = f"{user.display_name()}'s Household" if not user.display_name().isspace() else "Default Household"
+                household = Household(None, user.get_id(), name, [user.get_id()])
+                if not household_manager.add_or_update_household(household):
+                    log.error("Unable to create default household for user.")
+
             return redirect(next)
         else:
             # Output the response for debugging purposes
@@ -160,7 +173,6 @@ def settings():
         new_email = request.form.get('new_email')
         new_name = request.form.get('new_name')
 
-        updated = False
         # Update user details in Firebase Authentication
         if new_password:
             # Handle password update
@@ -168,24 +180,22 @@ def settings():
                 user.get_id(),
                 password=new_password
             )
-            updated = True
         if new_email:
             # Handle email update
             auth.update_user(
                 user.get_id(),
                 email=new_email
             )
-            updated = True
         if new_name:
             # Handle display name update
             auth.update_user(
                 user.get_id(),
                 display_name=new_name
             )
-            updated = True
         # Go back to the main page after submitting settings.
         return redirect("/")
-    return render_template('settings.html', display_name=display_name, email=email)
+    households = household_manager.get_households_for_user(user.get_id())
+    return render_template('settings.html', display_name=display_name, email=email, households=households)
 
 
 # TODO: Is this still necessary? Does not seem to be used anywhere.
@@ -563,6 +573,12 @@ def generate_recipe_from_database():
     # Generate a recipe based on the product names
     recipe_suggestion = recipe_generator.generate_recipe(product_names)
     return jsonify({'recipe_suggestion': recipe_suggestion})
+
+# Route for generating a recipe based on user input
+@app.route('/update_households', methods=['POST'])
+@login_required
+def update_households():
+    return redirect("/settings")
 
 def is_url_safe(url: str) -> bool:
     return url in ["/",

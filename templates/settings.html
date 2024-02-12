@@ -19,6 +19,16 @@
         <br>
         <input type="submit" value="Save Changes">
     </form>
+
+    <!-- Form for updating households -->
+    <h2>Households</h2>
+    <form method="post" action="{{ url_for('update_households') }}" class="settings-form">
+      <ul>
+      {% for household in households %}
+        <li>{{household.name}}</li>
+      {% endfor %}
+      </ul>
+  </form>
   </div>
 
 {% endblock %}
