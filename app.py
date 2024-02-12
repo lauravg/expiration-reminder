@@ -26,6 +26,7 @@ app = Flask(__name__)
 # Generate a secure secret key for the app, required for session management.
 secret_key = secrets.token_urlsafe(16)
 app.secret_key = secret_key
+app.config.update(SESSION_COOKIE_SECURE=True)
 
 
 log.set_verbosity(log.DEBUG if app.debug else log.INFO)
