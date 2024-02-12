@@ -1,8 +1,11 @@
-import uuid
-
 from absl import logging as log
+from flask import session
+import flask_login
 from google.cloud.firestore_v1 import Query, DocumentSnapshot
 from google.cloud.firestore_v1.base_query import FieldFilter
+import uuid
+
+from user_manager import User
 
 class Household:
     def __init__(self, hid: str, owner_uid: str, name: str, participants: list[str]) -> None:
@@ -18,6 +21,7 @@ class Household:
 class HouseholdManager:
     def __init__(self, firestore) -> None:
         self.__db = firestore
+        self.active_household = None
 
     def get_household(self, id: str) -> Household | None:
         if id is None or id.isspace():
@@ -97,6 +101,37 @@ class HouseholdManager:
                 return False
         return True
 
+    def get_active_household(self) -> Household | None:
+        if self.active_household == None and "active_household_id" in session:
+            self.active_household = self.get_household(session["active_household_id"])
+
+        # If none is set, set it to the first owned household in the session.
+        # Only fail if there are not households owned by the current user.
+        if self.active_household == None:
+            user: User = flask_login.current_user
+            if user is None:
+                log.error("Bug: Cannot set default household, no user logged in")
+                return None
+            households = self.get_households_for_user(user.get_id())
+            if len(households) == 0:
+                log.error("Bug: Cannot set default houshold, user has no households")
+                return None
+            self.active_household = households[0]
+            session["active_household_id"] = self.active_household.id
+
+        if self.active_household.id is None or self.active_household.id.isspace():
+            log.error("Bug: Active household has no id")
+            return None
+        return self.active_household
+
+    def set_active_household(self, id: str):
+        household = self.get_household(id)
+        if household is not None:
+            session["active_household_id"] = household
+            self.active_household = household
+            log.info("Active household changed to '%s'", id)
+        else:
+            log.error("Cannot set household as active as it wasn't found: '%s'", id)
 
 
     def __collection(self):

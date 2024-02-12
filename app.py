@@ -132,7 +132,6 @@ def login():
                 household = Household(None, user.get_id(), name, [user.get_id()])
                 if not household_manager.add_or_update_household(household):
                     log.error("Unable to create default household for user.")
-
             return redirect(next)
         else:
             # Output the response for debugging purposes
@@ -299,6 +298,12 @@ def index():
         else:
             expiration_date_str = ''
 
+        household = household_manager.get_active_household()
+        if household == None:
+            msg = "Cannot add product: No active household set"
+            log.error(msg)
+            return msg, 500
+
         product = Product(None,
                             barcode=barcode.code if barcode else None,
                             category=category,
@@ -307,6 +312,7 @@ def index():
                             location=location,
                             product_name=item_content,
                             uid=user.get_id(),
+                            household_id=household.id,
                             wasted=False,
                             wasted_timestamp=0)
 

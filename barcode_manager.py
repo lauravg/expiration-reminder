@@ -60,19 +60,3 @@ class BarcodeManager:
             log.error("Unable to delete barcode: %s", err)
             return False
         return True
-
-    def import_from_rt(self, file: str):
-        """Used to import data from legacy RTDB"""
-
-        with open(file, "r") as fd:
-            data = json.load(fd)
-            from pprint import pprint
-            # pprint(data)
-
-            barcodes = data["barcodes"]
-            for uuid in barcodes:
-                code = barcodes[uuid]["barcode_value"]
-                name = barcodes[uuid]["barcode_item_name"]
-
-                self.add_barcode(code, name)
-                log.info("[ADDED] %s ==> %s", code, name)

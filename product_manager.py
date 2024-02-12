@@ -16,7 +16,8 @@ class Product:
         expires: int,
         location: str,
         product_name: str,
-        uid: str,
+        uid: str,  # TODO: Deprecated
+        household_id: str,
         wasted: bool,
         wasted_timestamp: int
     ) -> None:
@@ -28,6 +29,7 @@ class Product:
         self.location =location
         self.product_name = product_name
         self.uid = uid
+        self.household_id = household_id
         self.wasted = wasted
         self.wasted_timestamp = wasted_timestamp
     def __iter__(self):
@@ -38,6 +40,7 @@ class Product:
         yield "location", self.location
         yield "product_name", self.product_name
         yield "uid", self.uid
+        yield "household_id", self.household_id
         yield "wasted", self.wasted
         yield "wasted_timestamp", self.wasted_timestamp
     def creation_str(self, format="%b %d %Y") -> str:
@@ -113,7 +116,8 @@ class ProductManager:
     def __product_from_dict(self, doc: DocumentSnapshot) -> Product:
         dict = doc.to_dict()
         wasted_timestamp = dict["wasted_timestamp"] if "wasted_timestamp" in dict else 0
-        return Product(doc.id, dict["barcode"], dict["category"], dict["created"], dict["expires"], dict["location"], dict["product_name"], dict["uid"], dict["wasted"], wasted_timestamp)
+        household_id = dict["household_id"] if "household_id" in dict else ""
+        return Product(doc.id, dict["barcode"], dict["category"], dict["created"], dict["expires"], dict["location"], dict["product_name"], dict["uid"], household_id, dict["wasted"], wasted_timestamp)
 
     @classmethod
     def parse_import_date(cls, date_str: str) -> int:
@@ -123,32 +127,3 @@ class ProductManager:
             return int((date_obj - epoch_obj).total_seconds() * 1000)
         except ValueError:
             raise ValueError(f"Invalid date format: {date_str}")
-
-    def import_from_rt(self, file: str):
-        """Used to import data from legacy RTDB"""
-
-        with open(file, "r") as fd:
-            data = json.load(fd)
-
-            bc_uuid_to_code = {}
-            barcodes = data["barcodes"]
-            for uuid in barcodes:
-                code = barcodes[uuid]["barcode_value"]
-                bc_uuid_to_code[uuid] = code
-
-            products = data["products"]
-            for uuid in products:
-                p = products[uuid]
-                barcode = bc_uuid_to_code[p["barcode_id"]] if "barcode_id" in p else None
-                category = p["category"]
-                created = ProductManager.parse_import_date(p["date_created"])
-                expires = ProductManager.parse_import_date(p["expiration_date"])
-                location = p["location"]
-                product_name = p["product_name"]
-                uid = p["user_uid"]
-                wasted = p["wasted_status"]
-                # NOTE: date_wasted missing (but none of the old data had it)
-
-                product = Product(None, barcode, category, created, expires, location, product_name, uid, wasted)
-                self.add_product(product)
-                log.info("[ADDED] %s ==> %s", uuid, product_name)
