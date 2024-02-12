@@ -1,8 +1,8 @@
-from absl import logging as log
-
 from datetime import datetime
 import json
 import uuid
+
+from absl import logging as log
 from google.cloud.firestore_v1 import Query, DocumentSnapshot
 from google.cloud.firestore_v1.base_query import FieldFilter
 
