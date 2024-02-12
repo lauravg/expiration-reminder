@@ -120,14 +120,17 @@ class HouseholdManager:
             session["active_household_id"] = self.active_household.id
 
         if self.active_household.id is None or self.active_household.id.isspace():
-            log.error("Bug: Active household has no id")
+            log.error("Bug: Active household is not set or has no id")
             return None
         return self.active_household
 
     def set_active_household(self, id: str):
         household = self.get_household(id)
         if household is not None:
-            session["active_household_id"] = household
+            if household.id is None or household.id.isspace():
+                log.error("Bug: Cannot set a default household without an ID")
+                return
+            session["active_household_id"] = household.id
             self.active_household = household
             log.info("Active household changed to '%s'", id)
         else:
