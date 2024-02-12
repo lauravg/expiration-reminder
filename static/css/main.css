@@ -31,6 +31,7 @@ h4.no-products-msg {
 }
 
 .product-form label,
+.settings-form label,
 .filter-form label,
 .registration-form label {
     display: block;
@@ -41,6 +42,9 @@ h4.no-products-msg {
 
 .product-form input[type="text"],
 .product-form input[type="date"],
+.settings-form input[type="text"],
+.settings-form input[type="email"],
+.settings-form input[type="password"],
 .filter-form input[type="text"],
 .filter-form input[type="date"],
 .registration-form input[type="text"],
@@ -55,6 +59,7 @@ h4.no-products-msg {
 
 /* Add styles for the select element */
 .product-form select,
+.settings-form select,
 .filter-form select {
     width: 100%;
     padding: 10px;
@@ -128,7 +133,7 @@ h4.no-products-msg {
     color: #0056b3;
 }
 
-button {
+button, input[type=submit] {
     background-color: #007bff;
     color: #fff;
     border: none;

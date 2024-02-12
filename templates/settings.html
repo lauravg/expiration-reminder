@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 
 {% block body %}
+<div class="content">
     <h1>User Settings</h1>
-    <p>Welcome, {{ display_name }}!</p>
+    <p>Welcome, <b>{{ display_name }}</b>!</p>
     <p>Email: {{ email }}</p>
 
     <!-- Form for updating password, email, and name -->
-    <form method="post" action="{{ url_for('settings') }}">
+    <form method="post" action="{{ url_for('settings') }}" class="settings-form">
         <label for="new_password">New Password:</label>
         <input type="password" name="new_password" id="new_password" placeholder="Enter new password">
         <br>
@@ -18,6 +19,6 @@
         <br>
         <input type="submit" value="Save Changes">
     </form>
+  </div>
 
-    
 {% endblock %}
