@@ -65,8 +65,6 @@
     </div>
 
     <h1 class="headline">Product List</h1>
-    {% if products|length < 1 %} <h4 class="no-products-msg">There are no products. Create one below!</h4>
-        {% else %}
         <form class="filter-form" action="/" method="GET">
             <div class="select-container">
                 <label for="location-filter">Location</label>
@@ -102,6 +100,9 @@
             <button type="submit" id="filter-button">Filter</button>
             <button type="button" id="clear-filter-button">Clear Filter</button>
         </form>
+        {% if products|length < 1 %} <h4 class="no-products-msg">There are no products. Create one below!</h4>
+        {% else %}
+
         <!-- Mobile -->
         <div class="mobile">
             {% for product in products %}
@@ -151,6 +152,7 @@
             </tr>
             {% endfor %}
         </table>
+        {% endif %}
         <div class="logout">
             <form action="/logout" method="post">
                 <button type="submit">Logout</button>
@@ -159,6 +161,6 @@
 
         <div id="debug-product-ids"></div>
 
-        {% endif %}
+
 </div>
 {% endblock %}
