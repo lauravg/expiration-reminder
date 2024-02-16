@@ -85,7 +85,7 @@ class ProductManager:
             return results
         except Exception as err:
             log.error("[%s] Unable to fetch products for user, %s", uid, err)
-            return None
+            return []
 
     def add_product(self, product: Product) -> bool:
         if product is None:

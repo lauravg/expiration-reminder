@@ -330,43 +330,34 @@ def index():
 
         # Reference the 'products' node in Firebase
         products = product_mgr.get_products(user.get_id())
-        if products is not None:
-            filtered_products: list[Product] = []
+        filtered_products: list[Product] = []
+        for product in products:
+            expiration_date = datetime.utcfromtimestamp(product.expires / 1000).date()
 
-            for product in products:
-                expiration_date = datetime.utcfromtimestamp(product.expires / 1000).date()
+            # Apply filters to select products
+            if (location_filter == 'All' or product.location == location_filter) and \
+            (category_filter == 'All' or product.category == category_filter) and \
+            (expiration_date_filter == '' or (expiration_date and expiration_date.strftime('%d %b %Y') == expiration_date_filter)) and \
+            (expiration_status_filter == 'all' or
+                (expiration_status_filter == 'expired' and expiration_date and expiration_date <= current_date) or
+                (expiration_status_filter == 'not_expired' and expiration_date and expiration_date > current_date) or
+                (expiration_status_filter == 'not_expiring' and not expiration_date)):
 
-                # Apply filters to select products
-                if (location_filter == 'All' or product.location == location_filter) and \
-                (category_filter == 'All' or product.category == category_filter) and \
-                (expiration_date_filter == '' or (expiration_date and expiration_date.strftime('%d %b %Y') == expiration_date_filter)) and \
-                (expiration_status_filter == 'all' or
-                    (expiration_status_filter == 'expired' and expiration_date and expiration_date <= current_date) or
-                    (expiration_status_filter == 'not_expired' and expiration_date and expiration_date > current_date) or
-                    (expiration_status_filter == 'not_expiring' and not expiration_date)):
-
-                    product_info = {
-                        'product_id': product.id,
-                        'product_name': product.product_name,
-                        'expiration_date': product.expiration_str(),  # Does "Unknown" still exist?
-                        'location': product.location,
-                        'category': product.category,
-                        'wasted_status': product.wasted,
-                        'expired': (expiration_date is not None and expiration_date < current_date),
-                        'date_created': product.creation_str()
-                    }
-                    if product_info['wasted_status'] is False:
-                        filtered_products.append(product_info)
-
-            return render_template('index.html',display_name=user.display_name(), products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
-                                selected_location=location_filter, selected_category=category_filter,
-                                selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
-
-        else:
-            # Handle the case when there is no product data
-            return render_template('index.html', products=[], current_date=current_date.strftime('%Y-%m-%d'),
-                                selected_location=location_filter, selected_category=category_filter,
-                                selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
+                product_info = {
+                    'product_id': product.id,
+                    'product_name': product.product_name,
+                    'expiration_date': product.expiration_str(),  # Does "Unknown" still exist?
+                    'location': product.location,
+                    'category': product.category,
+                    'wasted_status': product.wasted,
+                    'expired': (expiration_date is not None and expiration_date < current_date),
+                    'date_created': product.creation_str()
+                }
+                if product_info['wasted_status'] is False:
+                    filtered_products.append(product_info)
+        return render_template('index.html',display_name=user.display_name(), products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
+                            selected_location=location_filter, selected_category=category_filter,
+                            selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
 
 
 @app.route('/check_barcode', methods=['POST'])
