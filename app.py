@@ -253,6 +253,10 @@ def index():
     current_date = datetime.now(pt_timezone).date()
     household = household_manager.get_active_household()
 
+    log.warning("Executing transfer to Household")
+    product_mgr.cleanup_products_hackhackhack()
+    log.warning("Executing transfer to Household.. DONE!!!!")
+
     if request.method == 'POST':
         # Get the item content from the form
         item_content = request.form['product-name']
@@ -299,8 +303,8 @@ def index():
         else:
             expiration_date_str = ''
 
-        if household == None:
-            msg = "Cannot add product: No active household set"
+        if household == None or household.id == None or household.id.isspace():
+            msg = "Cannot add product: No active household with an ID set."
             log.error(msg)
             return msg, 500
 
@@ -311,7 +315,6 @@ def index():
                             expires=ProductManager.parse_import_date(expiration_date_str),
                             location=location,
                             product_name=item_content,
-                            uid=user.get_id(),
                             household_id=household.id,
                             wasted=False,
                             wasted_timestamp=0)
@@ -329,7 +332,7 @@ def index():
         expiration_status_filter = request.args.get('expiration-status', 'all')
 
         # Reference the 'products' node in Firebase
-        products = product_mgr.get_products(user.get_id())
+        products = product_mgr.get_household_products(household.id)
         filtered_products: list[Product] = []
         for product in products:
             expiration_date = datetime.utcfromtimestamp(product.expires / 1000).date()
@@ -515,10 +518,10 @@ def waste_product(id):
 @app.route('/wasted_product_list', methods=['GET'])
 @login_required
 def wasted_product_list():
-    user: User = flask_login.current_user
+    household = household_manager.get_active_household()
     # Retrieve all products that are marked as wasted from Firebase
     wasted_products = []
-    for product in product_mgr.get_products(user.get_id()):
+    for product in product_mgr.get_household_products(household.id):
         if product.wasted:
             expiration_date_str = product.expiration_str()
             if not expiration_date_str:
@@ -559,11 +562,11 @@ def generate_recipe_user_input():
 @app.route('/generate_recipe_from_database', methods=['GET'])
 @login_required
 def generate_recipe_from_database():
-    user: User = flask_login.current_user
+    household = household_manager.get_active_household()
     today_millis = ProductManager.parse_import_date(datetime.now(pt_timezone).strftime('%d %b %Y'))
     # Retrieve product names for current user from Firestore.
     product_names = []
-    for product in product_mgr.get_products(user.get_id()):
+    for product in product_mgr.get_household_products(household.id):
         # Ensure the product is neither wasted nor expired.
         if not product.wasted and product.expires >= today_millis:
             product_names.append(product.product_name)

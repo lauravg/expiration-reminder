@@ -16,7 +16,6 @@ class Product:
         expires: int,
         location: str,
         product_name: str,
-        uid: str,  # TODO: Deprecated
         household_id: str,
         wasted: bool,
         wasted_timestamp: int
@@ -28,7 +27,6 @@ class Product:
         self.expires = expires
         self.location =location
         self.product_name = product_name
-        self.uid = uid
         self.household_id = household_id
         self.wasted = wasted
         self.wasted_timestamp = wasted_timestamp
@@ -39,7 +37,6 @@ class Product:
         yield "expires", self.expires
         yield "location", self.location
         yield "product_name", self.product_name
-        yield "uid", self.uid
         yield "household_id", self.household_id
         yield "wasted", self.wasted
         yield "wasted_timestamp", self.wasted_timestamp
@@ -73,18 +70,18 @@ class ProductManager:
             log.error("[%s] Unable to fetch product data, %s", id, err)
             return None
 
-    def get_products(self, uid: str) -> list[Product]:
-        if uid is None or uid.isspace():
-            log.error("get_products(): uid must not be empty")
+    def get_household_products(self, household_id: str) -> list[Product]:
+        if household_id is None or household_id.isspace():
+            log.error("get_household_products(): uid must not be empty")
             return None
         try:
             results = []
-            query: Query = self.__collection().where(filter=FieldFilter("uid", "==", uid))
+            query: Query = self.__collection().where(filter=FieldFilter("household_id", "==", household_id))
             for product in query.stream():
                 results.append(self.__product_from_dict(product))
             return results
         except Exception as err:
-            log.error("[%s] Unable to fetch products for user, %s", uid, err)
+            log.error("[%s] Unable to fetch products for household, %s", household_id, err)
             return []
 
     def add_product(self, product: Product) -> bool:
@@ -117,7 +114,7 @@ class ProductManager:
         dict = doc.to_dict()
         wasted_timestamp = dict["wasted_timestamp"] if "wasted_timestamp" in dict else 0
         household_id = dict["household_id"] if "household_id" in dict else ""
-        return Product(doc.id, dict["barcode"], dict["category"], dict["created"], dict["expires"], dict["location"], dict["product_name"], dict["uid"], household_id, dict["wasted"], wasted_timestamp)
+        return Product(doc.id, dict["barcode"], dict["category"], dict["created"], dict["expires"], dict["location"], dict["product_name"], household_id, dict["wasted"], wasted_timestamp)
 
     @classmethod
     def parse_import_date(cls, date_str: str) -> int:

@@ -42,10 +42,19 @@ class HouseholdManager:
             log.error("get_households_for_user(): uid must not be empty")
             return None
         try:
+            found_household_ids = []
             results = []
+            # Add the household where the user is an owner first.
             query: Query = self.__collection().where(filter=FieldFilter("owner_uid", "==", uid))
             for household in query.stream():
                 results.append(self.__household_from_dict(household))
+                found_household_ids.append(household.id)
+
+            # Next, add the households the user is a participant.
+            query: Query = self.__collection().where(filter=FieldFilter("participant", "array_contains", uid))
+            for household in query.stream():
+                if household.id not in found_household_ids:
+                    results.append(self.__household_from_dict(household))
             return results
         except Exception as err:
             log.error("[%s] Unable to fetch households for user, %s", uid, err)
@@ -146,3 +155,4 @@ class HouseholdManager:
                          dict["owner_uid"],
                          dict["name"],
                          dict["participants"])
+
