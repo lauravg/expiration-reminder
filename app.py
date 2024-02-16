@@ -253,10 +253,6 @@ def index():
     current_date = datetime.now(pt_timezone).date()
     household = household_manager.get_active_household()
 
-    log.warning("Executing transfer to Household")
-    product_mgr.cleanup_products_hackhackhack()
-    log.warning("Executing transfer to Household.. DONE!!!!")
-
     if request.method == 'POST':
         # Get the item content from the form
         item_content = request.form['product-name']
