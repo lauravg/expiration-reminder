@@ -196,6 +196,16 @@ button:hover {
     padding: 10px;
 }
 
+.active-household {
+  float:right
+}
+
+.active-household-name {
+  font-weight: bold;
+}
+
+
+
 /* Media Query for Tablets and Desktops */
 @media (min-width: 768px) {
     .mobile {
@@ -281,5 +291,4 @@ button:hover {
     #clear-filter-button {
         margin: 0;
     }
-
 }

@@ -251,6 +251,7 @@ def index():
 
     # Get the current date in the PT timezone
     current_date = datetime.now(pt_timezone).date()
+    household = household_manager.get_active_household()
 
     if request.method == 'POST':
         # Get the item content from the form
@@ -298,7 +299,6 @@ def index():
         else:
             expiration_date_str = ''
 
-        household = household_manager.get_active_household()
         if household == None:
             msg = "Cannot add product: No active household set"
             log.error(msg)
@@ -357,7 +357,8 @@ def index():
                     filtered_products.append(product_info)
         return render_template('index.html',display_name=user.display_name(), products=filtered_products, current_date=current_date.strftime('%Y-%m-%d'),
                             selected_location=location_filter, selected_category=category_filter,
-                            selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter)
+                            selected_expiration_date=expiration_date_filter, selected_status=expiration_status_filter,
+                            active_household_name=household.name)
 
 
 @app.route('/check_barcode', methods=['POST'])

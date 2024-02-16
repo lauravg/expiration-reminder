@@ -5,6 +5,7 @@
 {% endblock %}
 
 {% block body %}
+<div class="active-household">Active household:<br/><span class="active-household-name">{{ active_household_name }}</span></div>
 <h1>Welcome, {{ display_name }}!</h1>
 <a href="{{ url_for('settings') }}">Settings</a>
 
