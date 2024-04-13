@@ -6,6 +6,7 @@ from absl import logging as log
 from google.cloud.firestore_v1 import Query, DocumentSnapshot
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+
 class Product:
     def __init__(
         self,
@@ -18,18 +19,19 @@ class Product:
         product_name: str,
         household_id: str,
         wasted: bool,
-        wasted_timestamp: int
+        wasted_timestamp: int,
     ) -> None:
         self.id = id
         self.barcode = barcode
         self.category = category
         self.created = created
         self.expires = expires
-        self.location =location
+        self.location = location
         self.product_name = product_name
         self.household_id = household_id
         self.wasted = wasted
         self.wasted_timestamp = wasted_timestamp
+
     def __iter__(self):
         yield "barcode", self.barcode
         yield "category", self.category
@@ -40,12 +42,15 @@ class Product:
         yield "household_id", self.household_id
         yield "wasted", self.wasted
         yield "wasted_timestamp", self.wasted_timestamp
+
     def creation_str(self, format="%b %d %Y") -> str:
         return datetime.utcfromtimestamp(self.created / 1000).strftime(format)
+
     def expiration_str(self, format="%b %d %Y") -> str | None:
         if self.expires == 0:
             return None
         return datetime.utcfromtimestamp(self.expires / 1000).strftime(format)
+
     def wasted_date_str(self, format="%b %d %Y") -> str | None:
         if self.wasted_timestamp == 0:
             return None
@@ -76,12 +81,16 @@ class ProductManager:
             return None
         try:
             results = []
-            query: Query = self.__collection().where(filter=FieldFilter("household_id", "==", household_id))
+            query: Query = self.__collection().where(
+                filter=FieldFilter("household_id", "==", household_id)
+            )
             for product in query.stream():
                 results.append(self.__product_from_dict(product))
             return results
         except Exception as err:
-            log.error("[%s] Unable to fetch products for household, %s", household_id, err)
+            log.error(
+                "[%s] Unable to fetch products for household, %s", household_id, err
+            )
             return []
 
     def add_product(self, product: Product) -> bool:
@@ -114,7 +123,18 @@ class ProductManager:
         dict = doc.to_dict()
         wasted_timestamp = dict["wasted_timestamp"] if "wasted_timestamp" in dict else 0
         household_id = dict["household_id"] if "household_id" in dict else ""
-        return Product(doc.id, dict["barcode"], dict["category"], dict["created"], dict["expires"], dict["location"], dict["product_name"], household_id, dict["wasted"], wasted_timestamp)
+        return Product(
+            doc.id,
+            dict["barcode"],
+            dict["category"],
+            dict["created"],
+            dict["expires"],
+            dict["location"],
+            dict["product_name"],
+            household_id,
+            dict["wasted"],
+            wasted_timestamp,
+        )
 
     @classmethod
     def parse_import_date(cls, date_str: str) -> int:
@@ -123,4 +143,4 @@ class ProductManager:
             epoch_obj = datetime.utcfromtimestamp(0)
             return int((date_obj - epoch_obj).total_seconds() * 1000)
         except ValueError:
-            raise ValueError(f"Invalid date format: {date_str}")
+            raise ValueError(f"Invalid date format: '{date_str}'")
