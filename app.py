@@ -308,7 +308,11 @@ def index():
             created=ProductManager.parse_import_date(
                 datetime.now(pt_timezone).strftime("%d %b %Y")
             ),
-            expires=ProductManager.parse_import_date(expiration_date_str),
+            expires=(
+                0
+                if no_expiration
+                else ProductManager.parse_import_date(expiration_date_str)
+            ),
             location=location,
             product_name=item_content,
             household_id=household.id,
@@ -514,6 +518,7 @@ def update_product(id):
         product_data["id"] = product.id
         product_data["creation_html_date"] = product.creation_str(format="%Y-%m-%d")
         product_data["expiration_html_date"] = product.expiration_str(format="%Y-%m-%d")
+        product_data["no_expiration"] = not product.does_expire
         log.info("Expiration HTMl Date: '%s'", product_data["expiration_html_date"])
         return render_template("update_product.html", product=product_data)
 

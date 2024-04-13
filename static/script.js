@@ -96,6 +96,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Listen for changes to the 'No Expiration Date' checkbox
     if (noExpirationCheckbox != undefined) {
+      // Disable initially
+      if (noExpirationCheckbox.checked) {
+        expirationDateInput.disabled = true;
+      }
       noExpirationCheckbox.addEventListener('change', function () {
           if (this.checked) {
               // If checked, disable the expiration date input and clear its value
