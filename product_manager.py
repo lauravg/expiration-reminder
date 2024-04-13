@@ -32,7 +32,12 @@ class Product:
         self.wasted = wasted
         self.wasted_timestamp = wasted_timestamp
 
+    @property
+    def does_expire(self) -> bool:
+        return self.expires != 0
+
     def __iter__(self):
+        # Note: we don't want to persist the ID.
         yield "barcode", self.barcode
         yield "category", self.category
         yield "created", self.created
@@ -47,7 +52,7 @@ class Product:
         return datetime.utcfromtimestamp(self.created / 1000).strftime(format)
 
     def expiration_str(self, format="%b %d %Y") -> str | None:
-        if self.expires == 0:
+        if not self.does_expire:
             return None
         return datetime.utcfromtimestamp(self.expires / 1000).strftime(format)
 
