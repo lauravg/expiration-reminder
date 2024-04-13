@@ -7,16 +7,22 @@ import uuid
 
 from user_manager import User
 
+
 class Household:
-    def __init__(self, hid: str, owner_uid: str, name: str, participants: list[str]) -> None:
+    def __init__(
+        self, hid: str, owner_uid: str, name: str, participants: list[str]
+    ) -> None:
         self.id = hid
         self.owner_uid = owner_uid
         self.name = name
         self.participants = participants
+
     def __iter__(self):
+        # Note, we don't want to persist ID in the DB.
         yield "owner_uid", self.owner_uid
         yield "name", self.name
         yield "participants", self.participants
+
 
 class HouseholdManager:
     def __init__(self, firestore) -> None:
@@ -45,13 +51,17 @@ class HouseholdManager:
             found_household_ids = []
             results = []
             # Add the household where the user is an owner first.
-            query: Query = self.__collection().where(filter=FieldFilter("owner_uid", "==", uid))
+            query: Query = self.__collection().where(
+                filter=FieldFilter("owner_uid", "==", uid)
+            )
             for household in query.stream():
                 results.append(self.__household_from_dict(household))
                 found_household_ids.append(household.id)
 
             # Next, add the households the user is a participant.
-            query: Query = self.__collection().where(filter=FieldFilter("participant", "array_contains", uid))
+            query: Query = self.__collection().where(
+                filter=FieldFilter("participant", "array_contains", uid)
+            )
             for household in query.stream():
                 if household.id not in found_household_ids:
                     results.append(self.__household_from_dict(household))
@@ -86,7 +96,6 @@ class HouseholdManager:
             log.error("delete_household(): Unable to delete household: %s", err)
             return False
         return True
-
 
     def add_participant(self, id: str, uid: str, participant_id: str) -> bool:
         if id is None or id.isspace():
@@ -145,14 +154,9 @@ class HouseholdManager:
         else:
             log.error("Cannot set household as active as it wasn't found: '%s'", id)
 
-
     def __collection(self):
         return self.__db.collection("households")
 
     def __household_from_dict(self, doc: DocumentSnapshot) -> Household:
         dict = doc.to_dict()
-        return Household(doc.id,
-                         dict["owner_uid"],
-                         dict["name"],
-                         dict["participants"])
-
+        return Household(doc.id, dict["owner_uid"], dict["name"], dict["participants"])
