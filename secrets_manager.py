@@ -1,6 +1,7 @@
 from absl import logging as log
 import os
 
+
 class SecretNotFoundException(Exception):
     """Raised when a secret was not found."""
 
@@ -50,7 +51,7 @@ class SecretsManager:
             log.info(f"Found secret '{id}' through environment variable.'")
             return key
 
-        #2) Try to find the secret at the developer "secrets" location.
+        # 2) Try to find the secret at the developer "secrets" location.
         file_name = f"./secrets/{env_name}"
         try:
             f = open(file_name, "r")
@@ -59,10 +60,9 @@ class SecretsManager:
                 log.info(f"Found secret '{id}' through DEV secrets file'")
                 return key
         except:
-            raise SecretNotFoundException("Unable to read secret key for '%s'.", id)
+            raise SecretNotFoundException(f"Unable to read secret key for '{id}'.")
 
-
-        #3) Try to find it as the specified secrets file.
+        # 3) Try to find it as the specified secrets file.
         file_name = self.__mapping[id][1]
         try:
             f = open(file_name, "r")
@@ -71,4 +71,4 @@ class SecretsManager:
                 log.info(f"Found secret '{id}' through local secrets file'")
                 return key
         except:
-            raise SecretNotFoundException("Unable to read secret key for '%s'.", id)
+            raise SecretNotFoundException(f"Unable to read secret key for '{id}'.")
