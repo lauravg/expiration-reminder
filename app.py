@@ -97,7 +97,7 @@ def login():
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
-        next = request.form["next"]
+        next = request.form.get("next", "/")  # Use request.form.get to avoid KeyError
         firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
 
         # Make a request to Firebase Authentication REST API for sign-in
