@@ -1,3 +1,4 @@
+from flask_cors import CORS
 from config import pt_timezone
 from datetime import datetime
 from functools import wraps
@@ -22,8 +23,10 @@ from recipe import RecipeGenerator
 from secrets_manager import SecretsManager
 from send_email import SendMail
 from user_manager import UserManager, User
+from flask import redirect  # Import redirect from Flask
 
 app = Flask(__name__)
+CORS(app)
 # Generate a secure secret key for the app, required for session management.
 secret_key = secrets.token_urlsafe(16)
 app.secret_key = secret_key
@@ -91,13 +94,13 @@ def register():
         return render_template("register.html")
 
 
-# Login route for user authentication
-@app.route("/login", methods=["GET", "POST"])
+# Updated login route for user authentication
+@app.route("/login", methods=["GET", "POST"])  # Allow both GET and POST requests
 def login():
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-        next = request.form.get("next", "/")  # Use request.form.get to avoid KeyError
+        email = request.form.get("email")
+        password = request.form.get("password")
+        next_url = request.form.get("next", "/")  # Use request.form.get to avoid KeyError
         firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
 
         # Make a request to Firebase Authentication REST API for sign-in
@@ -114,11 +117,10 @@ def login():
             user = user_manager.get_user(user_data["localId"])
             login_user(user)
             log.info("User successfully logged in: %s", user.display_name())
-            if not is_url_safe(next):
-                next = "/"
-
-            # Ensure there is at least one household for the person
-            # In the future we should always create a household for the current user.
+            if not is_url_safe(next_url):
+                next_url = "/"
+            
+            # Ensure there is at least one household for the user
             households = household_manager.get_households_for_user(user.get_id())
             if len(households) == 0:
                 log.warning("No households found for user. Creating one now")
@@ -130,21 +132,20 @@ def login():
                 household = Household(None, user.get_id(), name, [user.get_id()])
                 if not household_manager.add_or_update_household(household):
                     log.error("Unable to create default household for user.")
-            return redirect(next)
+            
+            # Redirect to the next URL after successful login
+            return redirect(next_url)  # This will send a 302 redirect response
+
         else:
-            # Output the response for debugging purposes
-            log.warning(f"Login failed. Response: {response.json()}")
-
             # Handle authentication failure
-            return "Login failed: " + response.json().get("error", {}).get(
-                "message", "Unknown error"
-            )
-
-    next = request.args.get("next")
-    if not is_url_safe(next):
-        next = "/"
-    return render_template("login.html", next_url=next)
-
+            error_message = response.json().get("error", {}).get("message", "Unknown error")
+            return "Login failed: " + error_message, 401
+    
+    # Handle GET request to render login page
+    next_url = request.args.get("next", "/")
+    if not is_url_safe(next_url):
+        next_url = "/"
+    return render_template("login.html", next_url=next_url)
 
 # Logout route to clear the user's session
 @app.route("/logout", methods=["POST"])

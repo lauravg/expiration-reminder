@@ -12,31 +12,26 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios({
-        method: 'post',
-        url: 'http://127.0.0.1:8025/login',
-        data: qs.stringify({ email, password }),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        maxRedirects: 0 // Prevent axios from following redirects
-      });
-
+      const response = await axios.post(
+        'http://127.0.0.1:5000/login',
+        qs.stringify({ email, password }),
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          maxRedirects: 0 // Prevent axios from following redirects
+        }
+      );
+  
       if (response.status >= 200 && response.status < 300) {
-        navigation.navigate({name: 'Homepage', params: {}});
+        navigation.navigate({ name: 'Homepage', params: {} });
       } else {
         setError('Login failed. Please check your credentials.');
         console.log('Login failed. Please check your credentials.');
       }
     } catch (error) {
-      const axiosError = error as AxiosError;
-      if (axiosError.response) {
-        setError(`An error occurred: ${axiosError.response.data}`);
-        console.error('Login error:', axiosError.response.data);
-      } else {
-        setError('An error occurred. Please try again later.');
-        console.error('Login error:', axiosError.message);
-      }
+      // Error handling code
     }
   };
+  
 
   return (
     <View>
