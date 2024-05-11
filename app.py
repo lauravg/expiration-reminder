@@ -190,53 +190,6 @@ def settings():
         "settings.html", display_name=display_name, email=email, households=households
     )
 
-
-# TODO: Is this still necessary? Does not seem to be used anywhere.
-# @app.route('/get_products_data', methods=['GET'])
-# @authenticate_user
-# def get_products_data():
-#     user_uid = session.get('user_uid')
-#     products = products_ref.order_by_child('user_uid').equal_to(user_uid).get()
-
-#     if products is not None:
-#         product_data = []
-#         product_ids = []
-#         current_date = datetime.now(pt_timezone).date()
-
-#         for key, product in products.items():
-#             # Check if the product belongs to the current user based on UUID
-#             if 'user_uid' in product and product['user_uid'] == user_uid:
-#                 expiration_date = product.get('expiration_date')
-#                 expiration_status = False  # Initialize it to False here
-
-#                 if expiration_date and expiration_date != 'None':
-#                     try:
-#                         expiration_date = datetime.strptime(expiration_date, '%d %b %Y').date()
-#                         if expiration_date <= current_date:
-#                             expiration_status = True
-#                         expiration_date = expiration_date.strftime('%d %b %Y')
-#                     except ValueError as e:
-#                         log.error(f'Error parsing expiration date for product {key}: {e}')
-
-#                 product_info = {
-#                     'product_id': key,
-#                     'product_name': product['product_name'],
-#                     'expiration_date': expiration_date,
-#                     'location': product['location'],
-#                     'category': product['category'],
-#                     'wasted_status': product['wasted_status'],
-#                     'expiration_status': expiration_status
-#                 }
-
-#                 product_data.append(product_info)
-#                 product_ids.append(key)
-
-#         return jsonify({'products': product_data, 'product_ids': product_ids})
-#     else:
-#         # Handle the case when there is no product data
-#         return jsonify({'products': [], 'product_ids': []})
-
-
 # Update the route to include the display name
 @app.route("/", methods=["POST", "GET"])
 @login_required

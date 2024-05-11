@@ -138,21 +138,18 @@ const HomePage = () => {
             icon="cog"
             size={24}
             onPress={() => navigation.navigate({ name: 'Settings', params: { /* your parameters */ } })}
-            style={GlobalStyles.settingsIcon}
+            // style={GlobalStyles.settingsIcon}
           />
         </View>
 
         <Button mode="contained" style={GlobalStyles.addButton} onPress={handleAddProductPress}>Add Product</Button>
 
         <View style={GlobalStyles.links}>
-          <Button onPress={() => navigation.navigate({ name: 'WastedProductList', params: { someParam: 'value' } })}>Wasted Products</Button>
+          <Button onPress={() => navigation.navigate({ name: 'WastedProductList', params: { someParam: 'value' } })} style={GlobalStyles.linkButton}>Wasted Products</Button>
           <Button onPress={() => { }} style={GlobalStyles.linkButton}>Generate Recipe</Button>
         </View>
 
-
-
         <View style={GlobalStyles.productList}>
-          <Text style={GlobalStyles.sectionHeader}>Product List</Text>
           <List.Section>
             {nonWastedProducts.map(product => (
               <TouchableWithoutFeedback key={product.product_id} onPress={() => handleProductSelect(product)}>

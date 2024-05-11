@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 // Import your screens
 import Homepage from './Homepage';  // Adjust the path as necessary
 import Login from './LoginScreen';        // Adjust the path as necessary
+import Registration from './RegistrationScreen';        // Adjust the path as necessary
 
 // Create the stack navigator
 const Stack = createStackNavigator();
@@ -16,6 +17,7 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Registration" component={Registration} />
         <Stack.Screen name="Homepage" component={Homepage} />
       </Stack.Navigator>
       <StatusBar style="auto" />

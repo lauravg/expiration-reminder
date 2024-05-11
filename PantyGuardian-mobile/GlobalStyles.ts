@@ -1,8 +1,13 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 const GlobalStyles = StyleSheet.create({
   container: {
     flex: 1,
+    ...(Platform.OS === 'web' && {
+      width: '80%',
+      justifyContent: 'center',
+      alignSelf: 'center',
+    }),
   },
   scrollContainer: {
     flexGrow: 1,
@@ -25,6 +30,9 @@ const GlobalStyles = StyleSheet.create({
   },
   addButton: {
     marginBottom: 30,
+    ...(Platform.OS === 'web' && {
+      width: 200,
+    }),
   },
   links: {
     flexDirection: 'row',
@@ -36,17 +44,31 @@ const GlobalStyles = StyleSheet.create({
   },
   productList: {
     marginBottom: 20,
+    ...(Platform.OS === 'web' && {
+      width: '80%',
+      height: 600,
+      alignSelf: 'center',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 10,
+      boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.1)',
+      padding: 60,
+    }),
   },
   sectionHeader: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
   },
+
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
     elevation: 5,
+    ...(Platform.OS === 'web' && {
+      width: 600,
+      alignSelf: 'center',
+    }),
   },
   modalTitle: {
     fontSize: 20,
@@ -54,19 +76,19 @@ const GlobalStyles = StyleSheet.create({
     marginBottom: 10,
   },
   productDetails: {
-    flexDirection: 'column', // Stacks the label-value pairs vertically
+    flexDirection: 'column',
     marginBottom: 5,
   },
-  detailRow: {  // This will align the label and value in a single row
+  detailRow: {
     flexDirection: 'row',
-    marginBottom: 5,  // Adds some spacing between each detail row
+    marginBottom: 5,
   },
   detailLabel: {
     fontWeight: 'bold',
-    marginRight: 10,  // Increase space between label and value
+    marginRight: 10,
   },
   detailValue: {
-    flex: 1,  // Takes remaining space, ensuring the label and value are spaced out according to the text length
+    flex: 1,
   },
   pickerContainer: {
     flexDirection: 'row',
@@ -78,8 +100,8 @@ const GlobalStyles = StyleSheet.create({
     marginRight: 10,
   },
   colorPicker: {
-    backgroundColor: '#ddd',
-    elevation: 0, // Remove shadow
+    backgroundColor: '#E0E0E0',
+    elevation: 0,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -88,6 +110,9 @@ const GlobalStyles = StyleSheet.create({
   },
   input: {
     marginBottom: 10,
+  },
+  product: {
+    paddingLeft: 0,
   },
   productContainer: {
     flexDirection: 'row',
@@ -99,10 +124,20 @@ const GlobalStyles = StyleSheet.create({
   badge: {
     width: 60,
     fontSize: 12,
+    ...(Platform.OS === 'web' && {
+      width: 120,
+      fontSize: 14,
+      height: 25,
+      alignContent: 'center',
+    }),
   },
-  button: {
-},
-settingsIcon: {}
+  button: {},
+  settingsIcon: {},
+  errorMessage: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
+  },
 });
 
 export default GlobalStyles;
