@@ -3,6 +3,7 @@ import requests
 from absl import logging as log
 
 from secrets_manager import SecretsManager
+from firebase_admin import auth
 
 
 class AuthResponse:
@@ -50,3 +51,12 @@ class AuthManager:
             log.error("refreshToken is not found")
             return AuthResponse(ok=False)
         return auth_response
+
+    def user_id_from_token(self, id_token: str) -> str | None:
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            return decoded_token["uid"]
+        except Exception as err:
+            # TODO: Add a way to refresh the token if its expired.
+            log.error(f"Cannot verify id token: {err}")
+            return None

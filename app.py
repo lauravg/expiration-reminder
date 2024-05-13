@@ -153,37 +153,82 @@ def auth():
     multiple server instances is not an issues this way (otherwise some kind) of
     distributed memcached would need to be used.
     """
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        response = auth_mgr.login(email, password)
+    if request.method != "POST":
+        return "", 405
 
-        if response.ok:
-            uid = response.uid
-            user = user_manager.get_user(uid)
-            login_user(user)
-            log.info("User successfully logged in: %s", user.display_name())
+    email = request.form.get("email")
+    password = request.form.get("password")
+    response = auth_mgr.login(email, password)
 
-            # Ensure there is at least one household for the user
-            households = household_manager.get_households_for_user(user.get_id())
-            if len(households) == 0:
-                log.warning("No households found for user. Creating one now")
-                name = (
-                    f"{user.display_name()}'s Household"
-                    if not user.display_name().isspace()
-                    else "Default Household"
-                )
-                household = Household(None, user.get_id(), name, [user.get_id()])
-                if not household_manager.add_or_update_household(household):
-                    log.error("Unable to create default household for user.")
+    if response.ok:
+        uid = response.uid
+        user = user_manager.get_user(uid)
+        login_user(user)
+        log.info("User successfully logged in: %s", user.display_name())
 
-            # Send the client the auth tokens
-            token_response = {"rt": response.refresh_token, "it": response.id_token}
-            return jsonify(token_response)
-        else:
-            msg = f"Login failed for {email}"
-            log.info(msg)
-            return msg, 401
+        # Ensure there is at least one household for the user
+        households = household_manager.get_households_for_user(user.get_id())
+        if len(households) == 0:
+            log.warning("No households found for user. Creating one now")
+            name = (
+                f"{user.display_name()}'s Household"
+                if not user.display_name().isspace()
+                else "Default Household"
+            )
+            household = Household(None, user.get_id(), name, [user.get_id()])
+            if not household_manager.add_or_update_household(household):
+                log.error("Unable to create default household for user.")
+
+        # Send the client the auth tokens
+        token_response = {"rt": response.refresh_token, "it": response.id_token}
+        return jsonify(token_response)
+    else:
+        msg = f"Login failed for {email}"
+        log.info(msg)
+        return msg, 401
+
+
+@app.route("/list_products", methods=["GET", "POST"])
+def list_products():
+    """
+    Lists the products matching the given filters
+    """
+
+    # TODO: Add filters
+    if request.method != "POST":
+        return "", 405
+
+    idToken = request.headers.get("idToken")
+    if not idToken or len(idToken) < 10:
+        return "idToken missing or invalid format", 400
+
+    log.info(f"/lists_products: Got idToken! {idToken}")
+    uid = auth_mgr.user_id_from_token(idToken)
+    if uid == None:
+        # Might be expired.
+        # TODO: Add a way to refresh the token.
+        return "Cannot verify id token"
+    log.info(f"/lists_products: Got uid! {uid}")
+
+    household = household_manager.get_active_household(uid)
+    products = product_mgr.get_household_products(household.id)
+
+    log.info(f"Got {len(products)} products!")
+
+    result = []
+    for product in products:
+        result.append(
+            {
+                "product_name": product.product_name,
+                "expiration_date": product.expiration_str(),
+                "location": product.location,
+                "product_id": product.id,
+                "expired": False,
+                "creation_date": product.creation_str(),
+                "wasted": product.wasted,
+            }
+        )
+    return jsonify(result)
 
 
 # Logout route to clear the user's session
@@ -235,10 +280,12 @@ def settings():
 @login_required
 def index():
     user: User = flask_login.current_user
+    household: Household = None
+    if user != None:
+        household = household_manager.get_active_household(user.get_id())
 
     # Get the current date in the PT timezone
     current_date = datetime.now(pt_timezone).date()
-    household = household_manager.get_active_household()
 
     if request.method == "POST":
         # Get the item content from the form
@@ -552,7 +599,8 @@ def waste_product(id):
 @app.route("/wasted_product_list", methods=["GET"])
 @login_required
 def wasted_product_list():
-    household = household_manager.get_active_household()
+    user: User = flask_login.current_user
+    household = household_manager.get_active_household(user.get_id(0))
     # Retrieve all products that are marked as wasted from Firebase
     wasted_products = []
     for product in product_mgr.get_household_products(household.id):
@@ -598,7 +646,8 @@ def generate_recipe_user_input():
 @app.route("/generate_recipe_from_database", methods=["GET"])
 @login_required
 def generate_recipe_from_database():
-    household = household_manager.get_active_household()
+    user: User = flask_login.current_user
+    household = household_manager.get_active_household(user.get_id())
     today_millis = ProductManager.parse_import_date(
         datetime.now(pt_timezone).strftime("%d %b %Y")
     )

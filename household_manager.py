@@ -27,7 +27,6 @@ class Household:
 class HouseholdManager:
     def __init__(self, firestore) -> None:
         self.__db = firestore
-        self.active_household = None
 
     def get_household(self, id: str) -> Household | None:
         if id is None or id.isspace():
@@ -119,28 +118,12 @@ class HouseholdManager:
                 return False
         return True
 
-    def get_active_household(self) -> Household | None:
-        if self.active_household == None and "active_household_id" in session:
-            self.active_household = self.get_household(session["active_household_id"])
-
-        # If none is set, set it to the first owned household in the session.
-        # Only fail if there are not households owned by the current user.
-        if self.active_household == None:
-            user: User = flask_login.current_user
-            if user is None:
-                log.error("Bug: Cannot set default household, no user logged in")
-                return None
-            households = self.get_households_for_user(user.get_id())
-            if len(households) == 0:
-                log.error("Bug: Cannot set default houshold, user has no households")
-                return None
-            self.active_household = households[0]
-            session["active_household_id"] = self.active_household.id
-
-        if self.active_household.id is None or self.active_household.id.isspace():
-            log.error("Bug: Active household is not set or has no id")
+    def get_active_household(self, uid: str) -> Household | None:
+        households = self.get_households_for_user(uid)
+        if len(households) == 0:
+            log.error("Bug: Cannot set default houshold, user has no households")
             return None
-        return self.active_household
+        return self.get_household(households[0].id)
 
     def set_active_household(self, id: str):
         household = self.get_household(id)
@@ -149,7 +132,6 @@ class HouseholdManager:
                 log.error("Bug: Cannot set a default household without an ID")
                 return
             session["active_household_id"] = household.id
-            self.active_household = household
             log.info("Active household changed to '%s'", id)
         else:
             log.error("Cannot set household as active as it wasn't found: '%s'", id)
