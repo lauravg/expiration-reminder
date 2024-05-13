@@ -16,6 +16,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 import flask_login
 from flask_login import LoginManager, login_user, logout_user, login_required
 
+from auth_manager import AuthManager
 from barcode_manager import BarcodeManager, Barcode
 from household_manager import Household, HouseholdManager
 from product_manager import ProductManager, Product
@@ -36,6 +37,7 @@ app.config.update(SESSION_COOKIE_SECURE=True)
 log.set_verbosity(log.DEBUG if app.debug else log.INFO)
 
 secrets_mgr = SecretsManager()
+auth_mgr = AuthManager(secrets_mgr)
 json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
 cred = credentials.Certificate(json_data)
 
@@ -100,26 +102,19 @@ def login():
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
-        next_url = request.form.get("next", "/")  # Use request.form.get to avoid KeyError
-        firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
-
-        # Make a request to Firebase Authentication REST API for sign-in
-        request_data = {"email": email, "password": password, "returnSecureToken": True}
-
-        response = requests.post(
-            f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_web_api_key}",
-            json=request_data,
-        )
+        next_url = request.form.get(
+            "next", "/"
+        )  # Use request.form.get to avoid KeyError
+        response = auth_mgr.login(email, password)
 
         if response.ok:
-            # See https://cloud.google.com/identity-platform/docs/reference/rest/v1/accounts/signInWithPassword
-            user_data = response.json()
-            user = user_manager.get_user(user_data["localId"])
+            uid = response.uid
+            user = user_manager.get_user(uid)
             login_user(user)
             log.info("User successfully logged in: %s", user.display_name())
             if not is_url_safe(next_url):
                 next_url = "/"
-            
+
             # Ensure there is at least one household for the user
             households = household_manager.get_households_for_user(user.get_id())
             if len(households) == 0:
@@ -132,20 +127,64 @@ def login():
                 household = Household(None, user.get_id(), name, [user.get_id()])
                 if not household_manager.add_or_update_household(household):
                     log.error("Unable to create default household for user.")
-            
+
             # Redirect to the next URL after successful login
             return redirect(next_url)  # This will send a 302 redirect response
 
         else:
             # Handle authentication failure
-            error_message = response.json().get("error", {}).get("message", "Unknown error")
-            return "Login failed: " + error_message, 401
-    
+            return "Login failed", 401
+
     # Handle GET request to render login page
     next_url = request.args.get("next", "/")
     if not is_url_safe(next_url):
         next_url = "/"
     return render_template("login.html", next_url=next_url)
+
+
+@app.route("/auth", methods=["GET", "POST"])  # Allow both GET and POST requests
+def auth():
+    """
+    This auth method will take a username and password from the client, perform
+    the login with Firebase and then forward the refresh and idToken to the
+    client. From here the client can handle the login state themselves without
+    the server needing to manage any state. This is preferable for an app where
+    you don't want to log out a user of the server restarts. Also using
+    multiple server instances is not an issues this way (otherwise some kind) of
+    distributed memcached would need to be used.
+    """
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        response = auth_mgr.login(email, password)
+
+        if response.ok:
+            uid = response.uid
+            user = user_manager.get_user(uid)
+            login_user(user)
+            log.info("User successfully logged in: %s", user.display_name())
+
+            # Ensure there is at least one household for the user
+            households = household_manager.get_households_for_user(user.get_id())
+            if len(households) == 0:
+                log.warning("No households found for user. Creating one now")
+                name = (
+                    f"{user.display_name()}'s Household"
+                    if not user.display_name().isspace()
+                    else "Default Household"
+                )
+                household = Household(None, user.get_id(), name, [user.get_id()])
+                if not household_manager.add_or_update_household(household):
+                    log.error("Unable to create default household for user.")
+
+            # Send the client the auth tokens
+            token_response = {"rt": response.refresh_token, "it": response.id_token}
+            return jsonify(token_response)
+        else:
+            msg = f"Login failed for {email}"
+            log.info(msg)
+            return msg, 401
+
 
 # Logout route to clear the user's session
 @app.route("/logout", methods=["POST"])
@@ -189,6 +228,7 @@ def settings():
     return render_template(
         "settings.html", display_name=display_name, email=email, households=households
     )
+
 
 # Update the route to include the display name
 @app.route("/", methods=["POST", "GET"])
