@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PantyGuardian-mobile",
-    "slug": "PantyGuardian-mobile",
+    "name": "PantryGuardian-mobile",
+    "slug": "PantryGuardian-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
