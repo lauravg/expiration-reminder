@@ -5,6 +5,7 @@ import { Button, TextInput as PaperTextInput, TextInput} from 'react-native-pape
 import GlobalStyles from './GlobalStyles';
 import axios from 'axios';
 import qs from 'qs';
+import Requests from './Requests'
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
@@ -12,27 +13,18 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('4S9rE%3Wp');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false); // State to manage password visibility
+  const requests = new Requests();
 
   const handleLogin = async () => {
-    try {
-      const response = await axios.post(
-        'http://127.0.0.1:5000/login',
-        qs.stringify({ email, password }),
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          maxRedirects: 0 // Prevent axios from following redirects
-        }
-      );
-
-      if (response.status >= 200 && response.status < 300) {
+    requests.handleLogin(email, password).then((success) => {
+      if (success) {
         navigation.navigate({ name: 'Homepage', params: {} });
       } else {
-        setError('Login failed.');
-        console.log('Login failed.');
+          setError('Login failed.');
       }
-    } catch (error) {
+    }).catch((err) => {
       setError('Login failed. Please check your credentials');
-    }
+    })
   };
 
 
@@ -91,7 +83,7 @@ const styles = StyleSheet.create({
   formContainer: {
     marginBottom: 20,
   },
-  
+
   registerLink: {
     textAlign: 'center',
     marginTop: 20,
