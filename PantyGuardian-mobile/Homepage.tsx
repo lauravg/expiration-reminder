@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Button, List, Modal as PaperModal, IconButton, Badge, TextInput as PaperTextInput } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
@@ -6,18 +6,9 @@ import { Calendar } from 'react-native-calendars';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 
-interface Product {
-  product_name: string;
-  creation_date: string;
-  expiration_date: string;
-  location: string;
-  category?: string;
-  product_id: number;
-  expired: boolean;
-  wasted: boolean;
-  wasted_date?: string;
-  
-}
+import Requests from './Requests';
+import { Product } from './Product';
+
 
 const HomePage = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
@@ -27,7 +18,7 @@ const HomePage = () => {
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState('');
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('#000000'); // Default color  
+  const [selectedColor, setSelectedColor] = useState('#000000'); // Default color
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -35,6 +26,9 @@ const HomePage = () => {
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [wasteModalVisible, setwasteModalVisible] = useState(false);
   const [wastedDate, setWastedDate] = useState('');
+  const [products, setProducts] = useState<Product[]>([]);
+
+  const requests = new Requests()
 
   // Define a list of colors for the color picker
   const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF', '#808080', '#800000'];
@@ -115,17 +109,12 @@ const HomePage = () => {
     // Handle waste action
   };
 
-
-  const products: Product[] = [
-    { product_name: 'Product 1', expiration_date: '2024-05-01', location: 'Fridge', product_id: 1, expired: false, creation_date: '2024-04-20', wasted: false },
-    { product_name: 'Product 2', expiration_date: '2024-05-11', location: 'Pantry', product_id: 2, expired: true, creation_date: '2024-04-21', wasted: false },
-    { product_name: 'Product 3', expiration_date: '2024-05-21', location: 'Fridge', product_id: 3, expired: true, creation_date: '2024-04-22', wasted: false },
-    { product_name: 'Product 4', expiration_date: '2024-06-10', location: 'Pantry', product_id: 4, expired: true, creation_date: '2024-04-23', wasted: false },
-    { product_name: 'Product 5', expiration_date: '2024-07-10', location: 'Pantry', product_id: 5, expired: true, creation_date: '2024-04-24', wasted: true, wasted_date: '2024-04-25' },
-    { product_name: 'Product 6', expiration_date: '2024-05-11', location: 'Pantry', product_id: 6, expired: true, creation_date: '2024-04-21', wasted: true, wasted_date: '2024-04-26' },
-  ];
-
-  const nonWastedProducts = products.filter(product => !product.wasted);
+  useEffect(() => {
+    requests.listProducts().then((products) => {
+      const nonWastedProducts = products.filter(product => !product.wasted);
+      setProducts(products);
+    });
+  }, []);
 
   return (
     <View style={GlobalStyles.container}>
@@ -151,7 +140,7 @@ const HomePage = () => {
 
         <View style={GlobalStyles.productList}>
           <List.Section>
-            {nonWastedProducts.map(product => (
+            {products.map(product => (
               <TouchableWithoutFeedback key={product.product_id} onPress={() => handleProductSelect(product)}>
                 <View style={GlobalStyles.productContainer}>
                   <List.Item
