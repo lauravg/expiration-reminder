@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { Button, List, Modal as PaperModal, IconButton, Badge, TextInput as PaperTextInput } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { Calendar } from 'react-native-calendars';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { parse, differenceInDays } from 'date-fns';
 import GlobalStyles from './GlobalStyles';
 
 import Requests from './Requests';
 import { Product } from './Product';
 
-
-const HomePage = () => {
+const Homepage = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
 
   const [productName, setProductName] = useState('');
@@ -27,8 +27,10 @@ const HomePage = () => {
   const [wasteModalVisible, setwasteModalVisible] = useState(false);
   const [wastedDate, setWastedDate] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
 
-  const requests = new Requests()
+  const requests = new Requests();
 
   // Define a list of colors for the color picker
   const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF', '#808080', '#800000'];
@@ -62,16 +64,11 @@ const HomePage = () => {
     alert(`Color selected: ${color}`); // TODO
   };
 
-
   const handleCategoryChange = (value: string) => {
     setCategory(value);
     setCategoryModalVisible(false);
   };
 
-  const handleAddProductPress = () => {
-    console.log('Opening add product modal...');
-    setAddProductModalVisible(true);
-  };
 
   const handleAddProduct = () => {
     // Handle adding the product
@@ -92,9 +89,9 @@ const HomePage = () => {
   };
 
   const handleProductSelect = (product: Product) => {
-    console.log("Product selected:", product);  // Log the entire product object
+    console.log('Product selected:', product); // Log the entire product object
     setSelectedProduct(product);
-    setwasteModalVisible(false);  // Assuming this is now correctly not related to the waste status for testing
+    setwasteModalVisible(false); // Assuming this is now correctly not related to the waste status for testing
   };
 
   const handleUpdate = (product: Product) => {
@@ -109,12 +106,42 @@ const HomePage = () => {
     // Handle waste action
   };
 
+
+  const calculateTimeLeft = (expirationDate: string | null): string => {
+    if (!expirationDate) {
+      return 'Invalid date';
+    }
+    const parsedDate = parse(expirationDate, 'MMM dd yyyy', new Date());
+    const today = new Date();
+    const daysLeft = differenceInDays(parsedDate, today);
+
+    if (daysLeft > 30) {
+      const monthsLeft = Math.floor(daysLeft / 30);
+      return `${monthsLeft} months`;
+    } else if (daysLeft < 0) {
+      return `Expired`;
+    }
+
+    return `${daysLeft} days`;
+  };
+
+
   useEffect(() => {
     requests.listProducts().then((products) => {
-      const nonWastedProducts = products.filter(product => !product.wasted);
-      setProducts(products);
+      const nonWastedProducts = products.filter((product) => !product.wasted);
+      setProducts(nonWastedProducts);
     });
   }, []);
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.product_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = activeFilter === 'All' || product.location === activeFilter;
+    return matchesSearch && matchesFilter;
+  });
+
+  // Create a set of unique locations
+  const uniqueLocations = Array.from(new Set(products.map(product => product.location)));
+  const filterOptions = ['All', ...uniqueLocations];
 
   return (
     <View style={GlobalStyles.container}>
@@ -127,37 +154,57 @@ const HomePage = () => {
             icon="cog"
             size={24}
             onPress={() => navigation.navigate({ name: 'Settings', params: { /* your parameters */ } })}
-            // style={GlobalStyles.settingsIcon}
           />
         </View>
 
-        <Button mode="contained" style={GlobalStyles.addButton} onPress={handleAddProductPress}>Add Product</Button>
-
-        <View style={GlobalStyles.links}>
-          <Button onPress={() => navigation.navigate({ name: 'WastedProductList', params: { someParam: 'value' } })} style={GlobalStyles.linkButton}>Wasted Products</Button>
-          <Button onPress={() => { }} style={GlobalStyles.linkButton}>Generate Recipe</Button>
-        </View>
-
-        <View style={GlobalStyles.productList}>
-          <List.Section>
-            {products.map(product => (
-              <TouchableWithoutFeedback key={product.product_id} onPress={() => handleProductSelect(product)}>
-                <View style={GlobalStyles.productContainer}>
-                  <List.Item
-                    title={product.product_name}
-                    description={`Expiration Date: ${product.expiration_date}`}
-                  />
-                  <View style={GlobalStyles.badgeContainer}>
-                    <Badge style={GlobalStyles.badge}>{product.location}</Badge>
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
+        <PaperTextInput
+          style={GlobalStyles.input}
+          mode="outlined"
+          label="What are you searching for?"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScrollView}>
+            {filterOptions.map((filter) => (
+              <TouchableOpacity key={filter} onPress={() => setActiveFilter(filter)}>
+                <Text style={[styles.filterText, activeFilter === filter && styles.activeFilterText]}>{filter}</Text>
+              </TouchableOpacity>
             ))}
-          </List.Section>
+          </ScrollView>
         </View>
+        <View style={GlobalStyles.productList}>
+  <List.Section>
+    {filteredProducts.map((product, index) => {
+      const timeLeft = calculateTimeLeft(product.expiration_date);
+
+      return (
+        <TouchableWithoutFeedback key={product.product_id} onPress={() => handleProductSelect(product)}>
+          <View
+            style={[
+              GlobalStyles.productContainer,
+              index !== filteredProducts.length - 1 && GlobalStyles.productContainer,
+            ]}
+          >
+            <View style={GlobalStyles.productInfo}>
+              <Text style={[GlobalStyles.productName]}>
+                {product.product_name}
+              </Text>
+            </View>
+            <View style={GlobalStyles.badgeContainer}>
+              <Badge style={GlobalStyles.badge}>{product.location}</Badge>
+              <Text style={[GlobalStyles.timeLeft, { color: calculateTimeLeft(product.expiration_date) === 'Expired' ? 'red' : 'black' }]}>
+                      {calculateTimeLeft(product.expiration_date)}
+                    </Text>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      );
+    })}
+  </List.Section>
+</View>
 
       </ScrollView>
-
 
       {selectedProduct && (
         <PaperModal visible={true} onDismiss={() => setSelectedProduct(null)} contentContainerStyle={GlobalStyles.modalContent}>
@@ -176,6 +223,10 @@ const HomePage = () => {
               <Text style={GlobalStyles.detailValue}>{selectedProduct.expiration_date}</Text>
             </View>
             <View style={GlobalStyles.detailRow}>
+              <Text style={GlobalStyles.detailLabel}>Time until Expiration:</Text>
+              <Text style={[GlobalStyles.detailValue, GlobalStyles.expirationText]}>{calculateTimeLeft(selectedProduct.expiration_date)}</Text>
+            </View>
+            <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Location:</Text>
               <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
             </View>
@@ -187,55 +238,22 @@ const HomePage = () => {
             )}
           </View>
           <View style={GlobalStyles.buttonContainer}>
-            <Button style={GlobalStyles.button} onPress={() => selectedProduct && handleUpdate(selectedProduct)}>Update</Button>
-            <Button style={GlobalStyles.button} onPress={() => handleDelete(selectedProduct)}>Delete</Button>
-            <Button style={GlobalStyles.button} onPress={() => handleWaste(selectedProduct)}>Waste</Button>
+            <Button style={GlobalStyles.button} onPress={() => selectedProduct && handleUpdate(selectedProduct)}>
+              Update
+            </Button>
+            <Button style={GlobalStyles.button} onPress={() => handleDelete(selectedProduct)}>
+              Delete
+            </Button>
+            <Button style={GlobalStyles.button} onPress={() => handleWaste(selectedProduct)}>
+              Waste
+            </Button>
           </View>
-
         </PaperModal>
       )}
-      <PaperModal visible={addProductModalVisible} onDismiss={() => setAddProductModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
-        <TouchableWithoutFeedback onPress={() => setIsDatePickerVisible(false)}>
-          <View>
-            <PaperTextInput
-              style={GlobalStyles.input}
-              mode="outlined"
-              label="Enter the product name"
-              value={productName}
-              onChangeText={text => setProductName(text)}
-            />
-            <PaperTextInput
-              style={GlobalStyles.input}
-              mode="outlined"
-              label="Expiration Date (MM/DD/YYYY)"
-              value={expirationDate}
-              onFocus={handleExpirationDateFocus}
-              onBlur={handleExpirationDateBlur}
-              onChangeText={text => setExpirationDate(text)}
-            />
-            <PaperTextInput
-              style={GlobalStyles.input}
-              mode="outlined"
-              label="Barcode Number (optional)"
-            />
-            <Button style={GlobalStyles.button} onPress={handleLocationPress}>{location ? 'Location: ' + location : 'Select Location'}</Button>
-            <Button style={GlobalStyles.button} onPress={handleCategoryPress}>{category ? 'Category: ' + category : 'Select Category'}</Button>
-            <Button mode="contained" style={GlobalStyles.button} onPress={handleAddProduct}>Submit</Button>
-            {isDatePickerVisible && (
-              <Calendar
-                onDayPress={(day) => handleExpirationDateChange(day.dateString)}
-              />
-            )}
-          </View>
-        </TouchableWithoutFeedback>
-      </PaperModal>
 
       <PaperModal visible={locationModalVisible} onDismiss={() => setLocationModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
         <View style={GlobalStyles.pickerContainer}>
-          <Picker
-            selectedValue={location}
-            style={GlobalStyles.picker}
-            onValueChange={handleLocationChange}>
+          <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={handleLocationChange}>
             <Picker.Item label="Select Location" value="" />
             <Picker.Item label="Pantry" value="Pantry" />
             <Picker.Item label="Fridge" value="Fridge" />
@@ -244,25 +262,16 @@ const HomePage = () => {
             <Picker.Item label="Liquor Cabinet" value="Liquor Cabinet" />
           </Picker>
           <Button onPress={() => setColorPickerVisible(true)}>Select a Color</Button>
-      {colorPickerVisible && (
-        <PaperModal
-          visible={colorPickerVisible}
-          onDismiss={() => setColorPickerVisible(false)}
-          contentContainerStyle={GlobalStyles.modalContent}
-        >
-          <View style={styles.colorPickerContainer}>
-            {renderColorOptions()}
-          </View>
-        </PaperModal>
-      )}
+          {colorPickerVisible && (
+            <PaperModal visible={colorPickerVisible} onDismiss={() => setColorPickerVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
+              <View style={styles.colorPickerContainer}>{renderColorOptions()}</View>
+            </PaperModal>
+          )}
         </View>
       </PaperModal>
 
       <PaperModal visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
-        <Picker
-          selectedValue={category}
-          style={GlobalStyles.input}
-          onValueChange={(itemValue) => handleCategoryChange(itemValue)}>
+        <Picker selectedValue={category} style={GlobalStyles.input} onValueChange={(itemValue) => handleCategoryChange(itemValue)}>
           <Picker.Item label="Select Category" value="" />
           <Picker.Item label="Food" value="Food" />
           <Picker.Item label="Baby Food" value="Baby Food" />
@@ -286,7 +295,27 @@ const HomePage = () => {
 };
 
 const styles = StyleSheet.create({
-
+  searchInput: {
+    marginVertical: 10,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    marginVertical: 10,
+  },
+  filterScrollView: {
+    flexGrow: 0,
+  },
+  filterText: {
+    fontSize: 16,
+    color: '#665a6f',
+    marginHorizontal: 10,
+  },
+  activeFilterText: {
+    fontSize: 16,
+    color: '#663399',
+    textDecorationLine: 'underline',
+    marginHorizontal: 10,
+  },
   colorOption: {
     width: 50,
     height: 50,
@@ -298,8 +327,23 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: 10,
     justifyContent: 'center',
-  }
-
+  },
+  productContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+  },
+  productContainerWithBorder: {
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+  },
+  daysLeftText: {
+    marginTop: 5,
+  },
 });
 
-export default HomePage;
+
+
+export default Homepage;

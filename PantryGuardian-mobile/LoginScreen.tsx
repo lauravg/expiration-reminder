@@ -9,8 +9,8 @@ import Requests from './Requests'
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const [email, setEmail] = useState('lauravgreiner@gmail.com');
-  const [password, setPassword] = useState('4S9rE%3Wp');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false); // State to manage password visibility
   const requests = new Requests();
@@ -18,7 +18,7 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     requests.handleLogin(email, password).then((success) => {
       if (success) {
-        navigation.navigate({ name: 'Homepage', params: {} });
+        navigation.navigate({ name: 'Main', params: {} });
       } else {
           setError('Login failed.');
       }
@@ -52,7 +52,7 @@ const LoginScreen = () => {
             />
           }
         />
-        <Button mode="contained" style={GlobalStyles.button} onPress={handleLogin}>Submit</Button>
+        <Button mode="contained" style={GlobalStyles.button} onPress={handleLogin}>Login</Button>
         {error ? <Text style={GlobalStyles.errorMessage}>{error}</Text> : null}
       </View>
       <TouchableOpacity onPress={() => navigation.navigate({ name: 'Registration', params: {} })}>
@@ -64,8 +64,9 @@ const LoginScreen = () => {
 
 const styles = StyleSheet.create({
   LoginContainer: {
+    justifyContent: 'center',
     flex: 1,
-    margin: 20,
+    marginHorizontal: 20,
     ...(Platform.OS === 'web' && {
       width: 600,
       alignSelf: 'center',
