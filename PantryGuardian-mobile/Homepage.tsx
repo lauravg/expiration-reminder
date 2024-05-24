@@ -10,6 +10,15 @@ import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { Product } from './Product';
 
+const locationColors: { [key: string]: string } = {
+  Pantry: '#c28ce1',
+  Fridge: '#e1978c',
+  'Freezer (Upstairs)': '#8ce1a0',
+  'Freezer (Downstairs)': '#8cd5e1',
+  'Liquor Cabinet': '#9d72b6',
+};
+
+
 const Homepage = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
 
@@ -176,8 +185,6 @@ const Homepage = () => {
         <View style={GlobalStyles.productList}>
   <List.Section>
     {filteredProducts.map((product, index) => {
-      const timeLeft = calculateTimeLeft(product.expiration_date);
-
       return (
         <TouchableWithoutFeedback key={product.product_id} onPress={() => handleProductSelect(product)}>
           <View
@@ -192,8 +199,8 @@ const Homepage = () => {
               </Text>
             </View>
             <View style={GlobalStyles.badgeContainer}>
-              <Badge style={GlobalStyles.badge}>{product.location}</Badge>
-              <Text style={[GlobalStyles.timeLeft, { color: calculateTimeLeft(product.expiration_date) === 'Expired' ? 'red' : 'black' }]}>
+            <Badge style={[GlobalStyles.badge, { backgroundColor: locationColors[product.location] || 'gray' }]}>{product.location}</Badge>
+            <Text style={[GlobalStyles.timeLeft, { color: calculateTimeLeft(product.expiration_date) === 'Expired' ? 'red' : 'black' }]}>
                       {calculateTimeLeft(product.expiration_date)}
                     </Text>
             </View>
@@ -224,7 +231,9 @@ const Homepage = () => {
             </View>
             <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Time until Expiration:</Text>
-              <Text style={[GlobalStyles.detailValue, GlobalStyles.expirationText]}>{calculateTimeLeft(selectedProduct.expiration_date)}</Text>
+              <Text style={[GlobalStyles.detailValue, { color: calculateTimeLeft(selectedProduct.expiration_date) === 'Expired' ? 'red' : 'black' }]}>
+                      {calculateTimeLeft(selectedProduct.expiration_date)}
+                    </Text>            
             </View>
             <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Location:</Text>
