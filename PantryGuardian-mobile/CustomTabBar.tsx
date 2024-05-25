@@ -71,11 +71,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 80,
-    backgroundColor: colors.background,
-    shadowColor: colors.background,
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: colors.navBackground,
+    borderTopColor: colors.border,
+    borderWidth: .3,
     paddingBottom: 20,
   },
   tabButton: {

@@ -51,7 +51,7 @@ const LoginScreen = () => {
             />
           }
         />
-        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.buttonContainer} onPress={handleLogin}>Login</Button>
+        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.button} onPress={handleLogin}>Login</Button>
         {error ? <Text style={GlobalStyles.errorMessage}>{error}</Text> : null}
       </View>
       <TouchableOpacity onPress={() => navigation.navigate({ name: 'Registration', params: {} })}>

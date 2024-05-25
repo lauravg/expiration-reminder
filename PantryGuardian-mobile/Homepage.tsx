@@ -146,6 +146,7 @@ const Homepage = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={GlobalStyles.searchInput}
+          theme={{ colors: {primary: colors.primary} }}
         />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={GlobalStyles.filterContainer}>
@@ -169,7 +170,7 @@ const Homepage = () => {
                     {product.location}
                     </Text>
                   </View>
-                  <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date, 'MMM dd yyyy', new Date()) < new Date() ? GlobalStyles.expirationText : {color: 'black'}]}>
+                  <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date, 'MMM dd yyyy', new Date()) < new Date() ? GlobalStyles.expirationText : {color: colors.onProductBackground}]}>
                       {calculateDaysLeft(product.expiration_date)}
                     </Text>
                 </View>
@@ -197,8 +198,10 @@ const Homepage = () => {
             </View>
             <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Time until Expiration:</Text>
-              <Text style={[GlobalStyles.detailValue, GlobalStyles.expirationText]}>{calculateDaysLeft(selectedProduct.expiration_date)}</Text>
-            </View>
+              <Text style={[GlobalStyles.expirationText, selectedProduct.expiration_date && parse(selectedProduct.expiration_date, 'MMM dd yyyy', new Date()) < new Date() ? GlobalStyles.expirationText : {color: colors.onProductBackground}]}>
+                      {calculateDaysLeft(selectedProduct.expiration_date)}
+                    </Text>
+              </View>
             <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Location:</Text>
               <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
@@ -210,9 +213,9 @@ const Homepage = () => {
               </View>
             )}
           </View>
-          <View style={GlobalStyles.buttonContainer}>
+          <View style={GlobalStyles.modalButton}>
             <Button theme={{ colors: {primary: colors.primary} }} onPress={() => selectedProduct && handleUpdate(selectedProduct)}>
-              Update
+              Modify
             </Button>
             <Button theme={{ colors: {primary: colors.primary} }} onPress={() => handleDelete(selectedProduct)}>
               Delete

@@ -5,8 +5,9 @@ const GlobalStyles = StyleSheet.create({
   // Container
   container: {
     flex: 1,
-    paddingTop: 40,
-    backgroundColor: colors.primaryBackground,
+    padding: 20,
+    paddingTop: 60,
+    backgroundColor: colors.background,
     ...(Platform.OS === 'web' && {
       width: '80%',
       justifyContent: 'center',
@@ -15,15 +16,13 @@ const GlobalStyles = StyleSheet.create({
   },
 
   scrollContainer: {
-    flexGrow: 1,
-    padding: 20,
+    // padding: 20,
   },
 
   // Login and Registration
   loginContainer: {
     justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
+    paddingVertical: 60,
     ...(Platform.OS === 'web' && {
       width: 600,
       alignSelf: 'center',
@@ -77,12 +76,6 @@ const GlobalStyles = StyleSheet.create({
   },
 
 
-  // Search
-  searchInput: {
-    marginVertical: 10,
-  },
-
-
   // Filter
   filterContainer: {
     flexDirection: 'row',
@@ -107,7 +100,7 @@ const GlobalStyles = StyleSheet.create({
 
   // Modal
   modalContent: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.productBackground,
     padding: 20,
     borderRadius: 10,
     elevation: 5,
@@ -140,17 +133,28 @@ const GlobalStyles = StyleSheet.create({
 
   
   // Button
-  buttonContainer: {
+  button: {
+    marginTop: 20,
+  },
+
+  modalButton: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 20,
   },
 
-
   // Input
   input: {
     marginBottom: 10,
+    backgroundColor: colors.input,
   },
+
+  // Search
+  searchInput: {
+      marginVertical: 10,
+      backgroundColor: colors.input,
+  },
+
 
   // Product Details (Modal)
   productDetails: {
@@ -190,8 +194,8 @@ const GlobalStyles = StyleSheet.create({
     paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderRadius: 10,
-    borderColor: '#ddd',
-    backgroundColor: colors.background,
+    borderColor: colors.border,
+    backgroundColor: colors.productBackground,
   },
 
   // Product Information
@@ -208,7 +212,7 @@ const GlobalStyles = StyleSheet.create({
   },
 
   location: {
-    marginBottom: 5,
+    marginTop: 5,
     fontSize: 12,
     ...(Platform.OS === 'web' && {
       width: 120,

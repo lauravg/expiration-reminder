@@ -15,6 +15,7 @@ import AddProductScreen from './AddProductScreen';  // Adjust the path as necess
 import CustomTabBar from './CustomTabBar'; // Import the custom tab bar
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
+import WastedList from './WastedListScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -56,7 +57,7 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
         }}
         options={{ headerShown: false }}
       />
-      <Tab.Screen name="Wasted" component={Settings} options={{ headerShown: false }}/>
+      <Tab.Screen name="Wasted" component={WastedList} options={{ headerShown: false }}/>
       <Tab.Screen name="Settings" component={Settings} options={{ headerShown: false }}/>
     </Tab.Navigator>
   );

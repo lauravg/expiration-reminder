@@ -63,7 +63,7 @@ const RegistrationScreen = () => {
             />
           }
         />
-        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.buttonContainer} onPress={handleRegistration}>Register</Button>
+        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.button} onPress={handleRegistration}>Register</Button>
         {error ? <Text style={GlobalStyles.errorMessage}>{error}</Text> : null}
       </View>
   );
