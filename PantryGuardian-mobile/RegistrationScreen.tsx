@@ -4,6 +4,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Button, TextInput as PaperTextInput, TextInput} from 'react-native-paper';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests'
+import { colors } from './theme';
 
 const RegistrationScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
@@ -20,8 +21,8 @@ const RegistrationScreen = () => {
 
 
   return (
-    <View style={[GlobalStyles.container, styles.RegistrationContainer]}>
-      <Image style={styles.logo} source={require('./assets/PantryGuardian-logo.png')} />
+    <View style={[GlobalStyles.container, GlobalStyles.loginContainer]}>
+      <Image style={GlobalStyles.loginLogo} source={require('./assets/green-logo.png')} />
       <PaperTextInput
           style={GlobalStyles.input}
           mode="outlined"
@@ -62,30 +63,13 @@ const RegistrationScreen = () => {
             />
           }
         />
-        <Button mode="contained" style={GlobalStyles.button} onPress={handleRegistration}>Submit</Button>
+        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.buttonContainer} onPress={handleRegistration}>Register</Button>
         {error ? <Text style={GlobalStyles.errorMessage}>{error}</Text> : null}
       </View>
   );
 };
 
 const styles = StyleSheet.create({
-  RegistrationContainer: {
-    flex: 1,
-    margin: 20,
-    ...(Platform.OS === 'web' && {
-      width: 600,
-      alignSelf: 'center',
-    }),
-  },
-
-  logo: {
-    borderRadius: 100,
-    width: 200,
-    height: 200,
-    marginBottom: 40,
-    alignSelf: 'center',
-  },
-
 
 });
 

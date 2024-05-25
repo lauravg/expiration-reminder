@@ -1,8 +1,12 @@
 import { Platform, StyleSheet } from 'react-native';
+import { colors, theme } from './theme';
 
 const GlobalStyles = StyleSheet.create({
+  // Container
   container: {
     flex: 1,
+    paddingTop: 40,
+    backgroundColor: colors.primaryBackground,
     ...(Platform.OS === 'web' && {
       width: '80%',
       justifyContent: 'center',
@@ -15,6 +19,32 @@ const GlobalStyles = StyleSheet.create({
     padding: 20,
   },
 
+  // Login and Registration
+  loginContainer: {
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    ...(Platform.OS === 'web' && {
+      width: 600,
+      alignSelf: 'center',
+    }),
+  },
+
+  loginLogo: {
+    borderRadius: 100,
+    width: 250,
+    height: 250,
+    marginBottom: 40,
+    alignSelf: 'center',
+  },
+
+  registerLink: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: colors.primary,
+  },
+
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -29,25 +59,16 @@ const GlobalStyles = StyleSheet.create({
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
   },
 
-  addButton: {
-    marginBottom: 30,
-    ...(Platform.OS === 'web' && {
-      width: 200,
-    }),
-  },
 
-  links: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-
-  linkButton: {
-    flex: 1,
-  },
+  // // Links
+  // link: {
+  //   flex: 1,
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-evenly',
+  //   // marginBottom: 20,
+  // },
 
   sectionHeader: {
     fontSize: 20,
@@ -55,8 +76,38 @@ const GlobalStyles = StyleSheet.create({
     marginBottom: 10,
   },
 
+
+  // Search
+  searchInput: {
+    marginVertical: 10,
+  },
+
+
+  // Filter
+  filterContainer: {
+    flexDirection: 'row',
+    marginVertical: 10,
+  },
+
+  filterButton: {
+    paddingHorizontal: 10,
+  },
+
+  filterText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.secondary,
+  },
+
+  activeFilterText: {
+    fontSize: 16,
+    color: colors.primary,
+    textDecorationLine: 'underline',
+  },
+
+  // Modal
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: colors.surface,
     padding: 20,
     borderRadius: 10,
     elevation: 5,
@@ -72,6 +123,36 @@ const GlobalStyles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  pickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  picker: {
+    flex: 1,
+    marginRight: 10,
+  },
+
+  detailValue: {
+    flex: 1,
+  },
+
+  
+  // Button
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+  },
+
+
+  // Input
+  input: {
+    marginBottom: 10,
+  },
+
+  // Product Details (Modal)
   productDetails: {
     flexDirection: 'column',
     marginBottom: 5,
@@ -87,42 +168,9 @@ const GlobalStyles = StyleSheet.create({
     marginRight: 10,
   },
 
-  detailValue: {
-    flex: 1,
-  },
 
-  pickerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-
-  picker: {
-    flex: 1,
-    marginRight: 10,
-  },
-
-  colorPicker: {
-    backgroundColor: '#E0E0E0',
-    elevation: 0,
-  },
-
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 20,
-  },
-
-  input: {
-    marginBottom: 10,
-  },
-
+  // Product Container
   productList: {
-    // backgroundColor: '#FFFFFF',
-    // borderRadius: 10,
-    // paddingHorizontal: 15,
-    // paddingVertical: 5,
-
     ...(Platform.OS === 'web' && {
       width: '80%',
       height: 600,
@@ -143,12 +191,13 @@ const GlobalStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderRadius: 10,
     borderColor: '#ddd',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
 
+  // Product Information
   productInfo: {
-    flexWrap: 'wrap',
     width: '65%',
+    flexDirection: 'column',
   },
 
   productName: {
@@ -158,16 +207,9 @@ const GlobalStyles = StyleSheet.create({
     width: '100%',
   },
 
-  badgeContainer: {
-    flexDirection: 'column',
-    width: '25%',
-
-  },
-
-  badge: {
+  location: {
     marginBottom: 5,
     fontSize: 12,
-    width: '100%',
     ...(Platform.OS === 'web' && {
       width: 120,
       fontSize: 14,
@@ -177,20 +219,24 @@ const GlobalStyles = StyleSheet.create({
   },
 
   expirationText: {
-    color: 'red',
+    color: colors.error,
   },
 
-  timeLeft: {
+  expirationTextContainer: {
     textAlign: 'center',
-    color: 'red',
+    width: '25%',
   },
 
-  button: {},
-  settingsIcon: {},
+  // Error
   errorMessage: {
-    color: 'red',
+    color: colors.error,
     textAlign: 'center',
     marginTop: 10,
+  },
+
+  // Settings
+  settingsIcon: {
+
   },
 });
 

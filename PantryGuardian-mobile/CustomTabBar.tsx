@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-
+import {colors} from './theme'
 interface CustomTabBarProps extends BottomTabBarProps {
   toggleAddProductModal: () => void;
 }
@@ -33,7 +33,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
               onPress={toggleAddProductModal} // Handle the modal toggle here
               style={styles.addButton}
             >
-              <MaterialIcons name="add" size={40} color="#FFFFFF" />
+              <MaterialIcons name="add" size={40} color={colors.onPrimary} />
             </TouchableOpacity>
           );
         }
@@ -43,8 +43,8 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
           iconName = 'kitchen';
         } else if (route.name === 'Recipe') {
           iconName = 'restaurant';
-        } else if (route.name === 'Health') {
-          iconName = 'health-and-safety';
+        } else if (route.name === 'Wasted') {
+          iconName = 'compost';
         } else if (route.name === 'Settings') {
           iconName = 'settings';
         }
@@ -58,7 +58,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
             <MaterialIcons
               name={iconName}
               size={24}
-              color={isFocused ? '#663399' : '#665a6f'}
+              color={isFocused ? colors.primary : colors.secondary}
             />
           </TouchableOpacity>
         );
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 80,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: colors.background,
+    shadowColor: colors.background,
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
@@ -82,12 +82,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    // TBD change tabButton color
   },
   addButton: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#663399',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: -20,

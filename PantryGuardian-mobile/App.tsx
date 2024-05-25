@@ -31,8 +31,8 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
             iconName = 'kitchen';
           } else if (route.name === 'Recipe') {
             iconName = 'restaurant';
-          } else if (route.name === 'Health') {
-            iconName = 'health-and-safety';
+          } else if (route.name === 'Wasted') {
+            iconName = 'compost';
           } else if (route.name === 'Settings') {
             iconName = 'settings';
           } else if (route.name === 'AddProduct') {
@@ -40,13 +40,11 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
           }
 
           return <MaterialIcons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: 'green',
-        tabBarInactiveTintColor: 'gray',
+        }
       })}
     >
-      <Tab.Screen name="Inventory" component={Homepage} />
-      <Tab.Screen name="Recipe" component={Recipes} />
+      <Tab.Screen name="Inventory" component={Homepage} options={{ headerShown: false }}/>
+      <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }}/>
       <Tab.Screen
         name="AddProduct"
         component={() => null} // We don't actually want to navigate to this screen
@@ -56,9 +54,10 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
             toggleAddProductModal(); // Open the modal instead
           },
         }}
+        options={{ headerShown: false }}
       />
-      <Tab.Screen name="Health" component={Settings} />
-      <Tab.Screen name="Settings" component={Settings} />
+      <Tab.Screen name="Wasted" component={Settings} options={{ headerShown: false }}/>
+      <Tab.Screen name="Settings" component={Settings} options={{ headerShown: false }}/>
     </Tab.Navigator>
   );
 }

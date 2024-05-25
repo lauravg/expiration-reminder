@@ -3,6 +3,7 @@ import { View, TouchableWithoutFeedback } from 'react-native';
 import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import GlobalStyles from './GlobalStyles';
+import { colors } from './theme';
 
 interface AddProductScreenProps {
   visible: boolean;
@@ -55,13 +56,13 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ visible, onClose })
             onChangeText={text => setExpirationDate(text)}
           />
           <PaperTextInput style={GlobalStyles.input} mode="outlined" label="Barcode Number (optional)" />
-          <Button style={GlobalStyles.button} onPress={() => setLocation('')}>
+          <Button theme={{ colors: {primary: colors.primary} }} onPress={() => setLocation('')}>
             {location ? 'Location: ' + location : 'Select Location'}
           </Button>
-          <Button style={GlobalStyles.button} onPress={() => setCategory('')}>
+          <Button theme={{ colors: {primary: colors.primary} }} onPress={() => setCategory('')}>
             {category ? 'Category: ' + category : 'Select Category'}
           </Button>
-          <Button mode="contained" style={GlobalStyles.button} onPress={handleAddProduct}>
+          <Button mode="contained" theme={{ colors: {primary: colors.primary} }} onPress={handleAddProduct}>
             Submit
           </Button>
           {isDatePickerVisible && <Calendar onDayPress={(day) => handleExpirationDateChange(day.dateString)} />}
