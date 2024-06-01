@@ -1,0 +1,122 @@
+  import React, { useState } from 'react';
+  import { View, TouchableWithoutFeedback } from 'react-native';
+  import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
+  import { Calendar } from 'react-native-calendars';
+  import { Picker } from '@react-native-picker/picker';
+  import GlobalStyles from './GlobalStyles';
+  import { colors } from './theme';
+
+  interface AddProductModalProps {
+    visible: boolean;
+    onClose: () => void;
+  }
+
+  const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose }) => {
+    const [productName, setProductName] = useState('');
+    const [expirationDate, setExpirationDate] = useState('');
+    const [location, setLocation] = useState('');
+    const [category, setCategory] = useState('');
+    const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+    const [locationModalVisible, setLocationModalVisible] = useState(false);
+    const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+
+    const handleExpirationDateChange = (date: string) => {
+      setExpirationDate(date);
+      setIsDatePickerVisible(false); // Close date picker when a date is selected
+    };
+
+    const handleExpirationDateFocus = () => {
+      setIsDatePickerVisible(true);
+    };
+
+    const handleExpirationDateBlur = () => {
+      setIsDatePickerVisible(false);
+    };
+
+    const handleLocationChange = (value: string) => {
+      setLocation(value);
+      setLocationModalVisible(false);
+    };
+
+    const handleCategoryChange = (value: string) => {
+      setCategory(value);
+      setCategoryModalVisible(false);
+    };
+
+    const handleAddProduct = () => {
+      // Handle adding the product
+      onClose();
+    };
+
+    return (
+      <PaperModal visible={visible} onDismiss={onClose} contentContainerStyle={GlobalStyles.modalContent}>
+        <TouchableWithoutFeedback onPress={() => setIsDatePickerVisible(false)}>
+          <View>
+            <PaperTextInput
+              style={GlobalStyles.input}
+              mode="outlined"
+              label="Enter the product name"
+              value={productName}
+              onChangeText={text => setProductName(text)}
+            />
+            <PaperTextInput
+              style={GlobalStyles.input}
+              mode="outlined"
+              label="Expiration Date (MM/DD/YYYY)"
+              value={expirationDate}
+              onFocus={handleExpirationDateFocus}
+              onBlur={handleExpirationDateBlur}
+              onChangeText={text => setExpirationDate(text)}
+            />
+            <PaperTextInput style={GlobalStyles.input} mode="outlined" label="Barcode Number (optional)" />
+            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setLocationModalVisible(true)}>
+              {location ? 'Location: ' + location : 'Select Location'}
+            </Button>
+            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setCategoryModalVisible(true)}>
+              {category ? 'Category: ' + category : 'Select Category'}
+            </Button>
+            <Button mode="contained" theme={{ colors: { primary: colors.primary } }} onPress={handleAddProduct}>
+              Submit
+            </Button>
+            {isDatePickerVisible && <Calendar onDayPress={(day) => handleExpirationDateChange(day.dateString)} />}
+          </View>
+        </TouchableWithoutFeedback>
+
+        <PaperModal visible={locationModalVisible} onDismiss={() => setLocationModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
+          <View style={GlobalStyles.pickerContainer}>
+            <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={handleLocationChange}>
+              <Picker.Item label="Select Location" value="" />
+              <Picker.Item label="Pantry" value="Pantry" />
+              <Picker.Item label="Fridge" value="Fridge" />
+              <Picker.Item label="Freezer (Kitchen)" value="Freezer (Kitchen)" />
+              <Picker.Item label="Freezer (Downstairs)" value="Freezer (Downstairs)" />
+              <Picker.Item label="Liquor Cabinet" value="Liquor Cabinet" />
+            </Picker>
+          </View>
+        </PaperModal>
+
+        <PaperModal visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
+          <Picker selectedValue={category} style={GlobalStyles.input} onValueChange={(itemValue) => handleCategoryChange(itemValue)}>
+            <Picker.Item label="Select Category" value="" />
+            <Picker.Item label="Food" value="Food" />
+            <Picker.Item label="Baby Food" value="Baby Food" />
+            <Picker.Item label="Veggies" value="Veggies" />
+            <Picker.Item label="Meat" value="Meat" />
+            <Picker.Item label="Fish" value="Fish" />
+            <Picker.Item label="Fruits" value="Fruits" />
+            <Picker.Item label="Sauce/Dressing" value="Sauce" />
+            <Picker.Item label="Spices" value="Spices" />
+            <Picker.Item label="Juice/Beverages" value="Juice/Beverages" />
+            <Picker.Item label="Liquor" value="Liquor" />
+            <Picker.Item label="Wine" value="Wine" />
+            <Picker.Item label="Beer" value="Beer" />
+            <Picker.Item label="Whisky" value="Whisky" />
+            <Picker.Item label="Sparkling" value="Bubbly" />
+            <Picker.Item label="Others" value="Others" />
+          </Picker>
+        </PaperModal>
+      </PaperModal>
+    );
+  };
+
+  export default AddProductModal;

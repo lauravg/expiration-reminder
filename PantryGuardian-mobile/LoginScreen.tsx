@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native'; // Add TouchableOpacity for the registration link
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { Button, TextInput as PaperTextInput, TextInput} from 'react-native-paper';
+import { Button, TextInput as PaperTextInput, TextInput } from 'react-native-paper';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests'
 import { colors } from './theme';
@@ -14,17 +14,20 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false); // State to manage password visibility
   const requests = new Requests();
 
-  const handleLogin = async () => {
-    requests.handleLogin(email, password).then((success) => {
-      if (success) {
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const response = await requests.handleLogin(email, password);
+      if (response) {
+        console.info('Login successful');
         navigation.navigate({ name: 'Main', params: {} });
       } else {
-          setError('Login failed.');
+        setError('Login failed.');
       }
-    }).catch((err) => {
+    } catch (error) {
       setError('Login failed. Please check your credentials');
-    })
+    }
   };
+
 
 
   return (
@@ -51,7 +54,7 @@ const LoginScreen = () => {
             />
           }
         />
-        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.button} onPress={handleLogin}>Login</Button>
+        <Button mode="contained" theme={{ colors: { primary: colors.primary } }} style={GlobalStyles.button} onPress={(e) => handleLogin(email, password)}> Login </Button>
         {error ? <Text style={GlobalStyles.errorMessage}>{error}</Text> : null}
       </View>
       <TouchableOpacity onPress={() => navigation.navigate({ name: 'Registration', params: {} })}>

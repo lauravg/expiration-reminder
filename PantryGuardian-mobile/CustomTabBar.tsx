@@ -58,7 +58,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
             <MaterialIcons
               name={iconName}
               size={24}
-              color={isFocused ? colors.primary : colors.secondary}
+              color={isFocused ? colors.primary : colors.icon}
             />
           </TouchableOpacity>
         );

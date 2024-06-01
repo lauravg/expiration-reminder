@@ -565,7 +565,7 @@ def update_product(id):
 
 
 # Route to delete a product
-@app.route("/delete_product/<string:id>")
+@app.route("/delete_product")
 @login_required
 def delete_product(id):
     success = product_mgr.delete_product(id)
@@ -576,23 +576,34 @@ def delete_product(id):
 
 
 # Route to mark a product as wasted
-@app.route("/waste_product/<string:id>")
+@app.route("/waste_product/<string:id>", methods=["POST"])
 @login_required
 def waste_product(id):
+    idToken = request.headers.get("idToken")
+    if not idToken or len(idToken) < 10:
+        log.error("idToken missing or invalid format")
+        return jsonify({"success": False, "error": "idToken missing or invalid format"}), 400
+
+    uid = auth_mgr.user_id_from_token(idToken)
+    if uid is None:
+        log.error("Cannot verify id token")
+        return jsonify({"success": False, "error": "Cannot verify id token"}), 401
+
     product = product_mgr.get_product(id)
     if product is None:
-        return "Product not found", 404
+        log.error(f"Product with ID {id} not found")
+        return jsonify({"success": False, "error": "Product not found"}), 404
 
-    # Update the 'wasted_status' field of the product in Firebase to mark it as wasted
+    log.info(f"Marking product {product.id} as wasted")
     product.wasted = True
-    # TODO: Timezone should be whatever the user's timezone is. Need to get
-    #       that info from the browser
-    product.wasted_timestamp = ProductManager.parse_import_date(
-        datetime.now(pt_timezone).strftime("%d %b %Y")
-    )
+    product.wasted_timestamp = int(datetime.now().timestamp() * 1000)
+
     if not product_mgr.add_product(product):
-        return "Unable to update product to wasted state", 500
-    return redirect("/")
+        log.error(f"Failed to update product with ID {product.id} in the database")
+        return jsonify({"success": False, "error": "Unable to update product to wasted state"}), 500
+
+    log.info(f"Product {product.id} successfully marked as wasted")
+    return jsonify({"success": True})
 
 
 # Route to view the list of wasted products

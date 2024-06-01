@@ -7,6 +7,7 @@ const colors = {
   primaryLightLight:'rgba(185, 246, 202, .1)',
   secondary: '#665a6f',
   secondaryLight: 'rgba(102,90,111,.5)',
+  icon: '#4f4f4f',
   background: 'rgba(56, 142, 60, .1)',
   input: 'rgba(255,255,255,.6)',  
   productBackground: 'rgba(255,255,255,.8)',

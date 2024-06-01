@@ -6,16 +6,19 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Import your screens
-import Homepage from './Homepage';  // Adjust the path as necessary
-import Login from './LoginScreen';  // Adjust the path as necessary
-import Registration from './RegistrationScreen';  // Adjust the path as necessary
-import AddProductScreen from './AddProductScreen';  // Adjust the path as necessary
+// Import screens
+import Homepage from './Homepage';
+import Login from './LoginScreen';
+import Registration from './RegistrationScreen';
+import AddProductModal from './AddProductModal';
+import AccountDetailsScreen from './AccountDetailsModal';
 
-import CustomTabBar from './CustomTabBar'; // Import the custom tab bar
+import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
-import WastedList from './WastedListScreen';
+import WastedProducts from './WastedProductScreen';
+import { colors } from './theme';
+import { IconButton } from 'react-native-paper';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -48,17 +51,58 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
       <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }}/>
       <Tab.Screen
         name="AddProduct"
-        component={() => null} // We don't actually want to navigate to this screen
-        listeners={{
-          tabPress: e => {
-            e.preventDefault(); // Prevent default action
-            toggleAddProductModal(); // Open the modal instead
-          },
-        }}
         options={{ headerShown: false }}
+      >
+        {() => null}
+      </Tab.Screen>
+      <Tab.Screen
+        name="Wasted"
+        component={WastedProducts}
+        options={({ navigation }) => ({
+          headerLeft: () => (
+            <IconButton
+              icon="arrow-left"
+              size={24}
+              iconColor={colors.icon}
+              onPress={() => navigation.goBack()}
+            />
+          ),
+          headerTitle: 'WastedProducts',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            color: colors.primary,
+          },
+          headerStyle: {
+            backgroundColor: colors.background,
+            elevation: 0, // Remove shadow on Android
+            shadowOpacity: 0, // Remove shadow on iOS
+          },
+        })}  
       />
-      <Tab.Screen name="Wasted" component={WastedList} options={{ headerShown: false }}/>
-      <Tab.Screen name="Settings" component={Settings} options={{ headerShown: false }}/>
+      <Tab.Screen
+        name="Settings"
+        component={Settings}
+        options={({ navigation }) => ({
+          headerLeft: () => (
+            <IconButton
+              icon="arrow-left"
+              size={24}
+              iconColor={colors.icon}
+              onPress={() => navigation.goBack()}
+            />
+          ),
+          headerTitle: 'Settings',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            color: colors.primary,
+          },
+          headerStyle: {
+            backgroundColor: colors.background,
+            elevation: 0, // Remove shadow on Android
+            shadowOpacity: 0, // Remove shadow on iOS
+          },
+        })}  
+      />     
     </Tab.Navigator>
   );
 }
@@ -76,10 +120,36 @@ export default function App() {
         <Stack.Navigator initialRouteName="Login">
           <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
           <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
-          <Stack.Screen name="Main" component={() => <MainTabs toggleAddProductModal={toggleAddProductModal} />} options={{ headerShown: false }} />
+          <Stack.Screen name="Main" options={{ headerShown: false }}>
+            {() => <MainTabs toggleAddProductModal={toggleAddProductModal} />}
+          </Stack.Screen>
+          <Stack.Screen
+            name="AccountDetails"
+            component={AccountDetailsScreen}
+            options={({ navigation }) => ({
+              headerLeft: () => (
+                <IconButton
+                  icon="arrow-left"
+                  size={24}
+                  iconColor={colors.icon}
+                  onPress={() => navigation.goBack()}
+                />
+              ),
+              headerTitle: 'My Account',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+                color: colors.primary,
+              },
+              headerStyle: {
+                backgroundColor: colors.background,
+                elevation: 0, // Remove shadow on Android
+                shadowOpacity: 0, // Remove shadow on iOS
+              },
+            })}
+          />
         </Stack.Navigator>
         <StatusBar style="auto" />
-        <AddProductScreen visible={addProductModalVisible} onClose={toggleAddProductModal} />
+        <AddProductModal visible={addProductModalVisible} onClose={toggleAddProductModal} />
       </NavigationContainer>
     </SafeAreaProvider>
   );

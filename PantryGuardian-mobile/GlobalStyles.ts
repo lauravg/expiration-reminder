@@ -15,6 +15,13 @@ const GlobalStyles = StyleSheet.create({
     }),
   },
 
+  containerWithHeader: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: colors.background, 
+  },
+
   scrollContainer: {
     // padding: 20,
   },
@@ -60,19 +67,11 @@ const GlobalStyles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-
-  // // Links
-  // link: {
-  //   flex: 1,
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-evenly',
-  //   // marginBottom: 20,
-  // },
-
   sectionHeader: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: colors.primary,
   },
 
 
@@ -238,9 +237,30 @@ const GlobalStyles = StyleSheet.create({
     marginTop: 10,
   },
 
-  // Settings
-  settingsIcon: {
-
+  //Settings
+  preference: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  accountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  accountInfo: {
+    marginLeft: 16,
+  },
+  accountText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  accountEmail: {
+    fontSize: 14,
+    color: colors.secondary,
   },
 });
 

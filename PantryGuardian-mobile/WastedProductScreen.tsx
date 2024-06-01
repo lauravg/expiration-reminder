@@ -1,57 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
-import { Button, List, Modal as PaperModal, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
+import { View, Text, ScrollView, StyleSheet, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
+import { List, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { parse, differenceInDays } from 'date-fns';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
-
 import Requests from './Requests';
 import { Product } from './Product';
 
-const Homepage = () => {
+const WastedListScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [addProductModalVisible, setAddProductModalVisible] = useState(false);
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
   const requests = new Requests();
 
-  const handleAddProductPress = () => {
-    setAddProductModalVisible(true);
-  };
-
-  const handleAddProduct = () => {
-    setAddProductModalVisible(false);
-  };
-
   const handleProductSelect = (product: Product) => {
+    console.log('Product selected:', product); // Log the entire product object
     setSelectedProduct(product);
   };
-
-  const handleDelete = async (product: Product) => {
-    const success = await requests.deleteProduct(product.product_id);
-    if (success) {
-      setProducts(products.filter(p => p.product_id !== product.product_id));
-      setSelectedProduct(null);
-    } else {
-      console.error('Failed to delete product');
-    } 
-  };
-
-  const handleWaste = async (product: Product) => {
-    const success = await requests.wasteProduct(product.product_id);
-    if (success) {
-      setProducts(products.map(p => p.product_id === product.product_id ? { ...p, wasted: true } : p));
-      setSelectedProduct(null);
-    } else {
-      console.error('Failed to mark product as wasted');
-    }
-  };  
 
   const calculateDaysLeft = (expirationDate: string | null): string => {
     if (!expirationDate) {
@@ -73,8 +43,8 @@ const Homepage = () => {
 
   useEffect(() => {
     requests.listProducts().then((products) => {
-      const nonWastedProducts = products.filter((product) => !product.wasted);
-      setProducts(nonWastedProducts);
+      const wastedProducts = products.filter((product) => product.wasted);
+      setProducts(wastedProducts);
     });
   }, []);
 
@@ -87,20 +57,8 @@ const Homepage = () => {
   const uniqueLocations = ['All', ...new Set(products.map(product => product.location))];
 
   return (
-    <View style={GlobalStyles.container}>
+    <View style={GlobalStyles.containerWithHeader}>
       <ScrollView contentContainerStyle={GlobalStyles.scrollContainer}>
-        <View style={GlobalStyles.header}>
-          <View style={GlobalStyles.headerLeft}>
-            <Text style={GlobalStyles.welcomeText}>Welcome Laura!</Text>
-          </View>
-          <IconButton
-            icon="cog"
-            size={24}
-            iconColor={colors.icon}
-            onPress={() => navigation.navigate({ name: 'Settings', params: {} })}
-          />
-        </View>
-        
         <PaperTextInput
           mode="outlined"
           label="What are you searching for?"
@@ -174,21 +132,12 @@ const Homepage = () => {
               </View>
             )}
           </View>
-          <View style={GlobalStyles.modalButton}>
-            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => selectedProduct}>
-              Modify
-            </Button>
-            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => handleDelete(selectedProduct)}>
-              Delete
-            </Button>
-            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => handleWaste(selectedProduct)}>
-              Waste
-            </Button>
-          </View>
         </PaperModal>
       )}
     </View>
   );
 };
 
-export default Homepage;
+const styles = StyleSheet.create({});
+
+export default WastedListScreen;
