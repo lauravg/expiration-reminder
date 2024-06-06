@@ -59,7 +59,7 @@ class HouseholdManager:
 
             # Next, add the households the user is a participant.
             query: Query = self.__collection().where(
-                filter=FieldFilter("participant", "array_contains", uid)
+                filter=FieldFilter("participants", "array_contains", uid)
             )
             for household in query.stream():
                 if household.id not in found_household_ids:
