@@ -7,11 +7,12 @@ import pytz
 import requests
 import secrets
 import sys
+import logging
 
 from absl import logging as log
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
-from firebase_admin.auth import UserRecord
+from firebase_admin.auth import UserRecord, InvalidIdTokenError, ExpiredIdTokenError
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 import flask_login
 from flask_login import LoginManager, login_user, logout_user, login_required
@@ -24,7 +25,6 @@ from recipe import RecipeGenerator
 from secrets_manager import SecretsManager
 from send_email import SendMail
 from user_manager import UserManager, User
-from flask import redirect  # Import redirect from Flask
 
 app = Flask(__name__)
 CORS(app)
@@ -33,6 +33,7 @@ secret_key = secrets.token_urlsafe(16)
 app.secret_key = secret_key
 app.config.update(SESSION_COOKIE_SECURE=True)
 
+logging.basicConfig(level=logging.INFO)
 
 log.set_verbosity(log.DEBUG if app.debug else log.INFO)
 
@@ -143,7 +144,7 @@ def login():
 
 
 @app.route("/auth", methods=["GET", "POST"])  # Allow both GET and POST requests
-def auth():
+def auth_route():
     """
     This auth method will take a username and password from the client, perform
     the login with Firebase and then forward the refresh and idToken to the
@@ -274,6 +275,30 @@ def settings():
         "settings.html", display_name=display_name, email=email, households=households
     )
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('idToken')
+        if not token:
+            logging.error("Token is missing!")
+            return jsonify({'message': 'Token is missing!'}), 403
+        try:
+            decoded_token = auth.verify_id_token(token)
+            logging.info(f"Decoded token: {decoded_token}")
+            current_user = user_manager.get_user(decoded_token['uid'])
+            logging.info(f"Current user: {current_user}")
+            flask_login.login_user(current_user)
+        except InvalidIdTokenError:
+            logging.error("Token is invalid!")
+            return jsonify({'message': 'Token is invalid!'}), 403
+        except ExpiredIdTokenError:
+            logging.error("Token has expired!")
+            return jsonify({'message': 'Token has expired!'}), 403
+        except Exception as e:
+            logging.error(f"Token verification failed: {str(e)}")
+            return jsonify({'message': 'Token verification failed!', 'error': str(e)}), 403
+        return f(*args, **kwargs)
+    return decorated
 
 # Update the route to include the display name
 @app.route("/", methods=["POST", "GET"])
@@ -514,81 +539,60 @@ def expired_date_input():
 
 
 # Route to update a product
-@app.route("/update_product/<string:id>", methods=["GET", "POST"])
-@login_required
+@app.route("/update_product/<string:id>", methods=["POST"])
+@token_required
 def update_product(id):
-    # Retrieve the product by its ID from Firebase
-    product = product_mgr.get_product(id)
+    try:
+        data = request.json
+        log.info(f"Received update for product {id}: {data}")
 
-    # Check if the product doesn't exist
-    if product is None:
-        return "Product not found", 404
+        product = product_mgr.get_product(id)
+        if not product:
+            return jsonify({"success": False, "error": "Product not found"}), 404
 
-    # Assign the 'product_id' to the product_data
-    if request.method == "POST":
-        # Update the product information
-        product.product_name = request.form["product-name"]
+        # Update product fields
+        product.product_name = data.get('product_name', product.product_name)
+        product.location = data.get('location', product.location)
+        product.category = data.get('category', product.category)
 
-        # Check if the 'No Expiration Date Button' is checked
-        if "no-expiration" in request.form and request.form["no-expiration"] == "on":
-            # Handle the case where there is no expiration date
-            product.expires = 0
-        else:
-            # Try to parse the expiration date in '%Y-%m-%d' format
-            expiration_date_str = request.form["expiration-date"]
+        expiration_date = data.get('expiration_date')
+        if expiration_date:
             try:
-                expiration_date = datetime.strptime(expiration_date_str, "%Y-%m-%d")
-                epoch_obj = datetime.utcfromtimestamp(0)
-                product.expires = int(
-                    (expiration_date - epoch_obj).total_seconds() * 1000
-                )
-            except ValueError:
-                # Handle the case where the date is not in the expected format
-                return "Invalid expiration date format"
+                product.expires = ProductManager.parse_import_date(expiration_date)
+            except ValueError as ve:
+                log.error(f"Invalid expiration date format: {expiration_date}, error: {ve}")
+                return jsonify({"success": False, "error": "Invalid expiration date format"}), 400
 
-        try:
-            # Update the product data in Firebase
-            product_mgr.add_product(product)
-            return redirect("/")
-        except Exception as e:
-            return jsonify({"error": str(e)})
-    else:
-        # The dates needs to be formatted in this exact wat to be set in the
-        # HTML date widget.
-        product_data = dict(product)
-        product_data["id"] = product.id
-        product_data["creation_html_date"] = product.creation_str(format="%Y-%m-%d")
-        product_data["expiration_html_date"] = product.expiration_str(format="%Y-%m-%d")
-        product_data["no_expiration"] = not product.does_expire
-        log.info("Expiration HTMl Date: '%s'", product_data["expiration_html_date"])
-        return render_template("update_product.html", product=product_data)
+        if not product_mgr.add_product(product):
+            log.error(f"Failed to update product {id}")
+            return jsonify({"success": False, "error": "Failed to update product"}), 500
+
+        log.info(f"Product {id} successfully updated")
+        return jsonify({"success": True})
+
+    except Exception as e:
+        log.error(f"Error updating product {id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-# Route to delete a product
-@app.route("/delete_product")
-@login_required
+
+@app.route("/delete_product/<string:id>", methods=["POST"])
+@token_required
 def delete_product(id):
+    user: User = flask_login.current_user
     success = product_mgr.delete_product(id)
     if not success:
-        return "Unable to delete product", 404
+        return jsonify({"success": False, "error": "Unable to delete product"}), 404
 
-    return redirect(request.referrer)
+    logging.info(f"User {user.get_id()} deleted product {id}")
+    return jsonify({"success": True})
 
 
 # Route to mark a product as wasted
 @app.route("/waste_product/<string:id>", methods=["POST"])
-@login_required
+@token_required
 def waste_product(id):
-    idToken = request.headers.get("idToken")
-    if not idToken or len(idToken) < 10:
-        log.error("idToken missing or invalid format")
-        return jsonify({"success": False, "error": "idToken missing or invalid format"}), 400
-
-    uid = auth_mgr.user_id_from_token(idToken)
-    if uid is None:
-        log.error("Cannot verify id token")
-        return jsonify({"success": False, "error": "Cannot verify id token"}), 401
-
+    user: User = flask_login.current_user
     product = product_mgr.get_product(id)
     if product is None:
         log.error(f"Product with ID {id} not found")
@@ -707,4 +711,4 @@ else:
 
 # Run the Flask app
 if __name__ == "__main__":
-    app.run(debug=True, port=8111)
+    app.run(debug=True, port=8081)

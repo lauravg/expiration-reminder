@@ -8,7 +8,7 @@ import { Product } from './Product';
 //   logout?: () => Promise<any>;
 // }
 
-const BASE_URL = "http://127.0.0.1:5000";
+const BASE_URL = "http://127.0.0.1:8081";
 
 class Requests {
   // TODO: These should be stored in secure storage to persist.
@@ -29,7 +29,7 @@ class Requests {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        Requests.refresh_token = response.data.rt;
+        // Requests.refresh_token = response.data.rt;
         Requests.idToken = response.data.it;
       } else {
         console.error('Login failed.');
@@ -74,16 +74,17 @@ class Requests {
   }
 
   async deleteProduct(productId: string): Promise<boolean> {
+    console.log('Sending delete request with token:', Requests.idToken);
     try {
       const response = await axios.post(
         `${BASE_URL}/delete_product/${productId}`,
         {},
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
             'idToken': Requests.idToken
           },
-          maxRedirects: 0 
+          maxRedirects: 0
         }
       );
 
@@ -107,7 +108,7 @@ class Requests {
         {},
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
             'idToken': Requests.idToken,
           },
           maxRedirects: 0,
@@ -123,6 +124,33 @@ class Requests {
       }
     } catch (error) {
       console.error('Failed to mark product as wasted', error);
+      return false;
+    }
+  }
+
+  async updateProduct(product: Product): Promise<boolean> {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/update_product/${product.product_id}`,
+        product,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'idToken': Requests.idToken
+          },
+          maxRedirects: 0
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        console.log('Product updated successfully');
+        return true;
+      } else {
+        console.error('Failed to update product');
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to update product', error);
       return false;
     }
   }
