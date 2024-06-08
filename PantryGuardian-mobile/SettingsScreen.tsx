@@ -4,11 +4,13 @@ import { Button, List, Divider, Avatar } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors, theme } from './theme';
+import Requests from './Requests';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [somethingElse, setDarkMode] = useState(false);
+  const displayName = Requests.displayName;
 
   const toggleNotifications = () => setNotificationsEnabled(!notificationsEnabled);
   const toggleDarkMode = () => setDarkMode(!somethingElse);
@@ -21,8 +23,8 @@ const SettingsScreen = () => {
             <View style={GlobalStyles.accountContainer}>
               <Avatar.Icon size={48} icon="account"         theme={{ colors: { primary: colors.primary } }} />
               <View style={GlobalStyles.accountInfo}>
-                <Text style={GlobalStyles.accountText}>Laura Greiner</Text>
-                <Text style={GlobalStyles.accountEmail}>lauravgreiner@gmail.com</Text>
+                <Text style={GlobalStyles.accountText}>{displayName}</Text>
+                <Text style={GlobalStyles.accountEmail}>Email TBD</Text>
               </View>
             </View>
           </TouchableOpacity>

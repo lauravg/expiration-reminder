@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native'; // Add TouchableOpacity for the registration link
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Button, TextInput as PaperTextInput, TextInput } from 'react-native-paper';
 import GlobalStyles from './GlobalStyles';
@@ -11,7 +11,7 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State to manage password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const requests = new Requests();
 
   const handleLogin = async (email: string, password: string) => {
@@ -19,7 +19,8 @@ const LoginScreen = () => {
       const response = await requests.handleLogin(email, password);
       if (response) {
         console.info('Login successful');
-        navigation.navigate({ name: 'Main', params: {} });
+        // Pass the username to the main screen
+        navigation.navigate({ name: 'Main', params: { displayName: Requests.displayName } });
       } else {
         setError('Login failed.');
       }
@@ -27,8 +28,6 @@ const LoginScreen = () => {
       setError('Login failed. Please check your credentials');
     }
   };
-
-
 
   return (
     <View style={[GlobalStyles.container, GlobalStyles.loginContainer]}>

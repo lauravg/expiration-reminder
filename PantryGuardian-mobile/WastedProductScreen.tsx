@@ -25,7 +25,7 @@ const WastedListScreen = () => {
 
   const calculateDaysLeft = (expirationDate: string | null): string => {
     if (!expirationDate) {
-      return 'Invalid date';
+      return '';
     }
     const parsedDate = parse(expirationDate, 'MMM dd yyyy', new Date());
     const today = new Date();

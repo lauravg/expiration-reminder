@@ -14,6 +14,7 @@ class Requests {
   // TODO: These should be stored in secure storage to persist.
   static refresh_token = "";
   static idToken = "";
+  static displayName = "";
 
   constructor() {}
 
@@ -24,13 +25,17 @@ class Requests {
         qs.stringify({ email, password }),
         {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          maxRedirects: 0 // Prevent axios from following redirects
+          // Prevent axios from following redirects
+          maxRedirects: 0
         }
       );
 
       if (response.status >= 200 && response.status < 300) {
-        // Requests.refresh_token = response.data.rt;
+        Requests.refresh_token = response.data.rt;
         Requests.idToken = response.data.it;
+        // Save the user's display name
+        Requests.displayName = response.data.display_name;
+    
       } else {
         console.error('Login failed.');
         throw new Error('Login failed');
@@ -42,6 +47,32 @@ class Requests {
     console.info('Login successful');
     return true;
   }
+
+    async register(name: string, email: string, password: string): Promise<boolean> {
+      try {
+        const response = await axios.post(
+          `${BASE_URL}/register`,
+          qs.stringify({ name, email, password }),
+          {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            // Prevent axios from following redirects
+            maxRedirects: 0
+          }
+        );
+  
+        if (response.status >= 200 && response.status < 300) {
+          console.log('Registration successful');
+          return true;
+        } else {
+          console.error('Registration failed');
+          return false;
+        }
+      } catch (error) {
+        console.error('Registration failed', error);
+        return false;
+      }
+    }
+
 
   // TODO: Add filters
   // TODO: Handle token needing refreshing.
@@ -55,7 +86,8 @@ class Requests {
             'Content-Type': 'application/x-www-form-urlencoded',
             'idToken': Requests.idToken
           },
-          maxRedirects: 0 // Prevent axios from following redirects
+          // Prevent axios from following redirects
+          maxRedirects: 0
         }
       );
 

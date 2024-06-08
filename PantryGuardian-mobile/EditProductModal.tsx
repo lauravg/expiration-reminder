@@ -54,8 +54,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
 
   const handleUpdateProduct = () => {
     if (product) {
-      // Format the date to match the expected format "%d %b %Y"
-      const formattedExpirationDate = expirationDate ? format(parse(expirationDate, 'yyyy-MM-dd', new Date()), 'dd MMM yyyy') : '';
+      const formattedExpirationDate = expirationDate ? format(parse(expirationDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') : '';
 
       const updatedProduct: Product = {
         ...product,

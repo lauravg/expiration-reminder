@@ -9,10 +9,10 @@ import { colors } from './theme';
 const AccountDetailsScreen = () => {
   const navigation = useNavigation();
 
-  const [email, setEmail] = useState('lauravgreiner@gmail.com');
-  const [username, setUsername] = useState('LauraGreiner');
-  const [firstName, setFirstName] = useState('Laura');
-  const [lastName, setLastName] = useState('Greiner');
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const pickImage = async () => {

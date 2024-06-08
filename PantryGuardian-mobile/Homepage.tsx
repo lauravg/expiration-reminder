@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { Button, List, Modal as PaperModal, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { parse, differenceInDays, format } from 'date-fns';
+import { useNavigation, NavigationProp, useRoute } from '@react-navigation/native';
+import { parse, differenceInDays, format, isValid } from 'date-fns';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests from './Requests';
@@ -18,6 +18,7 @@ const Homepage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [editProductModalVisible, setEditProductModalVisible] = useState(false);
+  const displayName = Requests.displayName;
 
   const requests = new Requests();
 
@@ -59,13 +60,13 @@ const Homepage = () => {
     }
   };
 
-
   const handleUpdateProduct = async (updatedProduct: Product) => {
     const success = await requests.updateProduct(updatedProduct);
     if (success) {
       setProducts(products.map(p => p.product_id === updatedProduct.product_id ? updatedProduct : p));
       setEditProductModalVisible(false);
-      setSelectedProduct(null); // Clear selected product after update
+       // Clear selected product after update
+      setSelectedProduct(null);
     } else {
       console.error('Failed to update product');
     }
@@ -75,14 +76,15 @@ const Homepage = () => {
     if (!expirationDate) {
       return '';
     }
+
     try {
-      const parsedDate = parse(expirationDate, 'dd MMM yyyy', new Date());
+      const parsedDate = parse(expirationDate, 'yyyy-MM-dd', new Date());
+      if (!isValid(parsedDate)) {
+        throw new Error('Invalid date');
+      }
+
       const today = new Date();
       const daysLeft = differenceInDays(parsedDate, today);
-
-      if (isNaN(daysLeft) || daysLeft === null) {
-        return '';
-      }
 
       if (daysLeft > 30) {
         const monthsLeft = Math.floor(daysLeft / 30);
@@ -93,7 +95,7 @@ const Homepage = () => {
 
       return `${daysLeft} days`;
     } catch (error) {
-      console.error('Error parsing date:', error);
+      console.error('Error parsing date:', expirationDate, error);
       return '';
     }
   };
@@ -101,11 +103,24 @@ const Homepage = () => {
   useEffect(() => {
     requests.listProducts().then((products) => {
       const nonWastedProducts = products.filter((product) => !product.wasted);
-      // Ensure the date format is consistent
-      const formattedProducts = nonWastedProducts.map(product => ({
-        ...product,
-        expiration_date: product.expiration_date ? format(new Date(product.expiration_date), 'dd MMM yyyy') : ''
-      }));
+      const formattedProducts = nonWastedProducts.map(product => {
+        let formattedExpirationDate = '';
+        if (product.expiration_date) {
+          try {
+            const parsedDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
+
+            if (isValid(parsedDate)) {
+              formattedExpirationDate = format(parsedDate, 'yyyy-MM-dd');
+            }
+          } catch (error) {
+            console.error('Error parsing expiration date:', product.expiration_date, error);
+          }
+        }
+        return {
+          ...product,
+          expiration_date: formattedExpirationDate
+        };
+      });
       setProducts(formattedProducts);
     });
   }, []);
@@ -123,7 +138,7 @@ const Homepage = () => {
       <ScrollView contentContainerStyle={GlobalStyles.scrollContainer}>
         <View style={GlobalStyles.header}>
           <View style={GlobalStyles.headerLeft}>
-            <Text style={GlobalStyles.welcomeText}>Welcome Laura!</Text>
+            <Text style={GlobalStyles.welcomeText}>Welcome {displayName}!</Text>
           </View>
           <IconButton
             icon="cog"
@@ -163,7 +178,7 @@ const Homepage = () => {
                       {product.location}
                     </Text>
                   </View>
-                  <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date, 'dd MMM yyyy', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
+                  <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date, 'yyyy-MM-dd', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
                     {calculateDaysLeft(product.expiration_date)}
                   </Text>
                 </View>
@@ -187,11 +202,13 @@ const Homepage = () => {
             </View>
             <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Expiration Date:</Text>
-              <Text style={GlobalStyles.detailValue}>{selectedProduct.expiration_date}</Text>
+              <Text style={GlobalStyles.detailValue}>
+                {selectedProduct.expiration_date ? format(parse(selectedProduct.expiration_date, 'yyyy-MM-dd', new Date()), 'yyyy MM dd') : 'N/A'}
+              </Text>
             </View>
             <View style={GlobalStyles.detailRow}>
               <Text style={GlobalStyles.detailLabel}>Time until Expiration:</Text>
-              <Text style={[GlobalStyles.expirationText, selectedProduct.expiration_date && parse(selectedProduct.expiration_date, 'dd MMM yyyy', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
+              <Text style={[GlobalStyles.expirationText, selectedProduct.expiration_date && parse(selectedProduct.expiration_date, 'yyyy-MM-dd', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
                 {calculateDaysLeft(selectedProduct.expiration_date)}
               </Text>
             </View>
