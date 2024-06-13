@@ -66,7 +66,7 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
               onPress={() => navigation.goBack()}
             />
           ),
-          headerTitle: 'WastedProducts',
+          headerTitle: 'Wasted Products',
           headerTitleStyle: {
             fontWeight: 'bold',
             color: colors.primary,

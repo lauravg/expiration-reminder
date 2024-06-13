@@ -1,10 +1,11 @@
 import { format, isValid, parse } from 'date-fns';
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, StyleSheet} from 'react-native';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { Product } from './Product';
 import ProductList from './ProductList';
+import { colors } from './theme';
 
 const WastedProductScreen = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,12 +66,12 @@ const WastedProductScreen = () => {
   }, []);
 
   return (
-    <View style={GlobalStyles.container}>
-      <ProductList
-        products={products}
-        onDelete={handleDelete}
-        onUpdateProduct={handleUpdateProduct}
-      />
+    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
+        <ProductList
+          products={products}
+          onDelete={handleDelete}
+          onUpdateProduct={handleUpdateProduct}
+        />
     </View>
   );
 };

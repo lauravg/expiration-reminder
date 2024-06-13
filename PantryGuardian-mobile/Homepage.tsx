@@ -69,7 +69,7 @@ const Homepage = () => {
   }, []);
 
   return (
-    <View style={GlobalStyles.container}>
+    <View style={[GlobalStyles.container, GlobalStyles.background]}>
       <View style={GlobalStyles.header}>
         <View style={GlobalStyles.headerLeft}>
           <Text style={GlobalStyles.welcomeText}>Welcome {displayName}!</Text>

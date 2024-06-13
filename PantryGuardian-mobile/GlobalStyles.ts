@@ -5,9 +5,7 @@ const GlobalStyles = StyleSheet.create({
   // Container
   container: {
     flex: 1,
-    padding: 20,
     paddingTop: 60,
-    backgroundColor: colors.background,
     ...(Platform.OS === 'web' && {
       width: '80%',
       justifyContent: 'center',
@@ -17,14 +15,18 @@ const GlobalStyles = StyleSheet.create({
 
   containerWithHeader: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: colors.background, 
   },
 
-  scrollContainer: {
-    // padding: 20,
+  content: {
+    paddingHorizontal: 30,
+    paddingBottom: 30,
+    flex: 1,
   },
+
+  background: {
+    backgroundColor: colors.background,
+  },
+
 
   // Login and Registration
   loginContainer: {
@@ -50,8 +52,11 @@ const GlobalStyles = StyleSheet.create({
     color: colors.primary,
   },
 
+
   // Header
   header: {
+    paddingLeft: 30,
+    paddingRight: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -97,6 +102,7 @@ const GlobalStyles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
+
   // Modal
   modalContent: {
     backgroundColor: colors.productBackground,
@@ -130,7 +136,7 @@ const GlobalStyles = StyleSheet.create({
     flex: 1,
   },
 
-  
+
   // Button
   button: {
     marginTop: 20,
@@ -142,16 +148,18 @@ const GlobalStyles = StyleSheet.create({
     marginTop: 20,
   },
 
+
   // Input
   input: {
     marginBottom: 10,
     backgroundColor: colors.input,
   },
 
+
   // Search
   searchInput: {
-      marginVertical: 10,
-      backgroundColor: colors.input,
+    marginVertical: 10,
+    backgroundColor: colors.input,
   },
 
 
@@ -197,6 +205,7 @@ const GlobalStyles = StyleSheet.create({
     backgroundColor: colors.productBackground,
   },
 
+
   // Product Information
   productInfo: {
     width: '65%',
@@ -230,12 +239,14 @@ const GlobalStyles = StyleSheet.create({
     width: '25%',
   },
 
+
   // Error
   errorMessage: {
     color: colors.error,
     textAlign: 'center',
     marginTop: 10,
   },
+
 
   //Settings
   preference: {
@@ -245,19 +256,23 @@ const GlobalStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
+
   accountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
+
   accountInfo: {
     marginLeft: 16,
   },
+
   accountText: {
     fontSize: 18,
     fontWeight: 'bold',
   },
+
   accountEmail: {
     fontSize: 14,
     color: colors.secondary,

@@ -91,45 +91,47 @@ const ProductList: React.FC<ProductListProps> = ({
     };
 
     return (
-        <View style={GlobalStyles.container}>
-            <ScrollView contentContainerStyle={GlobalStyles.scrollContainer}>
-                <PaperTextInput
-                    mode="outlined"
-                    label="What are you searching for?"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    style={GlobalStyles.searchInput}
-                    theme={{ colors: { primary: colors.primary } }}
-                />
+        <View style={GlobalStyles.containerWithHeader}>
+            <ScrollView>
+                <View style={GlobalStyles.content}>
+                    <PaperTextInput
+                        mode="outlined"
+                        label="What are you searching for?"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={GlobalStyles.searchInput}
+                        theme={{ colors: { primary: colors.primary } }}
+                    />
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={GlobalStyles.filterContainer}>
-                    {uniqueLocations.map((filter) => (
-                        <TouchableOpacity key={filter} onPress={() => setActiveFilter(filter)} style={GlobalStyles.filterButton}>
-                            <Text style={[GlobalStyles.filterText, activeFilter === filter && GlobalStyles.activeFilterText]}>{filter}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={GlobalStyles.filterContainer}>
+                        {uniqueLocations.map((filter) => (
+                            <TouchableOpacity key={filter} onPress={() => setActiveFilter(filter)} style={GlobalStyles.filterButton}>
+                                <Text style={[GlobalStyles.filterText, activeFilter === filter && GlobalStyles.activeFilterText]}>{filter}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
 
-                <View style={GlobalStyles.productList}>
-                    <List.Section>
-                        {filteredProducts.map((product, index) => (
-                            <TouchableWithoutFeedback key={product.product_id} onPress={() => setSelectedProduct(product)}>
-                                <View style={[GlobalStyles.productContainer, index === filteredProducts.length - 1 && { borderBottomWidth: 0 }]}>
-                                    <View style={GlobalStyles.productInfo}>
-                                        <Text style={GlobalStyles.productName}>
-                                            {product.product_name}
-                                        </Text>
-                                        <Text style={GlobalStyles.location}>
-                                            {product.location}
+                    <View style={GlobalStyles.productList}>
+                        <List.Section>
+                            {filteredProducts.map((product, index) => (
+                                <TouchableWithoutFeedback key={product.product_id} onPress={() => setSelectedProduct(product)}>
+                                    <View style={[GlobalStyles.productContainer, index === filteredProducts.length - 1 && { borderBottomWidth: 0 }]}>
+                                        <View style={GlobalStyles.productInfo}>
+                                            <Text style={GlobalStyles.productName}>
+                                                {product.product_name}
+                                            </Text>
+                                            <Text style={GlobalStyles.location}>
+                                                {product.location}
+                                            </Text>
+                                        </View>
+                                        <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date ?? '', 'yyyy-MM-dd', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
+                                            {calculateDaysLeft(product.expiration_date ?? '')}
                                         </Text>
                                     </View>
-                                    <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date ?? '', 'yyyy-MM-dd', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
-                                        {calculateDaysLeft(product.expiration_date ?? '')}
-                                    </Text>
-                                </View>
-                            </TouchableWithoutFeedback>
-                        ))}
-                    </List.Section>
+                                </TouchableWithoutFeedback>
+                            ))}
+                        </List.Section>
+                    </View>
                 </View>
             </ScrollView>
 
