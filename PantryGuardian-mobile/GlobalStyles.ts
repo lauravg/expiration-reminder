@@ -18,9 +18,10 @@ const GlobalStyles = StyleSheet.create({
   },
 
   content: {
+    flex: 1,
     paddingHorizontal: 30,
     paddingBottom: 30,
-    flex: 1,
+    justifyContent: 'center',
   },
 
   background: {

@@ -16,10 +16,10 @@ const SettingsScreen = () => {
   const toggleDarkMode = () => setDarkMode(!somethingElse);
 
   return (
-    <View style={GlobalStyles.containerWithHeader}>
-      <View style={styles.settingsContainer}>
+    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
+      <View style={[GlobalStyles.content, styles.settingsContainer]}>
         <List.Section>
-          <TouchableOpacity onPress={() => navigation.navigate({ name: 'AccountDetails', params: {} })}>
+          <TouchableOpacity onPress={() => navigation.navigate({ name: 'Profile', params: {} })}>
             <View style={GlobalStyles.accountContainer}>
               <Avatar.Icon size={48} icon="account"         theme={{ colors: { primary: colors.primary } }} />
               <View style={GlobalStyles.accountInfo}>
@@ -51,17 +51,46 @@ const SettingsScreen = () => {
               trackColor={{ false: colors.secondary, true: colors.primaryLight }}
             />
           </View>
+          <View style={GlobalStyles.preference}>
+            <Text>Something Else</Text>
+            <Switch
+              value={somethingElse}
+              onValueChange={toggleDarkMode}
+              thumbColor={colors.onPrimary}
+              trackColor={{ false: colors.secondary, true: colors.primaryLight }}
+            />
+          </View>
+          <View style={GlobalStyles.preference}>
+            <Text>Something Else</Text>
+            <Switch
+              value={somethingElse}
+              onValueChange={toggleDarkMode}
+              thumbColor={colors.onPrimary}
+              trackColor={{ false: colors.secondary, true: colors.primaryLight }}
+            />
+          </View>
+          <View style={GlobalStyles.preference}>
+            <Text>Something Else</Text>
+            <Switch
+              value={somethingElse}
+              onValueChange={toggleDarkMode}
+              thumbColor={colors.onPrimary}
+              trackColor={{ false: colors.secondary, true: colors.primaryLight }}
+            />
+          </View>
+          
         </List.Section>
-      </View>
+
 
       <Button
         mode="contained"
         theme={{ colors: { primary: colors.primary } }}
-        style={[GlobalStyles.button, styles.button]}
+        style={GlobalStyles.button}
         onPress={() => navigation.navigate({ name: 'Login', params: {} })}
       >
         Log Out
       </Button>
+      </View>
     </View>
   );
 };
@@ -69,9 +98,7 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   settingsContainer: {
     flex: 1,
-  },
-  button: {
-    marginBottom: 20,
+    justifyContent: 'flex-start',
   },
 });
 

@@ -13,7 +13,7 @@ import Homepage from './Homepage';
 import Login from './LoginScreen';
 import Registration from './RegistrationScreen';
 import AddProductModal from './AddProductModal';
-import AccountDetailsScreen from './AccountDetailsModal';
+import ProfileScreen from './ProfileScreen';
 import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
@@ -123,8 +123,8 @@ export default function App() {
             {() => <MainTabs toggleAddProductModal={toggleAddProductModal} />}
           </Stack.Screen>
           <Stack.Screen
-            name="AccountDetails"
-            component={AccountDetailsScreen}
+            name="Profile"
+            component={ProfileScreen}
             options={({ navigation }) => ({
               headerLeft: () => (
                 <IconButton
@@ -134,7 +134,7 @@ export default function App() {
                   onPress={() => navigation.goBack()}
                 />
               ),
-              headerTitle: 'My Account',
+              headerTitle: 'Profile',
               headerTitleStyle: {
                 fontWeight: 'bold',
                 color: colors.primary,

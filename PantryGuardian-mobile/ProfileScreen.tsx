@@ -6,9 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 
-const AccountDetailsScreen = () => {
-  const navigation = useNavigation();
-
+const ProfileScreen = () => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -34,13 +32,13 @@ const AccountDetailsScreen = () => {
   };
 
   return (
-    <View style={GlobalStyles.container}>
-      <View style={styles.content}>
+    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
+      <View style={[GlobalStyles.content, styles.content]}>
         <TouchableOpacity onPress={pickImage} style={styles.profileImageContainer}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.profileImage} />
           ) : (
-            <Avatar.Icon size={100} icon="account" />
+            <Avatar.Icon size={100} icon="account" theme={{ colors: { primary: colors.primary } }}/>
           )}
           <Text style={styles.changePhotoText}>Change Photo</Text>
         </TouchableOpacity>
@@ -95,11 +93,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   content: {
-    padding: 20,
+    justifyContent: 'flex-start',
+    paddingTop: 30,
   },
   profileImageContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   profileImage: {
     width: 100,
@@ -115,4 +114,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AccountDetailsScreen;
+export default ProfileScreen;

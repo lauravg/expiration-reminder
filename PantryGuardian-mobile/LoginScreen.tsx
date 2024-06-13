@@ -8,8 +8,8 @@ import { colors } from './theme';
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('lauravgreiner@gmail.com');
+  const [password, setPassword] = useState('4S9rE%3Wp');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const requests = new Requests();
@@ -30,7 +30,8 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={[GlobalStyles.container, GlobalStyles.loginContainer]}>
+    <View style={[GlobalStyles.container, GlobalStyles.loginContainer,  GlobalStyles.background]}>
+      <View style={GlobalStyles.content}>
       <Image style={GlobalStyles.loginLogo} source={require('./assets/green-logo.png')} />
       <View style={styles.formContainer}>
         <PaperTextInput
@@ -59,6 +60,7 @@ const LoginScreen = () => {
       <TouchableOpacity onPress={() => navigation.navigate({ name: 'Registration', params: {} })}>
         <Text style={GlobalStyles.registerLink}>Don't have an account? Register here.</Text>
       </TouchableOpacity>
+      </View>
     </View>
   );
 };
