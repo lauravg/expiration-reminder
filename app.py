@@ -532,6 +532,41 @@ def token_required(f):
 #         return jsonify({"error": str(e)})
 
 
+
+@app.route("/add_product", methods=["POST"])
+@token_required
+def add_product():
+    try:
+        data = request.json
+        log.info(f"Received new product: {data}")
+
+        household = household_manager.get_active_household(flask_login.current_user.get_id())
+        if not household:
+            return jsonify({"success": False, "error": "No active household found"}), 404
+
+        product = Product(
+            None,
+            barcode=data.get('barcode', ''),
+            category=data.get('category', ''),
+            created=int(datetime.utcnow().timestamp() * 1000),
+            expires=int(datetime.strptime(data.get('expiration_date'), "%Y-%m-%d").timestamp() * 1000) if data.get('expiration_date') else 0,
+            location=data.get('location', ''),
+            product_name=data.get('product_name', ''),
+            household_id=household.id,
+            wasted=False,
+            wasted_timestamp=0,
+        )
+
+        if not product_mgr.add_product(product):
+            return jsonify({"success": False, "error": "Unable to add product"}), 500
+
+        return jsonify({"success": True}), 200
+
+    except Exception as e:
+        log.error(f"Error adding product: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Route to update a product
 @app.route("/update_product/<string:id>", methods=["POST"])
 @token_required

@@ -1,10 +1,12 @@
-import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { IconButton } from 'react-native-paper';
+import { StatusBar } from 'expo-status-bar';
+import { colors } from './theme';
 
 // Import screens
 import Homepage from './Homepage';
@@ -12,13 +14,10 @@ import Login from './LoginScreen';
 import Registration from './RegistrationScreen';
 import AddProductModal from './AddProductModal';
 import AccountDetailsScreen from './AccountDetailsModal';
-
 import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
 import WastedProducts from './WastedProductScreen';
-import { colors } from './theme';
-import { IconButton } from 'react-native-paper';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -29,7 +28,7 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
       tabBar={(props) => <CustomTabBar {...props} toggleAddProductModal={toggleAddProductModal} />}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof MaterialIcons.glyphMap = 'home'; // Default value to avoid 'used before being assigned' error
+          let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
 
           if (route.name === 'Inventory') {
             iconName = 'kitchen';
@@ -101,8 +100,8 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
             elevation: 0, // Remove shadow on Android
             shadowOpacity: 0, // Remove shadow on iOS
           },
-        })}  
-      />     
+        })}
+      />
     </Tab.Navigator>
   );
 }

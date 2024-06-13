@@ -105,6 +105,34 @@ class Requests {
     }
   }
 
+  async addProduct(product: Product): Promise<boolean> {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/add_product`,
+        product,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'idToken': Requests.idToken,
+          },
+          maxRedirects: 0,
+        }
+      );
+
+      if (response.status === 200 && response.data.success) {
+        console.log('Product added successfully');
+        return true;
+      } else {
+        console.error('Failed to add product');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error adding product:', error);
+      return false;
+    }
+  }
+
+
   async deleteProduct(productId: string): Promise<boolean> {
     console.log('Sending delete request with token:', Requests.idToken);
     try {
