@@ -32,7 +32,7 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
 
           if (route.name === 'Inventory') {
             iconName = 'kitchen';
-          } else if (route.name === 'Recipe') {
+          } else if (route.name === 'Generate Recipe') {
             iconName = 'restaurant';
           } else if (route.name === 'Wasted') {
             iconName = 'compost';
@@ -47,7 +47,7 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
       })}
     >
       <Tab.Screen name="Inventory" component={Homepage} options={{ headerShown: false }}/>
-      <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }}/>
+      <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: true }}/>
       <Tab.Screen
         name="AddProduct"
         options={{ headerShown: false }}

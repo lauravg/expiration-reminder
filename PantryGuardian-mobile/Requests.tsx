@@ -214,6 +214,31 @@ class Requests {
       return false;
     }
   }
+
+  async generateRecipe(ingredients: string): Promise<string> {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/generate-recipe`,
+        { ingredients },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        console.log('Recipe generated successfully');
+        return response.data.recipe;
+      } else {
+        console.error('Failed to generate recipe');
+        return '';
+      }
+    } catch (error) {
+      console.error('Failed to generate recipe', error);
+      return '';
+    }
+  }
 }
 
 export default Requests;

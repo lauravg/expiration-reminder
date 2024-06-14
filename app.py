@@ -41,6 +41,7 @@ secrets_mgr = SecretsManager()
 auth_mgr = AuthManager(secrets_mgr)
 json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
 cred = credentials.Certificate(json_data)
+openai = secrets_mgr.get_openai_api_key()
 
 firebase_admin.initialize_app(cred)
 firestore = firestore.client()
@@ -643,72 +644,61 @@ def waste_product(id):
     return jsonify({"success": True})
 
 
-# Route to view the list of wasted products
-# @app.route("/wasted_product_list", methods=["GET"])
-# @login_required
-# def wasted_product_list():
-#     user: User = flask_login.current_user
-#     household = household_manager.get_active_household(user.get_id(0))
-#     # Retrieve all products that are marked as wasted from Firebase
-#     wasted_products = []
-#     for product in product_mgr.get_household_products(household.id):
-#         if product.wasted:
-#             expiration_date_str = product.expiration_str()
-#             if not expiration_date_str:
-#                 expiration_date_str = "Unknown"
 
-#             # Add the 'date_wasted' attribute if it's present in the product_data
-#             date_wasted_str = product.wasted_date_str()
-#             if not date_wasted_str:
-#                 date_wasted_str = "No Wasted Date"
+@app.route('/generate-recipe', methods=['POST'])
+def generate_recipe():
+    data = request.json
+    ingredients = data.get('ingredients', '')
 
-#             wasted_products.append(
-#                 {
-#                     "product_id": product.id,
-#                     "product_name": product.product_name,
-#                     "expiration_date": expiration_date_str,
-#                     "location": product.location,
-#                     "category": product.category,
-#                     "wasted_status": product.wasted,
-#                     "date_wasted": date_wasted_str,
-#                 }
-#             )
+    if not ingredients:
+        return jsonify({'error': 'No ingredients provided'}), 400
 
-#     return render_template("wasted_product_list.html", products=wasted_products)
+    try:
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {openai}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'gpt-3.5-turbo',
+                'messages': [
+                    {'role': 'system', 'content': 'You are a helpful assistant.'},
+                    {'role': 'user', 'content': f'Generate a recipe using the following ingredients: {ingredients}'}
+                ],
+                'max_tokens': 150
+            }
+        )
 
+        if response.status_code != 200:
+            error_message = response.json().get('error', {}).get('message', 'Failed to generate recipe')
+            return jsonify({'error': error_message}), response.status_code
 
-# Route for generating a recipe based on user input
-@app.route("/generate_recipe", methods=["POST", "GET"])
-@login_required
-def generate_recipe_user_input():
-    if request.method == "POST":
-        user_input = request.form.get("user-input")
-        # Assuming generate_recipe accepts a list
-        recipe_suggestion = recipe_generator.generate_recipe([user_input])
-        return jsonify({"recipe_suggestion": recipe_suggestion})
-    else:
-        return render_template("generate_recipe.html")
-
+        recipe_content = response.json()['choices'][0]['message']['content']
+        return jsonify({'recipe': recipe_content})
+    except Exception as e:
+        print(f'Exception: {e}')
+        return jsonify({'error': 'Failed to generate recipe', 'details': str(e)}), 500
 
 # Route to generate a recipe from the Firebase database
-@app.route("/generate_recipe_from_database", methods=["GET"])
-@login_required
-def generate_recipe_from_database():
-    user: User = flask_login.current_user
-    household = household_manager.get_active_household(user.get_id())
-    today_millis = ProductManager.parse_import_date(
-        datetime.now(pt_timezone).strftime("%d %b %Y")
-    )
-    # Retrieve product names for current user from Firestore.
-    product_names = []
-    for product in product_mgr.get_household_products(household.id):
-        # Ensure the product is neither wasted nor expired.
-        if not product.wasted and product.expires >= today_millis:
-            product_names.append(product.product_name)
+# @app.route("/generate_recipe_from_database", methods=["GET"])
+# @login_required
+# def generate_recipe_from_database():
+#     user: User = flask_login.current_user
+#     household = household_manager.get_active_household(user.get_id())
+#     today_millis = ProductManager.parse_import_date(
+#         datetime.now(pt_timezone).strftime("%d %b %Y")
+#     )
+#     # Retrieve product names for current user from Firestore.
+#     product_names = []
+#     for product in product_mgr.get_household_products(household.id):
+#         # Ensure the product is neither wasted nor expired.
+#         if not product.wasted and product.expires >= today_millis:
+#             product_names.append(product.product_name)
 
-    # Generate a recipe based on the product names
-    recipe_suggestion = recipe_generator.generate_recipe(product_names)
-    return jsonify({"recipe_suggestion": recipe_suggestion})
+#     # Generate a recipe based on the product names
+#     recipe_suggestion = recipe_generator.generate_recipe(product_names)
+#     return jsonify({"recipe_suggestion": recipe_suggestion})
 
 
 # Route for generating a recipe based on user input

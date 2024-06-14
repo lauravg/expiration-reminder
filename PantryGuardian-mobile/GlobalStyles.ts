@@ -278,6 +278,19 @@ const GlobalStyles = StyleSheet.create({
     fontSize: 14,
     color: colors.secondary,
   },
+
+  // Recipe Screen
+  card: {
+    marginTop: 16,
+    backgroundColor: colors.productBackground,
+    borderRadius: 8,
+    elevation: 4,
+  },
+  recipeText: {
+    fontSize: 16,
+    color: colors.onBackground,
+    lineHeight: 24,
+  },
 });
 
 export default GlobalStyles;

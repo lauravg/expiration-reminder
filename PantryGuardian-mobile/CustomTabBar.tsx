@@ -41,7 +41,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
         let iconName: keyof typeof MaterialIcons.glyphMap = 'circle'; // Default icon
         if (route.name === 'Inventory') {
           iconName = 'kitchen';
-        } else if (route.name === 'Recipe') {
+        } else if (route.name === 'Generate Recipe') {
           iconName = 'restaurant';
         } else if (route.name === 'Wasted') {
           iconName = 'compost';
