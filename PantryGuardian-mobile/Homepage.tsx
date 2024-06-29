@@ -9,7 +9,11 @@ import Requests from './Requests';
 import { Product } from './Product';
 import ProductList from './ProductList';
 
-const Homepage = () => {
+interface HomepageProps {
+  onProductAdded: () => void;
+}
+
+const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [products, setProducts] = useState<Product[]>([]);
   const displayName = Requests.displayName;
@@ -66,7 +70,7 @@ const Homepage = () => {
       });
       setProducts(formattedProducts);
     });
-  }, []);
+  }, [onProductAdded]);
 
   return (
     <View style={[GlobalStyles.container, GlobalStyles.background]}>

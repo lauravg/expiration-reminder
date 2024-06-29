@@ -22,7 +22,7 @@ import WastedProducts from './WastedProductScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void }) {
+function MainTabs({ toggleAddProductModal, onProductAdded }: { toggleAddProductModal: () => void; onProductAdded: () => void }) {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} toggleAddProductModal={toggleAddProductModal} />}
@@ -46,8 +46,10 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
         }
       })}
     >
-      <Tab.Screen name="Inventory" component={Homepage} options={{ headerShown: false }}/>
-      <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: true }}/>
+      <Tab.Screen name="Inventory">
+        {() => <Homepage onProductAdded={onProductAdded} />}
+      </Tab.Screen>
+      <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: true }} />
       <Tab.Screen
         name="AddProduct"
         options={{ headerShown: false }}
@@ -108,9 +110,14 @@ function MainTabs({ toggleAddProductModal }: { toggleAddProductModal: () => void
 
 export default function App() {
   const [addProductModalVisible, setAddProductModalVisible] = useState(false);
+  const [productAdded, setProductAdded] = useState(0);
 
   const toggleAddProductModal = () => {
     setAddProductModalVisible(!addProductModalVisible);
+  };
+
+  const handleProductAdded = () => {
+    setProductAdded(productAdded + 1); // Increment to trigger reload
   };
 
   return (
@@ -120,7 +127,7 @@ export default function App() {
           <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
           <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
           <Stack.Screen name="Main" options={{ headerShown: false }}>
-            {() => <MainTabs toggleAddProductModal={toggleAddProductModal} />}
+            {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onProductAdded={handleProductAdded} />}
           </Stack.Screen>
           <Stack.Screen
             name="Profile"
@@ -148,7 +155,11 @@ export default function App() {
           />
         </Stack.Navigator>
         <StatusBar style="auto" />
-        <AddProductModal visible={addProductModalVisible} onClose={toggleAddProductModal} />
+        <AddProductModal
+          visible={addProductModalVisible}
+          onClose={toggleAddProductModal}
+          onProductAdded={handleProductAdded} // Pass the onProductAdded prop
+        />
       </NavigationContainer>
     </SafeAreaProvider>
   );

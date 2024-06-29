@@ -10,9 +10,10 @@ import Requests from './Requests';
 interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
+  onProductAdded: () => void
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose }) => {
+const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onProductAdded }) => {
   const [productName, setProductName] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [location, setLocation] = useState('');
@@ -59,7 +60,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose }) =
     const requests = new Requests();
     const success = await requests.addProduct(newProduct);
     if (success) {
+      onProductAdded();
       onClose(); // Close the modal
+      // Clear input fields
+      setProductName('');
+      setExpirationDate('');
+      setLocation('');
+      setCategory('');
     } else {
       console.error('Failed to add product');
     }
