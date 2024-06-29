@@ -46,7 +46,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: { toggleAddProductM
         }
       })}
     >
-      <Tab.Screen name="Inventory">
+      <Tab.Screen name="Inventory" options={{ headerShown: false }} >
         {() => <Homepage onProductAdded={onProductAdded} />}
       </Tab.Screen>
       <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: true }} />
