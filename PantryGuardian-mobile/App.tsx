@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { IconButton } from 'react-native-paper';
-import { StatusBar } from 'expo-status-bar';
 import { colors } from './theme';
-
-// Import screens
 import Homepage from './Homepage';
 import Login from './LoginScreen';
 import Registration from './RegistrationScreen';
@@ -22,7 +22,12 @@ import WastedProducts from './WastedProductScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function MainTabs({ toggleAddProductModal, onProductAdded }: { toggleAddProductModal: () => void; onProductAdded: () => void }) {
+type MainTabsProps = {
+  toggleAddProductModal: () => void;
+  onProductAdded: () => void;
+};
+
+function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} toggleAddProductModal={toggleAddProductModal} />}
@@ -43,17 +48,14 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: { toggleAddProductM
           }
 
           return <MaterialIcons name={iconName} size={size} color={color} />;
-        }
+        },
       })}
     >
-      <Tab.Screen name="Inventory" options={{ headerShown: false }} >
+      <Tab.Screen name="Inventory" options={{ headerShown: false }}>
         {() => <Homepage onProductAdded={onProductAdded} />}
       </Tab.Screen>
       <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: true }} />
-      <Tab.Screen
-        name="AddProduct"
-        options={{ headerShown: false }}
-      >
+      <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
         {() => null}
       </Tab.Screen>
       <Tab.Screen
@@ -78,7 +80,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: { toggleAddProductM
             elevation: 0, // Remove shadow on Android
             shadowOpacity: 0, // Remove shadow on iOS
           },
-        })}  
+        })}
       />
       <Tab.Screen
         name="Settings"
@@ -120,6 +122,18 @@ export default function App() {
     setProductAdded(productAdded + 1); // Increment to trigger reload
   };
 
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log(notification);
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(subscription);
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
@@ -158,9 +172,44 @@ export default function App() {
         <AddProductModal
           visible={addProductModalVisible}
           onClose={toggleAddProductModal}
-          onProductAdded={handleProductAdded} // Pass the onProductAdded prop
+          onProductAdded={handleProductAdded}
         />
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
+
+// Function to request notifications permission and get the token
+async function registerForPushNotificationsAsync() {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  if (finalStatus !== 'granted') {
+    alert('Failed to get push token for push notification!');
+    return;
+  }
+
+  console.log('Constants.expoConfig:', Constants.expoConfig);
+
+  const projectId = Constants.expoConfig?.extra?.expoProjectId;
+  if (!projectId) {
+    console.error('Expo project ID is not defined.');
+    return;
+  }
+
+  const token = (await Notifications.getExpoPushTokenAsync({
+    projectId,
+  })).data;
+  console.log(token);
+}
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});

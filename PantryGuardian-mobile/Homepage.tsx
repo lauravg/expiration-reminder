@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { format, isValid, parse } from 'date-fns';
+import { format, isValid, parse, addDays, differenceInDays } from 'date-fns';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests from './Requests';
@@ -47,6 +49,31 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
     }
   };
 
+  const scheduleNotification = async (product: Product) => {
+    const notificationsEnabled = JSON.parse(await AsyncStorage.getItem('notificationsEnabled') || 'false');
+    if (!notificationsEnabled) return;
+
+    const daysBefore = parseInt(await AsyncStorage.getItem('daysBefore') || '5', 10);
+
+    if (product.expiration_date) {
+      const expirationDate = parse(product.expiration_date, 'yyyy-MM-dd', new Date());
+      const notificationDate = addDays(expirationDate, -daysBefore);
+      const daysLeft = differenceInDays(expirationDate, new Date());
+
+      if (daysLeft > daysBefore) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Product Expiration Alert",
+            body: `Your product ${product.product_name} will expire in ${daysBefore} days.`,
+          },
+          trigger: {
+            date: notificationDate,
+          },
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     requests.listProducts().then((products) => {
       const nonWastedProducts = products.filter((product) => !product.wasted);
@@ -63,6 +90,10 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
             console.error('Error parsing expiration date:', product.expiration_date, error);
           }
         }
+
+        // Schedule notifications for each product
+        scheduleNotification(product);
+
         return {
           ...product,
           expiration_date: formattedExpirationDate ?? '',

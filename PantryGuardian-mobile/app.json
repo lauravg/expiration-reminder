@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PantryGuardian-mobile",
-    "slug": "PantryGuardian-mobile",
+    "slug": "pantryguardian-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +25,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "expoProjectId": "92e1251a-e072-484a-8ebd-10e717e57282"
+    },
+    "owner": "lauravgr"
   }
 }
