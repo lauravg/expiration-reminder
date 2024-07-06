@@ -18,6 +18,7 @@ import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
 import WastedProducts from './WastedProductScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -125,7 +126,7 @@ export default function App() {
   useEffect(() => {
     registerForPushNotificationsAsync();
 
-    const subscription = Notifications.addNotificationReceivedListener(notification => {
+    const subscription = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
       console.log(notification);
     });
 
@@ -204,6 +205,7 @@ async function registerForPushNotificationsAsync() {
     projectId,
   })).data;
   console.log(token);
+  await AsyncStorage.setItem('expoPushToken', token);
 }
 
 Notifications.setNotificationHandler({

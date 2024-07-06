@@ -88,6 +88,7 @@ def register():
             )
 
             auth.update_user(user.uid, display_name=name)
+            set_default_notification_settings(user.uid)  # Set default notification settings
 
             return jsonify({"message": "Registration successful"}), 200
         except Exception as e:
@@ -171,6 +172,9 @@ def auth_route():
             household = Household(None, user.get_id(), name, [user.get_id()])
             if not household_manager.add_or_update_household(household):
                 log.error("Unable to create default household for user.")
+        
+        # Set default notification settings if not already set
+        set_default_notification_settings(uid)  
 
         # Send the client the auth tokens and the user's display name
         token_response = {
@@ -183,6 +187,20 @@ def auth_route():
         msg = f"Login failed for {email}"
         log.info(msg)
         return msg, 401
+
+
+def set_default_notification_settings(user_id):
+    doc_ref = firestore.collection("users").document(user_id)
+    doc = doc_ref.get()
+    if not doc.exists or "notification_settings" not in doc.to_dict():
+        default_settings = {
+            "notification_settings": {
+                "notificationsEnabled": False,
+                "daysBefore": 5
+            }
+        }
+        doc_ref.set(default_settings, merge=True)
+
 
 @app.route("/list_products", methods=["GET", "POST"])
 def list_products():
@@ -226,49 +244,6 @@ def list_products():
         )
     return jsonify(result)
 
-# Logout route to clear the user's session
-# @app.route("/logout", methods=["POST"])
-# def logout():
-#     logout_user()
-#     return redirect("/")
-
-
-# @app.route("/settings", methods=["GET", "POST"])
-# @login_required
-# def settings():
-#     user: User = flask_login.current_user
-#     try:
-#         # Fetch the user's display name and email from Firebase Authentication
-#         display_name = user.display_name()
-#         email = user.email()
-#     except auth.AuthError as e:
-#         log.error(f"Error retrieving user information: {e}")
-#         display_name = "User"
-#         email = "user@example.com"
-
-#     if request.method == "POST":
-#         # Handle form submission to update user details
-#         new_password = request.form.get("new_password")
-#         new_email = request.form.get("new_email")
-#         new_name = request.form.get("new_name")
-
-#         # Update user details in Firebase Authentication
-#         if new_password:
-#             # Handle password update
-#             auth.update_user(user.get_id(), password=new_password)
-#         if new_email:
-#             # Handle email update
-#             auth.update_user(user.get_id(), email=new_email)
-#         if new_name:
-#             # Handle display name update
-#             auth.update_user(user.get_id(), display_name=new_name)
-#         # Go back to the main page after submitting settings.
-#         return redirect("/")
-#     households = household_manager.get_households_for_user(user.get_id())
-#     return render_template(
-#         "settings.html", display_name=display_name, email=email, households=households
-#     )
-
 
 def token_required(f):
     @wraps(f)
@@ -294,245 +269,6 @@ def token_required(f):
             return jsonify({'message': 'Token verification failed!', 'error': str(e)}), 403
         return f(*args, **kwargs)
     return decorated
-
-# Update the route to include the display name
-# @app.route("/", methods=["POST", "GET"])
-# @login_required
-# def index():
-#     user: User = flask_login.current_user
-#     household: Household = None
-#     if user != None:
-#         household = household_manager.get_active_household(user.get_id())
-
-#     # Get the current date in the PT timezone
-#     current_date = datetime.now(pt_timezone).date()
-
-#     if request.method == "POST":
-#         # Get the item content from the form
-#         item_content = request.form["product-name"]
-
-#         # Check if the 'No Expiration Date' checkbox is checked
-#         no_expiration = "no-expiration" in request.form
-
-#         if not no_expiration:
-#             # Parse the expiration date from the form
-#             expiration_date_str = request.form["expiration-date"]
-#             try:
-#                 # Convert the expiration date to UTC timezone
-#                 item_expiration_datetime_utc = datetime.strptime(
-#                     expiration_date_str, "%Y-%m-%d"
-#                 ).replace(tzinfo=pytz.utc)
-#                 # Convert the expiration date to PT timezone
-#                 item_expiration_datetime_pt = item_expiration_datetime_utc
-#                 # Get the date part of the expiration date
-#                 item_expiration_date = item_expiration_datetime_pt.date()
-
-#             except ValueError:
-#                 # Handle invalid date format here
-#                 return render_template(
-#                     "error.html", error_message="Invalid date format"
-#                 )
-
-#         else:
-#             item_expiration_date = None  # No expiration date
-
-#         # Get location, category, and barcode information from the form
-#         location = request.form["locations"]
-#         category = request.form["category"]
-#         barcode_number = request.form["barcode-number"]
-#         barcode: Barcode = None
-
-#         if barcode_number != "":
-#             barcode = barcodes.get_barcode(barcode_number)
-
-#             # Handle the case when there are no barcode data
-#             if barcode is None:
-#                 # Add a new barcode
-#                 barcode = Barcode(barcode_number, request.form["product-name"])
-#                 barcodes.add_barcode(barcode)
-
-#         # Add the code to handle item_expiration_date here
-#         if item_expiration_date is not None:
-#             expiration_date_str = item_expiration_date.strftime("%d %b %Y")
-#         else:
-#             expiration_date_str = ""
-
-#         if household == None or household.id == None or household.id.isspace():
-#             msg = "Cannot add product: No active household with an ID set."
-#             log.error(msg)
-#             return msg, 500
-
-#         product = Product(
-#             None,
-#             barcode=barcode.code if barcode else None,
-#             category=category,
-#             created=ProductManager.parse_import_date(
-#                 datetime.now(pt_timezone).strftime("%d %b %Y")
-#             ),
-#             expires=(
-#                 0
-#                 if no_expiration
-#                 else ProductManager.parse_import_date(expiration_date_str)
-#             ),
-#             location=location,
-#             product_name=item_content,
-#             household_id=household.id,
-#             wasted=False,
-#             wasted_timestamp=0,
-#         )
-
-#         if not product_mgr.add_product(product):
-#             return "Unable to add product", 500
-#         # Redirect or perform further actions as needed
-#         return redirect(url_for("index"))
-
-#     else:
-#         # Get filters and parameters from the request
-#         location_filter = request.args.get("location-filter", "All")
-#         category_filter = request.args.get("category", "All")
-#         expiration_date_filter = request.args.get("expiration-date", "")
-#         expiration_status_filter = request.args.get("expiration-status", "all")
-
-#         # Reference the 'products' node in Firebase
-#         products = product_mgr.get_household_products(household.id)
-#         filtered_products: list[Product] = []
-#         for product in products:
-#             expiration_date = datetime.utcfromtimestamp(product.expires / 1000).date()
-
-#             # Apply filters to select products
-#             if (
-#                 (location_filter == "All" or product.location == location_filter)
-#                 and (category_filter == "All" or product.category == category_filter)
-#                 and (
-#                     expiration_date_filter == ""
-#                     or (
-#                         expiration_date
-#                         and expiration_date.strftime("%d %b %Y")
-#                         == expiration_date_filter
-#                     )
-#                 )
-#                 and (
-#                     expiration_status_filter == "all"
-#                     or (
-#                         expiration_status_filter == "expired"
-#                         and expiration_date
-#                         and expiration_date <= current_date
-#                     )
-#                     or (
-#                         expiration_status_filter == "not_expired"
-#                         and expiration_date
-#                         and expiration_date > current_date
-#                     )
-#                     or (
-#                         expiration_status_filter == "not_expiring"
-#                         and not expiration_date
-#                     )
-#                 )
-#             ):
-
-#                 product_info = {
-#                     "product_id": product.id,
-#                     "product_name": product.product_name,
-#                     "expiration_date": product.expiration_str(),  # Does "Unknown" still exist?
-#                     "location": product.location,
-#                     "category": product.category,
-#                     "wasted_status": product.wasted,
-#                     "expired": (
-#                         expiration_date is not None and expiration_date < current_date
-#                     ),
-#                     "date_created": product.creation_str(),
-#                 }
-#                 if product_info["wasted_status"] is False:
-#                     filtered_products.append(product_info)
-#         return render_template(
-#             "index.html",
-#             display_name=user.display_name(),
-#             products=filtered_products,
-#             current_date=current_date.strftime("%Y-%m-%d"),
-#             selected_location=location_filter,
-#             selected_category=category_filter,
-#             selected_expiration_date=expiration_date_filter,
-#             selected_status=expiration_status_filter,
-#             active_household_name=household.name,
-#         )
-
-
-# @app.route("/check_barcode", methods=["POST"])
-# @login_required
-# def check_barcode():
-#     data = request.get_json()
-#     barcode_value = data.get("barcode")
-
-#     # Ensure a valid barcode is provided
-#     if not barcode_value:
-#         response = {"exists": False, "productName": ""}
-#         return jsonify(response)
-
-#     # Retrieve barcode data from Firebase
-#     barcode = barcodes.get_barcode(barcode_value)
-#     if barcode == None:
-#         # If the barcode is not found in the database, indicate that it does not exist
-#         response = {"exists": False, "productName": ""}
-#         return jsonify(response)
-
-#     response = {"exists": True, "productName": barcode.name}
-#     return jsonify(response)
-
-
-# Route to check the expiration status of a product
-# @app.route("/check_expiration_status", methods=["GET"])
-# @login_required
-# def check_expiration_status():
-#     current_date = datetime.now(pt_timezone).date()
-
-#     # Get the product's expiration date from the request parameters
-#     product = request.args.get("product", None)
-
-#     if product is not None:
-#         try:
-#             # Parse the product's expiration date from a string to a date object
-#             product_expiration_date = datetime.strptime(product, "%Y-%m-%d").date()
-#         except ValueError as e:
-#             # Handle parsing errors and log them
-#             log.error(f"Error parsing product expiration date: {e}")
-
-#         if (
-#             product_expiration_date is not None
-#             and product_expiration_date <= current_date
-#         ):
-#             # Handle the case where the product has expired
-#             return "Expired"
-#         else:
-#             # Handle the case where the product has not expired
-#             return "Not Expired"
-
-#     # Handle cases where 'product' is None or not provided
-#     return "Unknown"
-
-
-# Route to handle expired date input
-# @app.route("/expired_date_input", methods=["POST"])
-# @login_required
-# def expired_date_input():
-#     try:
-#         # Get the expiration date as a string from the form data
-#         expiration_date_str = request.form["expiration-date"]
-#         # Convert the expiration date string to a Python date object
-#         item_expiration_date = (
-#             datetime.utcnow().strptime(expiration_date_str, "%Y-%m-%d").date()
-#         )
-#         current_date = datetime.now(pt_timezone).date()
-#         # Check if the item's expiration date is not valid
-#         if item_expiration_date <= current_date:
-#             return jsonify({"valid": False})
-
-#         # Handle the case when the expiration date is valid
-#         return jsonify({"valid": True})
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)})
-
-
 
 @app.route("/add_product", methods=["POST"])
 @token_required
@@ -645,7 +381,7 @@ def waste_product(id):
 
 
 
-@app.route('/generate-recipe', methods=['POST'])
+@app.route("/generate-recipe", methods=["POST"])
 def generate_recipe():
     data = request.json
     ingredients = data.get('ingredients', '')
@@ -707,6 +443,25 @@ def generate_recipe():
 def update_households():
     return redirect("/settings")
 
+@app.route("/save_notification_settings", methods=["POST"])
+@token_required
+def save_notification_settings():
+    user = flask_login.current_user
+    data = request.json
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc_ref.update({"notification_settings": data})
+    return jsonify({"success": True})
+
+@app.route("/get_notification_settings", methods=["GET"])
+@token_required
+def get_notification_settings():
+    user = flask_login.current_user
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        return jsonify(doc.to_dict().get("notification_settings", {}))
+    else:
+        return jsonify({"notificationsEnabled": False, "daysBefore": 5})
 
 def is_url_safe(url: str) -> bool:
     return url in [
