@@ -242,3 +242,4 @@ class Requests {
 }
 
 export default Requests;
+export { BASE_URL };

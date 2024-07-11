@@ -7,6 +7,7 @@ import { colors } from './theme';
 import Requests from './Requests';
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const BASE_URL = "http://127.0.0.1:8081";
 
@@ -14,6 +15,8 @@ const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [daysBefore, setDaysBefore] = useState('5');
+  const [notificationTime, setNotificationTime] = useState(new Date(0, 0, 0, 12, 0)); // Default to noon
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const displayName = Requests.displayName;
 
   useEffect(() => {
@@ -26,6 +29,7 @@ const SettingsScreen = () => {
         if (response.status === 200) {
           setNotificationsEnabled(response.data.notificationsEnabled);
           setDaysBefore(response.data.daysBefore.toString());
+          setNotificationTime(new Date(0, 0, 0, response.data.hour, response.data.minute));
         }
       } catch (error) {
         console.error('Failed to load notification settings', error);
@@ -42,7 +46,9 @@ const SettingsScreen = () => {
     try {
       await axios.post(`${BASE_URL}/save_notification_settings`, {
         notificationsEnabled: newStatus,
-        daysBefore: parseInt(daysBefore, 10)
+        daysBefore: parseInt(daysBefore, 10),
+        hour: notificationTime.getHours(),
+        minute: notificationTime.getMinutes(),
       }, {
         headers: { 'idToken': Requests.idToken }
       });
@@ -57,12 +63,34 @@ const SettingsScreen = () => {
     try {
       await axios.post(`${BASE_URL}/save_notification_settings`, {
         notificationsEnabled,
-        daysBefore: parseInt(value, 10)
+        daysBefore: parseInt(value, 10),
+        hour: notificationTime.getHours(),
+        minute: notificationTime.getMinutes(),
       }, {
         headers: { 'idToken': Requests.idToken }
       });
     } catch (error) {
       console.error('Failed to save notification settings', error);
+    }
+  };
+
+  const handleTimeChange = async (event: any, selectedDate?: Date) => {
+    setShowTimePicker(false);
+    if (selectedDate) {
+      setNotificationTime(selectedDate);
+
+      try {
+        await axios.post(`${BASE_URL}/save_notification_settings`, {
+          notificationsEnabled,
+          daysBefore: parseInt(daysBefore, 10),
+          hour: selectedDate.getHours(),
+          minute: selectedDate.getMinutes(),
+        }, {
+          headers: { 'idToken': Requests.idToken }
+        });
+      } catch (error) {
+        console.error('Failed to save notification settings', error);
+      }
     }
   };
 
@@ -94,25 +122,43 @@ const SettingsScreen = () => {
           </View>
           <Divider />
           {notificationsEnabled && (
-            <View style={GlobalStyles.preference}>
-              <Text>Days Before Expiration</Text>
-              <RNPickerSelect
-                onValueChange={handleDaysBeforeChange}
-                value={daysBefore}
-                items={[
-                  { label: '1', value: '1' },
-                  { label: '2', value: '2' },
-                  { label: '3', value: '3' },
-                  { label: '4', value: '4' },
-                  { label: '5', value: '5' },
-                  { label: '6', value: '6' },
-                  { label: '7', value: '7' },
-                  { label: '14', value: '14' },
-                  { label: '30', value: '30' },
-                ]}
-                style={pickerSelectStyles}
-              />
-            </View>
+            <>
+              <View style={GlobalStyles.preference}>
+                <Text>Days Before Expiration</Text>
+                <RNPickerSelect
+                  onValueChange={handleDaysBeforeChange}
+                  value={daysBefore}
+                  items={[
+                    { label: '1', value: '1' },
+                    { label: '2', value: '2' },
+                    { label: '3', value: '3' },
+                    { label: '4', value: '4' },
+                    { label: '5', value: '5' },
+                    { label: '6', value: '6' },
+                    { label: '7', value: '7' },
+                    { label: '2 Weeks', value: '14' },
+                    { label: '1 month', value: '30' },
+                  ]}
+                  style={pickerSelectStyles}
+                />
+              </View>
+              <Divider />
+              <View style={GlobalStyles.preference}>
+                <Text>Notification Time</Text>
+                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                  <Text>{notificationTime.getHours().toString().padStart(2, '0')}:{notificationTime.getMinutes().toString().padStart(2, '0')}</Text>
+                </TouchableOpacity>
+              </View>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={notificationTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={handleTimeChange}
+                />
+              )}
+            </>
           )}
         </List.Section>
 

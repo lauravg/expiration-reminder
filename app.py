@@ -11,12 +11,15 @@ import logging
 
 from absl import logging as log
 import firebase_admin
+import firebase_admin.messaging as messaging
+from datetime import datetime, timedelta
+
 from firebase_admin import credentials, auth, firestore
 from firebase_admin.auth import UserRecord, InvalidIdTokenError, ExpiredIdTokenError
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 import flask_login
 from flask_login import LoginManager, login_user, logout_user, login_required
-
+from apscheduler.schedulers.background import BackgroundScheduler
 from auth_manager import AuthManager
 from barcode_manager import BarcodeManager, Barcode
 from household_manager import Household, HouseholdManager
@@ -60,6 +63,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+
+scheduler = BackgroundScheduler()
+scheduler.start()
 
 # Create an instance of SendMail with the app and pt_timezone
 def convert_to_pt(dt):
@@ -188,20 +194,6 @@ def auth_route():
         log.info(msg)
         return msg, 401
 
-
-def set_default_notification_settings(user_id):
-    doc_ref = firestore.collection("users").document(user_id)
-    doc = doc_ref.get()
-    if not doc.exists or "notification_settings" not in doc.to_dict():
-        default_settings = {
-            "notification_settings": {
-                "notificationsEnabled": False,
-                "daysBefore": 5
-            }
-        }
-        doc_ref.set(default_settings, merge=True)
-
-
 @app.route("/list_products", methods=["GET", "POST"])
 def list_products():
     """
@@ -270,6 +262,91 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
+
+def send_push_notification(token, title, body):
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        token=token,
+    )
+    response = messaging.send(message)
+    print('Successfully sent message:', response)
+
+
+def schedule_notification(user_id, product_name, expiration_date, days_before):
+    notification_date = expiration_date - timedelta(days=days_before)
+    doc_ref = firestore.collection("users").document(user_id)
+    doc = doc_ref.get()
+    if doc.exists:
+        user_data = doc.to_dict()
+        push_token = user_data.get("push_token")
+        if push_token:
+            scheduler.add_job(
+                send_push_notification,
+                'date',
+                run_date=notification_date,
+                args=[push_token, "Product Expiration Alert", f"Your product {product_name} will expire soon!"]
+            )
+
+
+
+@app.route("/save_notification_settings", methods=["POST"])
+@token_required
+def save_notification_settings():
+    user = flask_login.current_user
+    data = request.json
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc_ref.update({
+        "notification_settings": {
+            "notificationsEnabled": data.get("notificationsEnabled", False),
+            "daysBefore": data.get("daysBefore", 5),
+            "hour": data.get("hour", 12),
+            "minute": data.get("minute", 0)
+        }
+    })
+    return jsonify({"success": True})
+
+
+@app.route("/get_notification_settings", methods=["GET"])
+@token_required
+def get_notification_settings():
+    user = flask_login.current_user
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        settings = doc.to_dict().get("notification_settings", {})
+        return jsonify({
+            "notificationsEnabled": settings.get("notificationsEnabled", False),
+            "daysBefore": settings.get("daysBefore", 5),
+            "hour": settings.get("hour", 12),
+            "minute": settings.get("minute", 0)
+        })
+    else:
+        return jsonify({
+            "notificationsEnabled": False,
+            "daysBefore": 5,
+            "hour": 12,
+            "minute": 0
+        })
+
+
+def set_default_notification_settings(user_id):
+    doc_ref = firestore.collection("users").document(user_id)
+    doc = doc_ref.get()
+    if not doc.exists or "notification_settings" not in doc.to_dict():
+        default_settings = {
+            "notification_settings": {
+                "notificationsEnabled": False,
+                "daysBefore": 5,
+                "hour": 12,
+                "minute": 0, 
+            }
+        }
+        doc_ref.set(default_settings, merge=True)
+
+
 @app.route("/add_product", methods=["POST"])
 @token_required
 def add_product():
@@ -297,11 +374,19 @@ def add_product():
         if not product_mgr.add_product(product):
             return jsonify({"success": False, "error": "Unable to add product"}), 500
 
+        # Schedule notification
+        user = flask_login.current_user
+        settings = firestore.collection("users").document(user.get_id()).get().to_dict().get("notification_settings", {})
+        if settings.get("notificationsEnabled"):
+            expiration_date = datetime.strptime(data.get('expiration_date'), "%Y-%m-%d")
+            schedule_notification(user.get_id(), product.product_name, expiration_date, settings.get("daysBefore", 5))
+
         return jsonify({"success": True}), 200
 
     except Exception as e:
         log.error(f"Error adding product: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 
 # Route to update a product
@@ -380,6 +465,34 @@ def waste_product(id):
     return jsonify({"success": True})
 
 
+@app.route("/get_expiring_products", methods=["GET"])
+@token_required
+def get_expiring_products():
+    user = flask_login.current_user
+    household = household_manager.get_active_household(user.get_id())
+    settings_doc = firestore.collection("users").document(user.get_id()).get()
+    settings = settings_doc.to_dict().get("notification_settings", {})
+    days_before = settings.get("daysBefore", 5)
+    expiring_date = datetime.utcnow() + timedelta(days=days_before)
+    expiring_timestamp = int(expiring_date.timestamp() * 1000)
+
+    products = product_mgr.get_household_products(household.id)
+    expiring_products = [product for product in products if product.expires > 0 and product.expires <= expiring_timestamp]
+
+    result = [
+        {
+            "product_name": product.product_name,
+            "expiration_date": product.expiration_str(),
+            "location": product.location,
+            "product_id": product.id,
+            "expired": product.expires < int(datetime.utcnow().timestamp() * 1000),
+            "creation_date": product.creation_str(),
+            "wasted": product.wasted,
+        }
+        for product in expiring_products
+    ]
+    return jsonify(result)
+
 
 @app.route("/generate-recipe", methods=["POST"])
 def generate_recipe():
@@ -443,25 +556,22 @@ def generate_recipe():
 def update_households():
     return redirect("/settings")
 
-@app.route("/save_notification_settings", methods=["POST"])
+
+
+
+@app.route("/save_push_token", methods=["POST"])
 @token_required
-def save_notification_settings():
+def save_push_token():
     user = flask_login.current_user
     data = request.json
+    token = data.get("token")
+    log.info(f"Saving push token for user: {user.get_id()}")
     doc_ref = firestore.collection("users").document(user.get_id())
-    doc_ref.update({"notification_settings": data})
+    doc_ref.update({"push_token": token})
+    log.info(f"Push token saved successfully for user: {user.get_id()}")
     return jsonify({"success": True})
 
-@app.route("/get_notification_settings", methods=["GET"])
-@token_required
-def get_notification_settings():
-    user = flask_login.current_user
-    doc_ref = firestore.collection("users").document(user.get_id())
-    doc = doc_ref.get()
-    if doc.exists:
-        return jsonify(doc.to_dict().get("notification_settings", {}))
-    else:
-        return jsonify({"notificationsEnabled": False, "daysBefore": 5})
+
 
 def is_url_safe(url: str) -> bool:
     return url in [
