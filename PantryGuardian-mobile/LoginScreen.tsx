@@ -7,7 +7,11 @@ import Requests from './Requests';
 import { colors } from './theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const LoginScreen = () => {
+type LoginScreenProps = {
+  onLoginSuccess: () => void;
+};
+
+const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [email, setEmail] = useState('lauravgreiner@gmail.com');
   const [password, setPassword] = useState('4S9rE%3Wp');
@@ -23,6 +27,8 @@ const LoginScreen = () => {
         console.log('idToken after login:', Requests.idToken); // Debug log
         // Save the idToken to AsyncStorage
         await AsyncStorage.setItem('idToken', Requests.idToken);
+        // Notify app of successful login
+        onLoginSuccess();
         // Pass the username to the main screen
         navigation.navigate({ name: 'Main', params: { displayName: Requests.displayName } });
       } else {

@@ -110,7 +110,6 @@ const SettingsScreen = () => {
         </List.Section>
 
         <List.Section>
-          <List.Subheader style={GlobalStyles.sectionHeader}>Preferences</List.Subheader>
           <View style={GlobalStyles.preference}>
             <Text>Enable Notifications</Text>
             <Switch

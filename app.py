@@ -18,7 +18,7 @@ from firebase_admin import credentials, auth, firestore
 from firebase_admin.auth import UserRecord, InvalidIdTokenError, ExpiredIdTokenError
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 import flask_login
-from flask_login import LoginManager, login_user, logout_user, login_required
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from apscheduler.schedulers.background import BackgroundScheduler
 from auth_manager import AuthManager
 from barcode_manager import BarcodeManager, Barcode
@@ -529,25 +529,26 @@ def generate_recipe():
         print(f'Exception: {e}')
         return jsonify({'error': 'Failed to generate recipe', 'details': str(e)}), 500
 
-# Route to generate a recipe from the Firebase database
-# @app.route("/generate_recipe_from_database", methods=["GET"])
-# @login_required
-# def generate_recipe_from_database():
-#     user: User = flask_login.current_user
-#     household = household_manager.get_active_household(user.get_id())
-#     today_millis = ProductManager.parse_import_date(
-#         datetime.now(pt_timezone).strftime("%d %b %Y")
-#     )
-#     # Retrieve product names for current user from Firestore.
-#     product_names = []
-#     for product in product_mgr.get_household_products(household.id):
-#         # Ensure the product is neither wasted nor expired.
-#         if not product.wasted and product.expires >= today_millis:
-#             product_names.append(product.product_name)
 
-#     # Generate a recipe based on the product names
-#     recipe_suggestion = recipe_generator.generate_recipe(product_names)
-#     return jsonify({"recipe_suggestion": recipe_suggestion})
+# Generate recipe based on database products
+@app.route("/generate_recipe_from_database", methods=["GET"])
+@token_required
+def generate_recipe_from_database():
+    user: User = current_user
+    household = household_manager.get_active_household(user.get_id())
+    today_millis = ProductManager.parse_import_date(
+        datetime.now(pt_timezone).strftime("%d %b %Y")
+    )
+    # Retrieve product names for current user from Firestore.
+    product_names = []
+    for product in product_mgr.get_household_products(household.id):
+        # Ensure the product is neither wasted nor expired.
+        if not product.wasted and product.expires >= today_millis:
+            product_names.append(product.product_name)
+
+    # Generate a recipe based on the product names
+    recipe_suggestion = recipe_generator.generate_recipe(product_names)
+    return jsonify({"recipe_suggestion": recipe_suggestion})
 
 
 # Route for generating a recipe based on user input

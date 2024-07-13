@@ -1,6 +1,7 @@
 import axios from 'axios';
 import qs from 'qs';
 import { Product } from './Product';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // interface Authenticator {
 //   register?: (email: string, password: string) => Promise<boolean>;
@@ -16,7 +17,7 @@ class Requests {
   static idToken = "";
   static displayName = "";
 
-  constructor() {}
+  constructor() { }
 
   async handleLogin(email: string, password: string): Promise<boolean> {
     try {
@@ -35,7 +36,8 @@ class Requests {
         Requests.idToken = response.data.it;
         // Save the user's display name
         Requests.displayName = response.data.display_name;
-    
+        await AsyncStorage.setItem('idToken', Requests.idToken);
+        await AsyncStorage.setItem('displayName', Requests.displayName);
       } else {
         console.error('Login failed.');
         throw new Error('Login failed');
@@ -48,43 +50,42 @@ class Requests {
     return true;
   }
 
-    async register(name: string, email: string, password: string): Promise<boolean> {
-      try {
-        const response = await axios.post(
-          `${BASE_URL}/register`,
-          qs.stringify({ name, email, password }),
-          {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            // Prevent axios from following redirects
-            maxRedirects: 0
-          }
-        );
-  
-        if (response.status >= 200 && response.status < 300) {
-          console.log('Registration successful');
-          return true;
-        } else {
-          console.error('Registration failed');
-          return false;
-        }
-      } catch (error) {
-        console.error('Registration failed', error);
-        return false;
-      }
-    }
-
-
-  // TODO: Add filters
-  // TODO: Handle token needing refreshing.
-  async listProducts(): Promise<Product[]> {
+  async register(name: string, email: string, password: string): Promise<boolean> {
     try {
       const response = await axios.post(
+        `${BASE_URL}/register`,
+        qs.stringify({ name, email, password }),
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          maxRedirects: 0
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        console.log('Registration successful');
+        return true;
+      } else {
+        console.error('Registration failed');
+        return false;
+      }
+    } catch (error) {
+      console.error('Registration failed', error);
+      return false;
+    }
+  }
+
+  async listProducts(): Promise<Product[]> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.post(
         `${BASE_URL}/list_products`,
-        qs.stringify({ /* TODO: filters */}),
+        qs.stringify({ /* TODO: filters */ }),
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'idToken': Requests.idToken
+            'idToken': idToken
           },
           // Prevent axios from following redirects
           maxRedirects: 0
@@ -100,20 +101,23 @@ class Requests {
         return [];
       }
     } catch (error) {
-      console.error('Request failed.');
+      console.error('Request failed.', error);
       return [];
     }
   }
 
   async addProduct(product: Product): Promise<boolean> {
     try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
       const response = await axios.post(
         `${BASE_URL}/add_product`,
         product,
         {
           headers: {
             'Content-Type': 'application/json',
-            'idToken': Requests.idToken,
+            'idToken': idToken,
           },
           maxRedirects: 0,
         }
@@ -132,17 +136,18 @@ class Requests {
     }
   }
 
-
   async deleteProduct(productId: string): Promise<boolean> {
-    console.log('Sending delete request with token:', Requests.idToken);
     try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
       const response = await axios.post(
         `${BASE_URL}/delete_product/${productId}`,
         {},
         {
           headers: {
             'Content-Type': 'application/json',
-            'idToken': Requests.idToken
+            'idToken': idToken
           },
           maxRedirects: 0
         }
@@ -163,13 +168,16 @@ class Requests {
 
   async wasteProduct(productId: string): Promise<boolean> {
     try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
       const response = await axios.post(
         `${BASE_URL}/waste_product/${productId}`,
         {},
         {
           headers: {
             'Content-Type': 'application/json',
-            'idToken': Requests.idToken,
+            'idToken': idToken,
           },
           maxRedirects: 0,
         }
@@ -190,13 +198,16 @@ class Requests {
 
   async updateProduct(product: Product): Promise<boolean> {
     try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
       const response = await axios.post(
         `${BASE_URL}/update_product/${product.product_id}`,
         product,
         {
           headers: {
             'Content-Type': 'application/json',
-            'idToken': Requests.idToken
+            'idToken': idToken
           },
           maxRedirects: 0
         }
@@ -215,14 +226,18 @@ class Requests {
     }
   }
 
-  async generateRecipe(ingredients: string): Promise<string> {
+  static async generateRecipe(ingredients: string): Promise<string> {
     try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
       const response = await axios.post(
         `${BASE_URL}/generate-recipe`,
         { ingredients },
         {
           headers: {
             'Content-Type': 'application/json',
+            'idToken': idToken
           },
         }
       );
@@ -236,6 +251,27 @@ class Requests {
       }
     } catch (error) {
       console.error('Failed to generate recipe', error);
+      return '';
+    }
+  }
+
+  static async generateRecipeFromDatabase(): Promise<string> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.get(
+        `${BASE_URL}/generate_recipe_from_database`,
+        {
+          headers: {
+            'idToken': idToken,
+          },
+        }
+      );
+
+      return response.status >= 200 && response.status < 300 ? response.data.recipe_suggestion : '';
+    } catch (error) {
+      console.error('Failed to generate recipe from database', error);
       return '';
     }
   }

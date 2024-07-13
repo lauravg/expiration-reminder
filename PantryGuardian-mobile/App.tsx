@@ -19,6 +19,7 @@ import WastedProducts from './WastedProductScreen';
 import Requests from './Requests';
 import { fetchAndSetIdToken, registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -55,7 +56,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
       <Tab.Screen name="Inventory" options={{ headerShown: false }}>
         {() => <Homepage onProductAdded={onProductAdded} />}
       </Tab.Screen>
-      <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: true }} />
+      <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: false }} />
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
         {() => null}
       </Tab.Screen>
@@ -114,6 +115,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
 export default function App() {
   const [addProductModalVisible, setAddProductModalVisible] = useState(false);
   const [productAdded, setProductAdded] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const toggleAddProductModal = () => {
     setAddProductModalVisible(!addProductModalVisible);
@@ -123,11 +125,16 @@ export default function App() {
     setProductAdded(productAdded + 1); // Increment to trigger reload
   };
 
-  useEffect(() => {
-    const authenticateAndRegisterForNotifications = async () => {
+  const authenticateAndRegisterForNotifications = async () => {
+    try {
       await fetchAndSetIdToken();
 
-      if (Requests.idToken) {
+      const idToken = await AsyncStorage.getItem('idToken');
+      console.log('Retrieved idToken from AsyncStorage:', idToken);
+
+      if (idToken) {
+        Requests.idToken = idToken; // Ensure Requests class has the idToken
+
         const subscription = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
           console.log(notification);
         });
@@ -142,16 +149,28 @@ export default function App() {
       } else {
         console.error('idToken is missing, cannot proceed with push notification registration.');
       }
-    };
+    } catch (error) {
+      console.error('Error in authenticateAndRegisterForNotifications:', error);
+    }
+  };
 
-    authenticateAndRegisterForNotifications();
-  }, []);
+  useEffect(() => {
+    if (isAuthenticated) {
+      authenticateAndRegisterForNotifications();
+    }
+  }, [isAuthenticated]);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
 
   return (
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
-          <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+          <Stack.Screen name="Login"  options={{ headerShown: false }}>
+            {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
+          </Stack.Screen>
           <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
           <Stack.Screen name="Main" options={{ headerShown: false }}>
             {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onProductAdded={handleProductAdded} />}

@@ -28,7 +28,6 @@ const GlobalStyles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-
   // Login and Registration
   loginContainer: {
     justifyContent: 'center',
@@ -53,7 +52,6 @@ const GlobalStyles = StyleSheet.create({
     color: colors.primary,
   },
 
-
   // Header
   header: {
     paddingLeft: 30,
@@ -74,12 +72,12 @@ const GlobalStyles = StyleSheet.create({
   },
 
   sectionHeader: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
     color: colors.primary,
+    textAlign: 'center',
   },
-
 
   // Filter
   filterContainer: {
@@ -102,7 +100,6 @@ const GlobalStyles = StyleSheet.create({
     color: colors.primary,
     textDecorationLine: 'underline',
   },
-
 
   // Modal
   modalContent: {
@@ -137,9 +134,14 @@ const GlobalStyles = StyleSheet.create({
     flex: 1,
   },
 
-
   // Button
   button: {
+    marginTop: 20,
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
 
@@ -149,20 +151,17 @@ const GlobalStyles = StyleSheet.create({
     marginTop: 20,
   },
 
-
   // Input
   input: {
     marginBottom: 10,
     backgroundColor: colors.input,
   },
 
-
   // Search
   searchInput: {
     marginVertical: 10,
     backgroundColor: colors.input,
   },
-
 
   // Product Details (Modal)
   productDetails: {
@@ -179,7 +178,6 @@ const GlobalStyles = StyleSheet.create({
     fontWeight: 'bold',
     marginRight: 10,
   },
-
 
   // Product Container
   productList: {
@@ -205,7 +203,6 @@ const GlobalStyles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.productBackground,
   },
-
 
   // Product Information
   productInfo: {
@@ -240,7 +237,6 @@ const GlobalStyles = StyleSheet.create({
     width: '25%',
   },
 
-
   // Error
   errorMessage: {
     color: colors.error,
@@ -248,8 +244,7 @@ const GlobalStyles = StyleSheet.create({
     marginTop: 10,
   },
 
-
-  //Settings
+  // Settings
   preference: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -286,10 +281,17 @@ const GlobalStyles = StyleSheet.create({
     borderRadius: 8,
     elevation: 4,
   },
+  
   recipeText: {
     fontSize: 16,
     color: colors.onBackground,
     lineHeight: 24,
+  },
+
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
 });
 
