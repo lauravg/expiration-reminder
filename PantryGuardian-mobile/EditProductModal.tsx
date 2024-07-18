@@ -99,7 +99,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
           <Button mode="contained" theme={{ colors: { primary: colors.primary } }} onPress={handleUpdateProduct}>
             Submit
           </Button>
-          {isDatePickerVisible && <Calendar onDayPress={(day) => handleExpirationDateChange(day.dateString)} />}
+          {isDatePickerVisible && <Calendar onDayPress={(day: any) => handleExpirationDateChange(day.dateString)} />}
         </View>
       </TouchableWithoutFeedback>
 

@@ -275,6 +275,127 @@ class Requests {
       return '';
     }
   }
+
+  async addLocation(location: string): Promise<boolean> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.post(
+        `${BASE_URL}/add_location`,
+        { location },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'idToken': idToken,
+          },
+          maxRedirects: 0,
+        }
+      );
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error adding location:', error);
+      return false;
+    }
+  }
+
+  async deleteLocation(location: string): Promise<boolean> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.post(
+        `${BASE_URL}/delete_location`,
+        { location },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'idToken': idToken,
+          },
+          maxRedirects: 0,
+        }
+      );
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error deleting location:', error);
+      return false;
+    }
+  }
+
+  async addCategory(category: string): Promise<boolean> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.post(
+        `${BASE_URL}/add_category`,
+        { category },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'idToken': idToken,
+          },
+          maxRedirects: 0,
+        }
+      );
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error adding category:', error);
+      return false;
+    }
+  }
+
+  async deleteCategory(category: string): Promise<boolean> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.post(
+        `${BASE_URL}/delete_category`,
+        { category },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'idToken': idToken,
+          },
+          maxRedirects: 0,
+        }
+      );
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      return false;
+    }
+  }
+
+  async getLocationsAndCategories(): Promise<{ locations: string[], categories: string[] }> {
+    try {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (!idToken) throw new Error('idToken not found');
+
+      const response = await axios.get(
+        `${BASE_URL}/get_locations_categories`,
+        {
+          headers: {
+            'idToken': idToken,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        return response.data;
+      } else {
+        throw new Error('Failed to fetch locations and categories');
+      }
+    } catch (error) {
+      console.error('Error fetching locations and categories:', error);
+      return { locations: [], categories: [] };
+    }
+  }
 }
 
 export default Requests;

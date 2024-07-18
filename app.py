@@ -574,6 +574,101 @@ def save_push_token():
 
 
 
+@app.route("/get_locations_categories", methods=["GET"])
+@token_required
+def get_locations_categories():
+    user = flask_login.current_user
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        user_data = doc.to_dict()
+        locations = user_data.get("locations", ["Pantry", "Fridge", "Freezer"])
+        categories = user_data.get("categories", ["Veggies", "Fruits", "Baking", "Spices", "Others"])
+        return jsonify({"locations": locations, "categories": categories})
+    else:
+        return jsonify({"locations": [], "categories": []})
+
+@app.route("/add_location", methods=["POST"])
+@token_required
+def add_location():
+    user = flask_login.current_user
+    data = request.json
+    new_location = data.get("location")
+    if not new_location:
+        return jsonify({"success": False, "error": "Location is required"}), 400
+
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        user_data = doc.to_dict()
+        locations = user_data.get("locations", ["Pantry", "Fridge", "Freezer"])
+        if new_location not in locations:
+            locations.append(new_location)
+            doc_ref.update({"locations": locations})
+            return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Unable to add location"}), 500
+
+@app.route("/delete_location", methods=["POST"])
+@token_required
+def delete_location():
+    user = flask_login.current_user
+    data = request.json
+    location_to_delete = data.get("location")
+    if not location_to_delete:
+        return jsonify({"success": False, "error": "Location is required"}), 400
+
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        user_data = doc.to_dict()
+        locations = user_data.get("locations", ["Pantry", "Fridge", "Freezer"])
+        if location_to_delete in locations:
+            locations.remove(location_to_delete)
+            doc_ref.update({"locations": locations})
+            return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Unable to delete location"}), 500
+
+@app.route("/add_category", methods=["POST"])
+@token_required
+def add_category():
+    user = flask_login.current_user
+    data = request.json
+    new_category = data.get("category")
+    if not new_category:
+        return jsonify({"success": False, "error": "Category is required"}), 400
+
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        user_data = doc.to_dict()
+        categories = user_data.get("categories", ["Veggies", "Fruits", "Baking", "Spices", "Others"])
+        if new_category not in categories:
+            categories.append(new_category)
+            doc_ref.update({"categories": categories})
+            return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Unable to add category"}), 500
+
+@app.route("/delete_category", methods=["POST"])
+@token_required
+def delete_category():
+    user = flask_login.current_user
+    data = request.json
+    category_to_delete = data.get("category")
+    if not category_to_delete:
+        return jsonify({"success": False, "error": "Category is required"}), 400
+
+    doc_ref = firestore.collection("users").document(user.get_id())
+    doc = doc_ref.get()
+    if doc.exists:
+        user_data = doc.to_dict()
+        categories = user_data.get("categories", ["Veggies", "Fruits", "Baking", "Spices", "Others"])
+        if category_to_delete in categories:
+            categories.remove(category_to_delete)
+            doc_ref.update({"categories": categories})
+            return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Unable to delete category"}), 500
+
+
 def is_url_safe(url: str) -> bool:
     return url in [
         "/",

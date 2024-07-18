@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar, ActivityIndicator, View } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -116,6 +116,7 @@ export default function App() {
   const [addProductModalVisible, setAddProductModalVisible] = useState(false);
   const [productAdded, setProductAdded] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const toggleAddProductModal = () => {
     setAddProductModalVisible(!addProductModalVisible);
@@ -155,6 +156,19 @@ export default function App() {
   };
 
   useEffect(() => {
+    const checkAuthStatus = async () => {
+      const idToken = await AsyncStorage.getItem('idToken');
+      if (idToken) {
+        Requests.idToken = idToken;
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       authenticateAndRegisterForNotifications();
     }
@@ -163,6 +177,14 @@ export default function App() {
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -200,7 +222,7 @@ export default function App() {
             })}
           />
         </Stack.Navigator>
-        <StatusBar style="auto" />
+        <StatusBar/>
         <AddProductModal
           visible={addProductModalVisible}
           onClose={toggleAddProductModal}

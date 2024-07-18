@@ -157,6 +157,11 @@ const GlobalStyles = StyleSheet.create({
     backgroundColor: colors.input,
   },
 
+  simpleInput: {
+    marginBottom: 10,
+    backgroundColor: 'transparent',
+  },
+
   // Search
   searchInput: {
     marginVertical: 10,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableWithoutFeedback } from 'react-native';
 import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
@@ -6,12 +6,15 @@ import { Picker } from '@react-native-picker/picker';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests from './Requests';
+import axios from 'axios';
 
 interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
-  onProductAdded: () => void
+  onProductAdded: () => void;
 }
+
+const BASE_URL = "http://127.0.0.1:8081";
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onProductAdded }) => {
   const [productName, setProductName] = useState('');
@@ -21,6 +24,29 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadLocationsAndCategories = async () => {
+      if (!Requests.idToken) return;  // Ensure token is available before making requests
+  
+      try {
+        const response = await axios.get(`${BASE_URL}/get_locations_categories`, {
+          headers: { 'idToken': Requests.idToken }
+        });
+        if (response.status === 200) {
+          setLocations(response.data.locations);
+          setCategories(response.data.categories);
+        }
+      } catch (error) {
+        console.error('Failed to load locations and categories', error);
+      }
+    };
+  
+    loadLocationsAndCategories();
+  }, []);
+  
 
   const handleExpirationDateChange = (date: string) => {
     setExpirationDate(date);
@@ -102,19 +128,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
           <Button mode="contained" theme={{ colors: { primary: colors.primary } }} onPress={handleAddProduct}>
             Submit
           </Button>
-          {isDatePickerVisible && <Calendar onDayPress={(day) => handleExpirationDateChange(day.dateString)} />}
-        </View>
+          {isDatePickerVisible && <Calendar onDayPress={(day:any) => handleExpirationDateChange(day.dateString)} />}
+          </View>
       </TouchableWithoutFeedback>
 
       <PaperModal visible={locationModalVisible} onDismiss={() => setLocationModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
         <View style={GlobalStyles.pickerContainer}>
           <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={handleLocationChange}>
             <Picker.Item label="Select Location" value="" />
-            <Picker.Item label="Pantry" value="Pantry" />
-            <Picker.Item label="Fridge" value="Fridge" />
-            <Picker.Item label="Freezer (Kitchen)" value="Freezer (Kitchen)" />
-            <Picker.Item label="Freezer (Downstairs)" value="Freezer (Downstairs)" />
-            <Picker.Item label="Liquor Cabinet" value="Liquor Cabinet" />
+            {locations.map((loc) => (
+              <Picker.Item key={loc} label={loc} value={loc} />
+            ))}
           </Picker>
         </View>
       </PaperModal>
@@ -122,21 +146,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       <PaperModal visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
         <Picker selectedValue={category} style={GlobalStyles.input} onValueChange={(itemValue) => handleCategoryChange(itemValue)}>
           <Picker.Item label="Select Category" value="" />
-          <Picker.Item label="Food" value="Food" />
-          <Picker.Item label="Baby Food" value="Baby Food" />
-          <Picker.Item label="Veggies" value="Veggies" />
-          <Picker.Item label="Meat" value="Meat" />
-          <Picker.Item label="Fish" value="Fish" />
-          <Picker.Item label="Fruits" value="Fruits" />
-          <Picker.Item label="Sauce/Dressing" value="Sauce" />
-          <Picker.Item label="Spices" value="Spices" />
-          <Picker.Item label="Juice/Beverages" value="Juice/Beverages" />
-          <Picker.Item label="Liquor" value="Liquor" />
-          <Picker.Item label="Wine" value="Wine" />
-          <Picker.Item label="Beer" value="Beer" />
-          <Picker.Item label="Whisky" value="Whisky" />
-          <Picker.Item label="Sparkling" value="Bubbly" />
-          <Picker.Item label="Others" value="Others" />
+          {categories.map((cat) => (
+            <Picker.Item key={cat} label={cat} value={cat} />
+          ))}
         </Picker>
       </PaperModal>
     </PaperModal>
