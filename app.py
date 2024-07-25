@@ -358,12 +358,15 @@ def add_product():
         if not household:
             return jsonify({"success": False, "error": "No active household found"}), 404
 
+        expiration_date = data.get('expiration_date')
+        expires = int(datetime.strptime(expiration_date, "%Y-%m-%d").timestamp() * 1000) if expiration_date else 0
+
         product = Product(
             None,
             barcode=data.get('barcode', ''),
             category=data.get('category', ''),
             created=int(datetime.utcnow().timestamp() * 1000),
-            expires=int(datetime.strptime(data.get('expiration_date'), "%Y-%m-%d").timestamp() * 1000) if data.get('expiration_date') else 0,
+            expires=expires,
             location=data.get('location', ''),
             product_name=data.get('product_name', ''),
             household_id=household.id,
@@ -377,8 +380,8 @@ def add_product():
         # Schedule notification
         user = flask_login.current_user
         settings = firestore.collection("users").document(user.get_id()).get().to_dict().get("notification_settings", {})
-        if settings.get("notificationsEnabled"):
-            expiration_date = datetime.strptime(data.get('expiration_date'), "%Y-%m-%d")
+        if settings.get("notificationsEnabled") and expiration_date:
+            expiration_date = datetime.strptime(expiration_date, "%Y-%m-%d")
             schedule_notification(user.get_id(), product.product_name, expiration_date, settings.get("daysBefore", 5))
 
         return jsonify({"success": True}), 200
@@ -386,7 +389,6 @@ def add_product():
     except Exception as e:
         log.error(f"Error adding product: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 
 # Route to update a product

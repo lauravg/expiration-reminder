@@ -5,12 +5,11 @@ import { TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
-import Requests from './Requests';
+import Requests, { BASE_URL } from './Requests';
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const BASE_URL = "http://127.0.0.1:8081";
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();

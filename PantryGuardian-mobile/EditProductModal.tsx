@@ -7,6 +7,8 @@ import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { Product } from './Product';
 import { format, parse } from 'date-fns';
+import Requests, { BASE_URL } from './Requests';
+import axios from 'axios';
 
 interface EditProductModalProps {
   visible: boolean;
@@ -23,6 +25,29 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [isDatePickerVisible, setIsDatePickerVisible] = useState<boolean>(false);
   const [locationModalVisible, setLocationModalVisible] = useState<boolean>(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (visible) {
+      const loadLocationsAndCategories = async () => {
+        if (!Requests.idToken) return;
+        try {
+          const response = await axios.get(`${BASE_URL}/get_locations_categories`, {
+            headers: { 'idToken': Requests.idToken }
+          });
+          if (response.status === 200) {
+            setLocations(response.data.locations);
+            setCategories(response.data.categories);
+          }
+        } catch (error) {
+          console.error('Failed to load locations and categories', error);
+        }
+      };
+
+      loadLocationsAndCategories();
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (product) {
@@ -107,11 +132,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         <View style={GlobalStyles.pickerContainer}>
           <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={handleLocationChange}>
             <Picker.Item label="Select Location" value="" />
-            <Picker.Item label="Pantry" value="Pantry" />
-            <Picker.Item label="Fridge" value="Fridge" />
-            <Picker.Item label="Freezer (Kitchen)" value="Freezer (Kitchen)" />
-            <Picker.Item label="Freezer (Downstairs)" value="Freezer (Downstairs)" />
-            <Picker.Item label="Liquor Cabinet" value="Liquor Cabinet" />
+            {locations.map((loc) => (
+              <Picker.Item key={loc} label={loc} value={loc} />
+            ))}
           </Picker>
         </View>
       </PaperModal>
@@ -119,21 +142,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
       <PaperModal visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
         <Picker selectedValue={category} style={GlobalStyles.input} onValueChange={(itemValue) => handleCategoryChange(itemValue)}>
           <Picker.Item label="Select Category" value="" />
-          <Picker.Item label="Food" value="Food" />
-          <Picker.Item label="Baby Food" value="Baby Food" />
-          <Picker.Item label="Veggies" value="Veggies" />
-          <Picker.Item label="Meat" value="Meat" />
-          <Picker.Item label="Fish" value="Fish" />
-          <Picker.Item label="Fruits" value="Fruits" />
-          <Picker.Item label="Sauce/Dressing" value="Sauce" />
-          <Picker.Item label="Spices" value="Spices" />
-          <Picker.Item label="Juice/Beverages" value="Juice/Beverages" />
-          <Picker.Item label="Liquor" value="Liquor" />
-          <Picker.Item label="Wine" value="Wine" />
-          <Picker.Item label="Beer" value="Beer" />
-          <Picker.Item label="Whisky" value="Whisky" />
-          <Picker.Item label="Sparkling" value="Bubbly" />
-          <Picker.Item label="Others" value="Others" />
+          {categories.map((cat) => (
+            <Picker.Item key={cat} label={cat} value={cat} />
+          ))}
         </Picker>
       </PaperModal>
     </PaperModal>
