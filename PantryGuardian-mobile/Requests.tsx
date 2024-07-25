@@ -16,6 +16,8 @@ class Requests {
   static refresh_token = "";
   static idToken = "";
   static displayName = "";
+  static userEmail = "";
+  static userPhotoUrl = "";
 
   constructor() { }
 
@@ -36,6 +38,8 @@ class Requests {
         Requests.idToken = response.data.it;
         // Save the user's display name
         Requests.displayName = response.data.display_name;
+        Requests.userEmail = response.data.user_email;
+        Requests.userPhotoUrl = response.data.user_photo_url;
         await AsyncStorage.setItem('idToken', Requests.idToken);
         await AsyncStorage.setItem('displayName', Requests.displayName);
       } else {

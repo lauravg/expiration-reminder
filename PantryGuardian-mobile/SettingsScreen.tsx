@@ -22,6 +22,7 @@ const SettingsScreen = () => {
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const displayName = Requests.displayName;
+  const userEmail = Requests.userEmail;
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     notifications: true,
@@ -198,7 +199,7 @@ const SettingsScreen = () => {
             <Avatar.Icon size={48} icon="account" theme={{ colors: { primary: colors.primary } }} />
             <View style={GlobalStyles.accountInfo}>
               <Text style={GlobalStyles.accountText}>{displayName}</Text>
-              <Text style={GlobalStyles.accountEmail}>Email TBD</Text>
+              <Text style={GlobalStyles.accountEmail}>{userEmail}</Text>
             </View>
           </View>
         </TouchableOpacity>

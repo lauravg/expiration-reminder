@@ -2,6 +2,7 @@ from absl import logging as log
 from firebase_admin import credentials, auth, firestore
 from firebase_admin.auth import UserRecord
 
+
 class User:
     def __init__(self, record: UserRecord) -> None:
         self.record = record
@@ -11,6 +12,9 @@ class User:
 
     def display_name(self) -> str:
         return self.record.display_name
+
+    def photo_url(self) -> str:
+        return self.record.photo_url
 
     def is_authenticated(self) -> bool:
         return True
@@ -24,6 +28,7 @@ class User:
     def get_id(self) -> str:
         return self.record.uid
 
+
 class UserManager:
     def __init__(self) -> None:
         pass
@@ -35,5 +40,5 @@ class UserManager:
             return User(record)
 
         except auth.AuthError as e:
-            log.error(f'Error retrieving user information: {e}')
+            log.error(f"Error retrieving user information: {e}")
             return None
