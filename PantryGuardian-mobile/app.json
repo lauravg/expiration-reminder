@@ -15,7 +15,10 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,6 +32,9 @@
     "extra": {
       "expoProjectId": "92e1251a-e072-484a-8ebd-10e717e57282"
     },
-    "owner": "lauravgr"
+    "owner": "lauravgr",
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

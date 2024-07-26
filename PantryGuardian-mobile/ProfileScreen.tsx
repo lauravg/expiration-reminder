@@ -5,12 +5,10 @@ import { IconButton, TextInput as PaperTextInput, Button, Avatar } from 'react-n
 import * as ImagePicker from 'expo-image-picker';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
+import {SessionData} from './SessionData'
 
 const ProfileScreen = () => {
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const sessionData = new SessionData();
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const pickImage = async () => {
@@ -28,7 +26,8 @@ const ProfileScreen = () => {
 
   const handleSave = () => {
     // Add your save logic here (e.g., API call to save profile details)
-    console.log('Profile information saved:', { email, username, firstName, lastName, profileImage });
+    // console.log('Profile information saved:', { sessionData, displayName, profileImage });
+    // TODO
   };
 
   return (
@@ -47,30 +46,17 @@ const ProfileScreen = () => {
           style={GlobalStyles.input}
           mode="outlined"
           label="Email"
-          value={email}
-          onChangeText={setEmail}
+          value={sessionData.userEmail}
+          onChangeText={sessionData.setUserEmail}
         />
         <PaperTextInput
           style={GlobalStyles.input}
           mode="outlined"
-          label="Username"
-          value={username}
-          onChangeText={setUsername}
+          label="Display Name"
+          value={sessionData.userDisplayName}
+          onChangeText={sessionData.setUserDisplayName}
         />
-        <PaperTextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="First Name"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
-        <PaperTextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Last Name"
-          value={lastName}
-          onChangeText={setLastName}
-        />
+
 
         <Button mode="contained" theme={{ colors: { primary: colors.primary } }} style={styles.button} onPress={handleSave}>
           Save

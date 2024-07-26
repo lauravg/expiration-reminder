@@ -1,7 +1,7 @@
 import axios from 'axios';
 import qs from 'qs';
 import { Product } from './Product';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SessionData } from './SessionData'
 
 // interface Authenticator {
 //   register?: (email: string, password: string) => Promise<boolean>;
@@ -15,11 +15,10 @@ class Requests {
   // TODO: These should be stored in secure storage to persist.
   static refresh_token = "";
   static idToken = "";
-  static displayName = "";
-  static userEmail = "";
-  static userPhotoUrl = "";
+  private sessionData = new SessionData()
 
-  constructor() { }
+  constructor() { 
+  }
 
   async handleLogin(email: string, password: string): Promise<boolean> {
     try {
@@ -34,21 +33,20 @@ class Requests {
       );
 
       if (response.status >= 200 && response.status < 300) {
+
         Requests.refresh_token = response.data.rt;
+        this.sessionData.setRefreshToken(response.data.rt)
         Requests.idToken = response.data.it;
+        this.sessionData.setIdToken(response.data.it)
         // Save the user's display name
-        Requests.displayName = response.data.display_name;
-        Requests.userEmail = response.data.user_email;
-        Requests.userPhotoUrl = response.data.user_photo_url;
-        await AsyncStorage.setItem('idToken', Requests.idToken);
-        await AsyncStorage.setItem('displayName', Requests.displayName);
+        this.sessionData.setUserDisplayName(response.data.display_name)
+        this.sessionData.setUserEmail(response.data.user_email)
+        this.sessionData.setUserPhotoUrl(response.data.user_photo_url)
       } else {
-        console.error('Login failed.');
-        throw new Error('Login failed');
+        throw new Error(`Login failed. Return code was ${response.status}`);
       }
     } catch (error) {
-      console.error('Login failed.');
-      throw new Error('Login failed');
+      throw new Error('Login failed: ' + error);
     }
     console.info('Login successful');
     return true;
@@ -80,7 +78,7 @@ class Requests {
 
   async listProducts(): Promise<Product[]> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -112,7 +110,7 @@ class Requests {
 
   async addProduct(product: Product): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -142,7 +140,7 @@ class Requests {
 
   async deleteProduct(productId: string): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -172,7 +170,7 @@ class Requests {
 
   async wasteProduct(productId: string): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -202,7 +200,7 @@ class Requests {
 
   async updateProduct(product: Product): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -232,7 +230,7 @@ class Requests {
 
   static async generateRecipe(ingredients: string): Promise<string> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -261,7 +259,7 @@ class Requests {
 
   static async generateRecipeFromDatabase(): Promise<string> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.get(
@@ -282,7 +280,7 @@ class Requests {
 
   async addLocation(location: string): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -306,7 +304,7 @@ class Requests {
 
   async deleteLocation(location: string): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -330,7 +328,7 @@ class Requests {
 
   async addCategory(category: string): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -354,7 +352,7 @@ class Requests {
 
   async deleteCategory(category: string): Promise<boolean> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.post(
@@ -378,7 +376,7 @@ class Requests {
 
   async getLocationsAndCategories(): Promise<{ locations: string[], categories: string[] }> {
     try {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
 
       const response = await axios.get(

@@ -8,13 +8,13 @@ class User:
         self.record = record
 
     def email(self) -> str:
-        return self.record.email
+        return self.record.email if self.record.email != None else ""
 
     def display_name(self) -> str:
-        return self.record.display_name
+        return self.record.display_name if self.record.display_name != None else ""
 
     def photo_url(self) -> str:
-        return self.record.photo_url
+        return self.record.photo_url if self.record.photo_url != None else ""
 
     def is_authenticated(self) -> bool:
         return True

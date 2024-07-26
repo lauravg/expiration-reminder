@@ -9,6 +9,7 @@ import Requests, { BASE_URL } from './Requests';
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SessionData } from './SessionData';
 
 
 const SettingsScreen = () => {
@@ -21,8 +22,7 @@ const SettingsScreen = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
-  const displayName = Requests.displayName;
-  const userEmail = Requests.userEmail;
+  const sessionData = new SessionData();
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     notifications: true,
@@ -198,8 +198,8 @@ const SettingsScreen = () => {
           <View style={GlobalStyles.accountContainer}>
             <Avatar.Icon size={48} icon="account" theme={{ colors: { primary: colors.primary } }} />
             <View style={GlobalStyles.accountInfo}>
-              <Text style={GlobalStyles.accountText}>{displayName}</Text>
-              <Text style={GlobalStyles.accountEmail}>{userEmail}</Text>
+              <Text style={GlobalStyles.accountText}>{sessionData.userDisplayName}</Text>
+              <Text style={GlobalStyles.accountEmail}>{sessionData.userEmail}</Text>
             </View>
           </View>
         </TouchableOpacity>
