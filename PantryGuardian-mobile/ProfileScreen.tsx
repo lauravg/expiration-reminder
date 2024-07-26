@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { IconButton, TextInput as PaperTextInput, Button, Avatar } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import GlobalStyles from './GlobalStyles';
@@ -8,6 +8,7 @@ import { colors } from './theme';
 import {SessionData} from './SessionData'
 
 const ProfileScreen = () => {
+  const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const sessionData = new SessionData();
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
@@ -30,6 +31,10 @@ const ProfileScreen = () => {
     // TODO
   };
 
+  const handleLogout = () => {
+    sessionData.eraseAllData();
+    navigation.navigate({ name: 'Login', params: { } });
+  };
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
       <View style={[GlobalStyles.content, styles.content]}>
@@ -60,6 +65,9 @@ const ProfileScreen = () => {
 
         <Button mode="contained" theme={{ colors: { primary: colors.primary } }} style={styles.button} onPress={handleSave}>
           Save
+        </Button>
+        <Button mode="contained" theme={{ colors: { primary: colors.error } }} style={styles.button} onPress={handleLogout}>
+          Logout
         </Button>
       </View>
     </View>

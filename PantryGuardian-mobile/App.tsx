@@ -154,10 +154,10 @@ export default function App() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       const idToken = sessionData.idToken;
-      if (idToken) {
-        setIsAuthenticated(true);
-      }
       setIsLoading(false);
+      if (idToken) {
+        handleLoginSuccess();
+      }
     };
 
     checkAuthStatus();

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Button, TextInput as PaperTextInput, TextInput } from 'react-native-paper';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { colors } from './theme';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SessionData } from './SessionData';
 
 type LoginScreenProps = {
   onLoginSuccess: () => void;
@@ -19,6 +19,14 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const requests = new Requests();
 
+  useEffect(() => {
+    const sessionData = new SessionData();
+    // TODO: Check that token is valid and refresh it if needed.
+    if (sessionData.idToken) {
+      navigation.navigate({ name: 'Main', params: { } });
+    }
+  });
+
   const handleLogin = async (email: string, password: string) => {
     try {
       const response = await requests.handleLogin(email, password);
@@ -26,7 +34,6 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
         console.info('Login successful');
         // Notify app of successful login
         onLoginSuccess();
-        // Pass the username to the main screen
         navigation.navigate({ name: 'Main', params: { } });
       } else {
         setError('Login failed.');

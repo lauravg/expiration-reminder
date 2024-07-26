@@ -18,6 +18,20 @@ export class SessionData {
     this.refreshToken = this.getValue("refreshToken")
   }
 
+  public eraseAllData() {
+    this.setUserEmail("");
+    this.setUserDisplayName("");
+    this.setUserPhotoUrl("");
+    this.setIdToken("");
+    this.setRefreshToken("");
+
+    this.userEmail = ""
+    this.userDisplayName = ""
+    this.userPhotoUrl = ""
+    this.idToken = ""
+    this.refreshToken = ""
+  }
+
   public setUserEmail(email: string) {
     this.userEmail = this.setValue(email, this.userEmail, "userEmail");
   }
