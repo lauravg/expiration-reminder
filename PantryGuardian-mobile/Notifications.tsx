@@ -5,30 +5,15 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from './Product';
 import { parse } from 'date-fns';
-import Requests, { BASE_URL } from './Requests';
-
-// Function to fetch and set idToken asynchronously
-export async function fetchAndSetIdToken() {
-  try {
-    const idToken = await AsyncStorage.getItem('idToken');
-    if (idToken) {
-      Requests.idToken = idToken;
-      console.log('Fetched idToken from AsyncStorage:', idToken); // Debug log
-    } else {
-      console.error('idToken not found in AsyncStorage');
-    }
-  } catch (error) {
-    console.error('Failed to fetch idToken:', error);
-  }
-}
+import { BASE_URL } from './Requests';
 
 // Function to request notifications permission and get the token
-export async function registerForPushNotificationsAsync() {
+export async function registerForPushNotificationsAsync(idToken: string) {
   try {
     console.log('Starting push notification registration'); // Debug log
 
     // Ensure Requests.idToken is available
-    if (!Requests.idToken) {
+    if (idToken) {
       throw new Error('idToken is missing, cannot save push token');
     }
 
@@ -59,7 +44,7 @@ export async function registerForPushNotificationsAsync() {
 
     // Save push token with idToken
     await axios.post(`${BASE_URL}/save_push_token`, { token }, {
-      headers: { 'idToken': Requests.idToken }
+      headers: { 'idToken': idToken }
     });
 
     await AsyncStorage.setItem('expoPushToken', token);
@@ -71,9 +56,8 @@ export async function registerForPushNotificationsAsync() {
 }
 
 // Function to fetch expiring products from the backend
-export async function fetchExpiringProducts(daysBefore: number): Promise<Product[]> {
+export async function fetchExpiringProducts(idToken: string, daysBefore: number): Promise<Product[]> {
   try {
-    const idToken = await AsyncStorage.getItem('idToken');
     if (!idToken) {
       throw new Error('idToken is missing');
     }
@@ -142,12 +126,12 @@ function parseDate(dateString: string): Date | null {
 }
 
 // Function to schedule daily notifications
-export async function scheduleDailyNotification() {
+export async function scheduleDailyNotification(idToken: string) {
   try {
     console.log('Scheduling daily notifications');
 
     // Fetch notification settings from the backend
-    const settings = await fetchNotificationSettings();
+    const settings = await fetchNotificationSettings(idToken);
 
     if (!settings.notificationsEnabled) {
       console.log('Notifications are disabled');
@@ -156,7 +140,7 @@ export async function scheduleDailyNotification() {
 
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const products = await fetchExpiringProducts(settings.daysBefore);
+    const products = await fetchExpiringProducts(idToken, settings.daysBefore);
     const productNames = products.map((product: Product) => product.product_name).join(', ');
 
     // Add logging for debugging
@@ -186,9 +170,8 @@ export async function scheduleDailyNotification() {
 }
 
 // Function to fetch notification settings from the backend
-async function fetchNotificationSettings() {
+async function fetchNotificationSettings(idToken: string) {
   try {
-    const idToken = await AsyncStorage.getItem('idToken');
     if (!idToken) {
       throw new Error('idToken is missing');
     }

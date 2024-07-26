@@ -5,7 +5,7 @@ import { TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
-import Requests, { BASE_URL } from './Requests';
+import { BASE_URL } from './Requests';
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -33,11 +33,11 @@ const SettingsScreen = () => {
   useEffect(() => {
     // Load saved settings from the database
     const loadSettings = async () => {
-      if (!Requests.idToken) return;
+      if (!sessionData.idToken) return;
 
       try {
         const response = await axios.get(`${BASE_URL}/get_notification_settings`, {
-          headers: { 'idToken': Requests.idToken }
+          headers: { 'idToken': sessionData.idToken }
         });
         if (response.status === 200) {
           setNotificationsEnabled(response.data.notificationsEnabled);
@@ -50,7 +50,7 @@ const SettingsScreen = () => {
 
       try {
         const locationResponse = await axios.get(`${BASE_URL}/get_locations_categories`, {
-          headers: { 'idToken': Requests.idToken }
+          headers: { 'idToken': sessionData.idToken }
         });
         if (locationResponse.status === 200) {
           setLocations(locationResponse.data.locations);
@@ -82,7 +82,7 @@ const SettingsScreen = () => {
         hour: notificationTime.getHours(),
         minute: notificationTime.getMinutes(),
       }, {
-        headers: { 'idToken': Requests.idToken }
+        headers: { 'idToken': sessionData.idToken }
       });
     } catch (error) {
       console.error('Failed to save notification settings', error);
@@ -99,7 +99,7 @@ const SettingsScreen = () => {
         hour: notificationTime.getHours(),
         minute: notificationTime.getMinutes(),
       }, {
-        headers: { 'idToken': Requests.idToken }
+        headers: { 'idToken': sessionData.idToken }
       });
     } catch (error) {
       console.error('Failed to save notification settings', error);
@@ -118,7 +118,7 @@ const SettingsScreen = () => {
           hour: selectedDate.getHours(),
           minute: selectedDate.getMinutes(),
         }, {
-          headers: { 'idToken': Requests.idToken }
+          headers: { 'idToken': sessionData.idToken }
         });
       } catch (error) {
         console.error('Failed to save notification settings', error);
@@ -134,7 +134,7 @@ const SettingsScreen = () => {
 
     try {
       const response = await axios.post(`${BASE_URL}/add_location`, { location: newLocation }, {
-        headers: { 'idToken': Requests.idToken }
+        headers: { 'idToken': sessionData.idToken }
       });
       if (response.status === 200) {
         setLocations([...locations, newLocation]);
@@ -148,7 +148,7 @@ const SettingsScreen = () => {
   const handleDeleteLocation = async (locationToDelete: string) => {
     try {
       const response = await axios.post(`${BASE_URL}/delete_location`, { location: locationToDelete }, {
-        headers: { 'idToken': Requests.idToken }
+        headers: { 'idToken': sessionData.idToken }
       });
       if (response.status === 200) {
         setLocations(locations.filter(location => location !== locationToDelete));
@@ -166,7 +166,7 @@ const SettingsScreen = () => {
 
     try {
       const response = await axios.post(`${BASE_URL}/add_category`, { category: newCategory }, {
-        headers: { 'idToken': Requests.idToken }
+        headers: { 'idToken': sessionData.idToken }
       });
       if (response.status === 200) {
         setCategories([...categories, newCategory]);
@@ -180,7 +180,7 @@ const SettingsScreen = () => {
   const handleDeleteCategory = async (categoryToDelete: string) => {
     try {
       const response = await axios.post(`${BASE_URL}/delete_category`, { category: categoryToDelete }, {
-        headers: { 'idToken': Requests.idToken }
+        headers: { 'idToken': sessionData.idToken }
       });
       if (response.status === 200) {
         setCategories(categories.filter(category => category !== categoryToDelete));

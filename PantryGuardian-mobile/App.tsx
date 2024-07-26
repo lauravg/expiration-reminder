@@ -16,10 +16,9 @@ import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
 import WastedProducts from './WastedProductScreen';
-import Requests from './Requests';
-import { fetchAndSetIdToken, registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
+import { registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SessionData } from './SessionData';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -117,6 +116,7 @@ export default function App() {
   const [productAdded, setProductAdded] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const sessionData = new SessionData();
 
   const toggleAddProductModal = () => {
     setAddProductModalVisible(!addProductModalVisible);
@@ -128,21 +128,17 @@ export default function App() {
 
   const authenticateAndRegisterForNotifications = async () => {
     try {
-      await fetchAndSetIdToken();
-
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = sessionData.idToken;
       console.log('Retrieved idToken from AsyncStorage:', idToken);
 
       if (idToken) {
-        Requests.idToken = idToken; // Ensure Requests class has the idToken
-
         const subscription = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
           console.log(notification);
         });
 
         // Schedule daily notification
-        await registerForPushNotificationsAsync();
-        await scheduleDailyNotification();
+        await registerForPushNotificationsAsync(idToken);
+        await scheduleDailyNotification(idToken);
 
         return () => {
           Notifications.removeNotificationSubscription(subscription);
@@ -157,9 +153,8 @@ export default function App() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      const idToken = await AsyncStorage.getItem('idToken');
+      const idToken = sessionData.idToken;
       if (idToken) {
-        Requests.idToken = idToken;
         setIsAuthenticated(true);
       }
       setIsLoading(false);

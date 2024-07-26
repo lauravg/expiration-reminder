@@ -24,13 +24,10 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
       const response = await requests.handleLogin(email, password);
       if (response) {
         console.info('Login successful');
-        console.log('idToken after login:', Requests.idToken); // Debug log
-        // Save the idToken to AsyncStorage
-        await AsyncStorage.setItem('idToken', Requests.idToken);
         // Notify app of successful login
         onLoginSuccess();
         // Pass the username to the main screen
-        navigation.navigate({ name: 'Main', params: { displayName: Requests.displayName } });
+        navigation.navigate({ name: 'Main', params: { } });
       } else {
         setError('Login failed.');
       }
