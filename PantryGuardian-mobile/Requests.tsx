@@ -12,9 +12,6 @@ import { SessionData } from './SessionData'
 const BASE_URL = "http://127.0.0.1:8081";
 
 class Requests {
-  // TODO: These should be stored in secure storage to persist.
-  static refresh_token = "";
-  static idToken = "";
   private sessionData = new SessionData()
 
   constructor() { 
@@ -33,15 +30,12 @@ class Requests {
       );
 
       if (response.status >= 200 && response.status < 300) {
-
-        Requests.refresh_token = response.data.rt;
-        this.sessionData.setRefreshToken(response.data.rt)
-        Requests.idToken = response.data.it;
-        this.sessionData.setIdToken(response.data.it)
-        // Save the user's display name
-        this.sessionData.setUserDisplayName(response.data.display_name)
-        this.sessionData.setUserEmail(response.data.user_email)
-        this.sessionData.setUserPhotoUrl(response.data.user_photo_url)
+        // Persist the data we are gettin from the auth request in a secure location.
+        this.sessionData.setRefreshToken(response.data.rt);
+        this.sessionData.setIdToken(response.data.it);
+        this.sessionData.setUserDisplayName(response.data.display_name);
+        this.sessionData.setUserEmail(response.data.user_email);
+        this.sessionData.setUserPhotoUrl(response.data.user_photo_url);
       } else {
         throw new Error(`Login failed. Return code was ${response.status}`);
       }
@@ -228,7 +222,7 @@ class Requests {
     }
   }
 
-  static async generateRecipe(ingredients: string): Promise<string> {
+  async generateRecipe(ingredients: string): Promise<string> {
     try {
       const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');
@@ -257,7 +251,7 @@ class Requests {
     }
   }
 
-  static async generateRecipeFromDatabase(): Promise<string> {
+  async generateRecipeFromDatabase(): Promise<string> {
     try {
       const idToken = this.sessionData.idToken;
       if (!idToken) throw new Error('idToken not found');

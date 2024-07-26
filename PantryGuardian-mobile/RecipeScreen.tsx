@@ -10,6 +10,7 @@ const RecipeScreen = () => {
   const [ingredients, setIngredients] = useState('');
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState<string | null>(null);
+  const requests = new Requests();
 
   const handleGenerateRecipe = async () => {
     if (!ingredients) {
@@ -20,7 +21,7 @@ const RecipeScreen = () => {
     setRecipe(null);
 
     try {
-      const recipe = await Requests.generateRecipe(ingredients);
+      const recipe = await requests.generateRecipe(ingredients);
       setRecipe(recipe);
     } catch (error) {
       console.error('Error generating recipe:', error);
@@ -35,7 +36,7 @@ const RecipeScreen = () => {
     setRecipe(null);
 
     try {
-      const recipe = await Requests.generateRecipeFromDatabase();
+      const recipe = await requests.generateRecipeFromDatabase();
       setRecipe(recipe);
     } catch (error) {
       console.error('Error generating recipe from database:', error);
