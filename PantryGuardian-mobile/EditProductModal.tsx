@@ -8,7 +8,6 @@ import { colors } from './theme';
 import { Product } from './Product';
 import { format, parse } from 'date-fns';
 import Requests, { BASE_URL } from './Requests';
-import axios from 'axios';
 
 interface EditProductModalProps {
   visible: boolean;
@@ -27,27 +26,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const requests = new Requests()
 
   useEffect(() => {
-    if (visible) {
       const loadLocationsAndCategories = async () => {
-        if (!Requests.idToken) return;
-        try {
-          const response = await axios.get(`${BASE_URL}/get_locations_categories`, {
-            headers: { 'idToken': Requests.idToken }
-          });
-          if (response.status === 200) {
-            setLocations(response.data.locations);
-            setCategories(response.data.categories);
-          }
-        } catch (error) {
-          console.error('Failed to load locations and categories', error);
-        }
+        const response = await requests.getLocationsAndCategories();
+        setLocations(response.locations);
+        setCategories(response.categories);
       };
 
       loadLocationsAndCategories();
-    }
-  }, [visible]);
+  }, []);
 
   useEffect(() => {
     if (product) {

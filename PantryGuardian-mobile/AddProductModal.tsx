@@ -6,7 +6,6 @@ import { Picker } from '@react-native-picker/picker';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests, { BASE_URL } from './Requests';
-import axios from 'axios';
 
 interface AddProductModalProps {
   visible: boolean;
@@ -25,27 +24,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const requests = new Requests()
 
   useEffect(() => {
-    if (visible) {
-      const loadLocationsAndCategories = async () => {
-        if (!Requests.idToken) return;
-        try {
-          const response = await axios.get(`${BASE_URL}/get_locations_categories`, {
-            headers: { 'idToken': Requests.idToken }
-          });
-          if (response.status === 200) {
-            setLocations(response.data.locations);
-            setCategories(response.data.categories);
-          }
-        } catch (error) {
-          console.error('Failed to load locations and categories', error);
-        }
-      };
+    const loadLocationsAndCategories = async () => {
+      const response = await requests.getLocationsAndCategories();
+      setLocations(response.locations);
+      setCategories(response.categories);
+    };
 
-      loadLocationsAndCategories();
-    }
-  }, [visible]);
+    loadLocationsAndCategories();
+  }, []);
 
   const handleExpirationDateChange = (date: string) => {
     setExpirationDate(date);
