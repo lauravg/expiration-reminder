@@ -79,29 +79,11 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   useEffect(() => {
     requests.listProducts().then((products) => {
       const nonWastedProducts = products.filter((product) => !product.wasted);
-      const formattedProducts = nonWastedProducts.map(product => {
-        let formattedExpirationDate = '';
-        if (product.expiration_date) {
-          try {
-            const parsedDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
-
-            if (isValid(parsedDate)) {
-              formattedExpirationDate = format(parsedDate, 'yyyy-MM-dd');
-            }
-          } catch (error) {
-            console.error('Error parsing expiration date:', product.expiration_date, error);
-          }
-        }
-
-        // Schedule notifications for each product
+      // Schedule notifications for each product
+      nonWastedProducts.forEach(product => {
         scheduleNotification(product);
-
-        return {
-          ...product,
-          expiration_date: formattedExpirationDate ?? '',
-        };
       });
-      setProducts(formattedProducts);
+      setProducts(nonWastedProducts);
     });
   }, [onProductAdded]);
 
