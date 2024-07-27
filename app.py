@@ -91,6 +91,37 @@ def load_user(uid: str) -> User:
     return user_manager.get_user(uid)
 
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        log.info(f"token_required({request.path})")
+        token = request.headers.get("idToken")
+        if not token:
+            log.error("Token is missing!")
+            return jsonify({"message": "Token is missing!"}), 401
+        try:
+            decoded_token = auth.verify_id_token(token)
+            log.info(f"Decoded token: {decoded_token}")
+            current_user = user_manager.get_user(decoded_token["uid"])
+            log.info(f"Current user: {current_user}")
+            flask_login.login_user(current_user)
+        except ExpiredIdTokenError as err:
+            log.warn(f"Token has expired: {err}")
+            return jsonify({"message": "Token has expired!"}), 401
+        except InvalidIdTokenError:
+            log.error("Token is invalid!")
+            return jsonify({"message": "Token is invalid!"}), 401
+        except Exception as e:
+            log.error(f"Token verification failed: {str(e)}")
+            return (
+                jsonify({"message": "Token verification failed!", "error": str(e)}),
+                401,
+            )
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 # Register route for user registration
 @app.route("/register", methods=["POST"])
 def register():
@@ -174,7 +205,16 @@ def auth_route():
 
     email = request.form.get("email")
     password = request.form.get("password")
-    response = auth_mgr.login(email, password)
+    refresh_token = request.form.get("refresh_token")
+    response = None
+    if email and len(email) > 2 and password and len(password) > 2:
+        response = auth_mgr.login(email, password)
+    elif refresh_token and len(refresh_token) > 2:
+        response = auth_mgr.refresh(refresh_token)
+    else:
+        msg = "Neither email/password nor refresh_token were given"
+        log.warn(msg)
+        return msg, 400
 
     if response.ok:
         uid = response.uid
@@ -214,6 +254,7 @@ def auth_route():
 
 
 @app.route("/list_products", methods=["GET", "POST"])
+@token_required
 def list_products():
     """
     Lists the products matching the given filters
@@ -223,16 +264,7 @@ def list_products():
     if request.method != "POST":
         return "", 405
 
-    idToken = request.headers.get("idToken")
-    if not idToken or len(idToken) < 10:
-        return "idToken missing or invalid format", 400
-
-    log.info(f"/lists_products: Got idToken! {idToken}")
-    uid = auth_mgr.user_id_from_token(idToken)
-    if uid == None:
-        # Might be expired.
-        # TODO: Add a way to refresh the token.
-        return "Cannot verify id token"
+    uid = flask_login.current_user.get_id()
     log.info(f"/lists_products: Got uid! {uid}")
 
     household = household_manager.get_active_household(uid)
@@ -257,36 +289,6 @@ def list_products():
             }
         )
     return jsonify(result)
-
-
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get("idToken")
-        if not token:
-            log.error("Token is missing!")
-            return jsonify({"message": "Token is missing!"}), 403
-        try:
-            decoded_token = auth.verify_id_token(token)
-            log.info(f"Decoded token: {decoded_token}")
-            current_user = user_manager.get_user(decoded_token["uid"])
-            log.info(f"Current user: {current_user}")
-            flask_login.login_user(current_user)
-        except InvalidIdTokenError:
-            log.error("Token is invalid!")
-            return jsonify({"message": "Token is invalid!"}), 403
-        except ExpiredIdTokenError:
-            log.error("Token has expired!")
-            return jsonify({"message": "Token has expired!"}), 403
-        except Exception as e:
-            log.error(f"Token verification failed: {str(e)}")
-            return (
-                jsonify({"message": "Token verification failed!", "error": str(e)}),
-                403,
-            )
-        return f(*args, **kwargs)
-
-    return decorated
 
 
 def send_push_notification(token, title, body):
