@@ -263,8 +263,6 @@ def list_products():
         return "", 405
 
     uid = flask_login.current_user.get_id()
-    log.info(f"/lists_products: Got uid! {uid}")
-
     household = household_manager.get_active_household(uid)
     products = product_mgr.get_household_products(household.id)
 
@@ -628,7 +626,7 @@ def save_push_token():
     return jsonify({"success": True})
 
 
-@app.route("/get_locations_categories", methods=["GET"])
+@app.route("/get_locations_categories", methods=["POST"])
 @token_required
 def get_locations_categories():
     user = flask_login.current_user

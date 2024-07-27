@@ -5,8 +5,9 @@ import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
+
 import { Product } from './Product';
-import { format, parse } from 'date-fns';
+import { isValid, format, parse } from 'date-fns';
 import Requests, { BASE_URL } from './Requests';
 
 interface EditProductModalProps {
@@ -40,8 +41,16 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
 
   useEffect(() => {
     if (product) {
+      // Reformat the date for the date picker expected format.
+      if (product.expiration_date) {
+        const parsedDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
+        if (isValid(parsedDate)) {
+          let formattedExpirationDate = format(parsedDate, 'yyyy-MM-dd');
+          setExpirationDate(formattedExpirationDate)
+        }
+      }
+
       setProductName(product.product_name);
-      setExpirationDate(product.expiration_date || '');
       setLocation(product.location || '');
       setCategory(product.category || '');
     }
@@ -68,12 +77,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
 
   const handleUpdateProduct = () => {
     if (product) {
-      const formattedExpirationDate = expirationDate ? format(parse(expirationDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') : '';
-
       const updatedProduct: Product = {
         ...product,
         product_name: productName,
-        expiration_date: formattedExpirationDate,
+        expiration_date: expirationDate,
         location: location,
         category: category,
       };
@@ -111,7 +118,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
             {category ? 'Category: ' + category : 'Select Category'}
           </Button>
           <Button mode="contained" theme={{ colors: { primary: colors.primary } }} onPress={handleUpdateProduct}>
-            Submit
+            Update
           </Button>
           {isDatePickerVisible && <Calendar onDayPress={(day: any) => handleExpirationDateChange(day.dateString)} />}
         </View>
