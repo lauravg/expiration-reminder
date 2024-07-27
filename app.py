@@ -458,18 +458,7 @@ def update_product(id):
 
         expiration_date = data.get("expiration_date")
         if expiration_date:
-            try:
-                product.expires = ProductManager.parse_import_date(expiration_date)
-            except ValueError as ve:
-                log.error(
-                    f"Invalid expiration date format: {expiration_date}, error: {ve}"
-                )
-                return (
-                    jsonify(
-                        {"success": False, "error": "Invalid expiration date format"}
-                    ),
-                    400,
-                )
+            product.expires = ProductManager.parse_import_date(expiration_date)
 
         if not product_mgr.add_product(product):
             log.error(f"Failed to update product {id}")
