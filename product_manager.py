@@ -143,9 +143,11 @@ class ProductManager:
 
     @classmethod
     def parse_import_date(cls, date_str: str) -> int:
+        date_obj = None
         try:
             date_obj = datetime.strptime(date_str, "%d %b %Y")
-            epoch_obj = datetime.utcfromtimestamp(0)
-            return int((date_obj - epoch_obj).total_seconds() * 1000)
         except ValueError:
-            raise ValueError(f"Invalid date format: '{date_str}'")
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+
+        epoch_obj = datetime.utcfromtimestamp(0)
+        return int((date_obj - epoch_obj).total_seconds() * 1000)

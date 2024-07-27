@@ -101,9 +101,7 @@ def token_required(f):
             return jsonify({"message": "Token is missing!"}), 401
         try:
             decoded_token = auth.verify_id_token(token)
-            log.info(f"Decoded token: {decoded_token}")
             current_user = user_manager.get_user(decoded_token["uid"])
-            log.info(f"Current user: {current_user}")
             flask_login.login_user(current_user)
         except ExpiredIdTokenError as err:
             log.warn(f"Token has expired: {err}")
@@ -397,9 +395,7 @@ def add_product():
 
         expiration_date = data.get("expiration_date")
         expires = (
-            int(datetime.strptime(expiration_date, "%Y-%m-%d").timestamp() * 1000)
-            if expiration_date
-            else 0
+            ProductManager.parse_import_date(expiration_date) if expiration_date else 0
         )
 
         product = Product(
@@ -463,15 +459,7 @@ def update_product(id):
         expiration_date = data.get("expiration_date")
         if expiration_date:
             try:
-                try:
-                    # Try parsing the date with the first format
-                    product.expires = ProductManager.parse_import_date(expiration_date)
-                except ValueError:
-                    # If it fails, try the second format
-                    product.expires = int(
-                        datetime.strptime(expiration_date, "%Y-%m-%d").timestamp()
-                        * 1000
-                    )
+                product.expires = ProductManager.parse_import_date(expiration_date)
             except ValueError as ve:
                 log.error(
                     f"Invalid expiration date format: {expiration_date}, error: {ve}"
