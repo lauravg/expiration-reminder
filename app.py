@@ -7,7 +7,6 @@ import pytz
 import requests
 import secrets
 import sys
-import logging
 
 from absl import logging as log
 import firebase_admin
@@ -35,6 +34,17 @@ from secrets_manager import SecretsManager
 from send_email import SendMail
 from user_manager import UserManager, User
 
+
+def set_logging_params(debug_logging_enabled: bool = False):
+    import logging
+
+    fmt = "%(levelname)s %(asctime)s.%(msecs)03d %(filename)s:%(lineno)s: %(message)s"
+    formatter = logging.Formatter(fmt, datefmt="%H:%M:%S")
+    log.get_absl_handler().setFormatter(formatter)
+    log.set_verbosity(log.DEBUG if app.debug else log.INFO)
+    log.use_absl_handler()
+
+
 app = Flask(__name__)
 CORS(app)
 # Generate a secure secret key for the app, required for session management.
@@ -42,10 +52,7 @@ secret_key = secrets.token_urlsafe(16)
 app.secret_key = secret_key
 app.config.update(SESSION_COOKIE_SECURE=True)
 
-logging.basicConfig(level=logging.INFO)
-
-log.set_verbosity(log.DEBUG if app.debug else log.INFO)
-
+set_logging_params()
 secrets_mgr = SecretsManager()
 auth_mgr = AuthManager(secrets_mgr)
 json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
@@ -257,22 +264,22 @@ def token_required(f):
     def decorated(*args, **kwargs):
         token = request.headers.get("idToken")
         if not token:
-            logging.error("Token is missing!")
+            log.error("Token is missing!")
             return jsonify({"message": "Token is missing!"}), 403
         try:
             decoded_token = auth.verify_id_token(token)
-            logging.info(f"Decoded token: {decoded_token}")
+            log.info(f"Decoded token: {decoded_token}")
             current_user = user_manager.get_user(decoded_token["uid"])
-            logging.info(f"Current user: {current_user}")
+            log.info(f"Current user: {current_user}")
             flask_login.login_user(current_user)
         except InvalidIdTokenError:
-            logging.error("Token is invalid!")
+            log.error("Token is invalid!")
             return jsonify({"message": "Token is invalid!"}), 403
         except ExpiredIdTokenError:
-            logging.error("Token has expired!")
+            log.error("Token has expired!")
             return jsonify({"message": "Token has expired!"}), 403
         except Exception as e:
-            logging.error(f"Token verification failed: {str(e)}")
+            log.error(f"Token verification failed: {str(e)}")
             return (
                 jsonify({"message": "Token verification failed!", "error": str(e)}),
                 403,
@@ -494,7 +501,7 @@ def delete_product(id):
     if not success:
         return jsonify({"success": False, "error": "Unable to delete product"}), 404
 
-    logging.info(f"User {user.get_id()} deleted product {id}")
+    log.info(f"User {user.get_id()} deleted product {id}")
     return jsonify({"success": True})
 
 
