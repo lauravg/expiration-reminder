@@ -10,6 +10,7 @@ import { colors } from './theme';
 import Requests from './Requests';
 import { Product } from './Product';
 import ProductList from './ProductList';
+import { SessionData } from './SessionData';
 
 interface HomepageProps {
   onProductAdded: () => void;
@@ -18,7 +19,8 @@ interface HomepageProps {
 const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [products, setProducts] = useState<Product[]>([]);
-  const displayName = Requests.displayName;
+  const sessionData = new SessionData();
+  const displayName = sessionData.userDisplayName;
 
   const requests = new Requests();
 
