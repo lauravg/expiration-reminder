@@ -6,7 +6,6 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests, { BASE_URL } from './Requests';
-import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SessionData } from './SessionData';
@@ -37,14 +36,10 @@ const SettingsScreen = () => {
       if (!sessionData.idToken) return;
 
       try {
-        const response = await axios.get(`${BASE_URL}/get_notification_settings`, {
-          headers: { 'idToken': sessionData.idToken }
-        });
-        if (response.status === 200) {
-          setNotificationsEnabled(response.data.notificationsEnabled);
-          setDaysBefore(response.data.daysBefore.toString());
-          setNotificationTime(new Date(0, 0, 0, response.data.hour, response.data.minute));
-        }
+        const response = await requests.getNotificationSettings()
+        setNotificationsEnabled(response.notificationsEnabled);
+        setDaysBefore(response.daysBefore.toString());
+        setNotificationTime(new Date(0, 0, 0, response.hour, response.minute));
       } catch (error) {
         console.error('Failed to load notification settings', error);
       }
@@ -72,35 +67,27 @@ const SettingsScreen = () => {
     const newStatus = !notificationsEnabled;
     setNotificationsEnabled(newStatus);
 
-    try {
-      await axios.post(`${BASE_URL}/save_notification_settings`, {
-        notificationsEnabled: newStatus,
-        daysBefore: parseInt(daysBefore, 10),
-        hour: notificationTime.getHours(),
-        minute: notificationTime.getMinutes(),
-      }, {
-        headers: { 'idToken': sessionData.idToken }
-      });
-    } catch (error) {
-      console.error('Failed to save notification settings', error);
-    }
+    // Logs an error, if one occurs.
+    requests.saveNotificationSettings({
+      notificationsEnabled: newStatus,
+      daysBefore: parseInt(daysBefore, 10),
+      hour: notificationTime.getHours(),
+      minute: notificationTime.getMinutes(),
+    });
+
+    // TODO: What to do when request failed?
   };
 
   const handleDaysBeforeChange = async (value: string) => {
     setDaysBefore(value);
 
-    try {
-      await axios.post(`${BASE_URL}/save_notification_settings`, {
+      // Logs an error, if one occurs.
+      requests.saveNotificationSettings({
         notificationsEnabled,
         daysBefore: parseInt(value, 10),
         hour: notificationTime.getHours(),
         minute: notificationTime.getMinutes(),
-      }, {
-        headers: { 'idToken': sessionData.idToken }
       });
-    } catch (error) {
-      console.error('Failed to save notification settings', error);
-    }
   };
 
   const handleTimeChange = async (event: any, selectedDate?: Date) => {
@@ -108,18 +95,13 @@ const SettingsScreen = () => {
     if (selectedDate) {
       setNotificationTime(selectedDate);
 
-      try {
-        await axios.post(`${BASE_URL}/save_notification_settings`, {
-          notificationsEnabled,
-          daysBefore: parseInt(daysBefore, 10),
-          hour: selectedDate.getHours(),
-          minute: selectedDate.getMinutes(),
-        }, {
-          headers: { 'idToken': sessionData.idToken }
-        });
-      } catch (error) {
-        console.error('Failed to save notification settings', error);
-      }
+      // Logs an error, if one occurs.
+      requests.saveNotificationSettings({
+        notificationsEnabled,
+        daysBefore: parseInt(daysBefore, 10),
+        hour: selectedDate.getHours(),
+        minute: selectedDate.getMinutes(),
+      });
     }
   };
 

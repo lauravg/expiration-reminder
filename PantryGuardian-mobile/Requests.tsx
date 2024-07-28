@@ -232,6 +232,40 @@ class Requests {
     }
   }
 
+  async getNotificationSettings(): Promise<{ notificationsEnabled:boolean, daysBefore: number, hour: number, minute: number }> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'get_notification_settings');
+      if (response.status === 200) {
+        return {
+          notificationsEnabled: response.data.notificationsEnabled,
+          daysBefore: response.data.daysBefore,
+          hour: response.data.hour,
+          minute: response.data.minute,
+        }
+      } else {
+        throw new Error('Failed to fetch notification settings');
+      }
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+      return { notificationsEnabled: false, daysBefore: 0, hour: 0, minute: 0 };
+    }
+  }
+
+  async saveNotificationSettings(settings: any): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'save_notification_settings', settings);
+      if (response.status === 200) {
+        return true;
+      } else {
+        console.error('Error fetching notification settings. (Server error)');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+      return false;
+    }
+  }
+
   async _make_request(idToken: string, path: string, data: any = {}, retry_if_auth_expired = true): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);
 
