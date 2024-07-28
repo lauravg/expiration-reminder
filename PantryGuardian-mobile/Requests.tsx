@@ -266,6 +266,21 @@ class Requests {
     }
   }
 
+  async saveNotificationPushToken( obj: any ): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'save_push_token', obj);
+      if (response.status === 200) {
+        return true;
+      } else {
+        console.error('Error saving push token. (Server error)');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error saving push token:', error);
+      return false;
+    }
+  }
+
   async _make_request(idToken: string, path: string, data: any = {}, retry_if_auth_expired = true): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);
 

@@ -338,7 +338,7 @@ def save_notification_settings():
     return jsonify({"success": True})
 
 
-@app.route("/get_notification_settings", methods=["GET"])
+@app.route("/get_notification_settings", methods=["POST"])
 @token_required
 def get_notification_settings():
     user = flask_login.current_user

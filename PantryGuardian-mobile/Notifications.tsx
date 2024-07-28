@@ -1,14 +1,13 @@
 // notifications.tsx
 import * as Notifications from 'expo-notifications';
-import axios from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from './Product';
 import { parse } from 'date-fns';
-import { BASE_URL } from './Requests';
+import Requests, { BASE_URL } from './Requests';
 
 // Function to request notifications permission and get the token
-export async function registerForPushNotificationsAsync(idToken: string) {
+export async function registerForPushNotificationsAsync(idToken: string, requests: Requests) {
   try {
     console.log('Starting push notification registration'); // Debug log
 
@@ -39,15 +38,7 @@ export async function registerForPushNotificationsAsync(idToken: string) {
     })).data;
     console.log('Push token:', token);
     await AsyncStorage.setItem('expoPushToken', token);
-
-    console.log('Push token:', token);
-
-    // Save push token with idToken
-    await axios.post(`${BASE_URL}/save_push_token`, { token }, {
-      headers: { 'idToken': idToken }
-    });
-
-    await AsyncStorage.setItem('expoPushToken', token);
+    await requests.saveNotificationPushToken({ token })
     console.log('Push token saved successfully.');
   } catch (error) {
     console.error('Failed to register for push notifications:', error);
@@ -56,51 +47,44 @@ export async function registerForPushNotificationsAsync(idToken: string) {
 }
 
 // Function to fetch expiring products from the backend
-export async function fetchExpiringProducts(idToken: string, daysBefore: number): Promise<Product[]> {
+export async function fetchExpiringProducts(idToken: string, daysBefore: number, requests: Requests): Promise<Product[]> {
   try {
     if (!idToken) {
       throw new Error('idToken is missing');
     }
 
-    const response = await axios.post(`${BASE_URL}/list_products`, {}, {
-      headers: { 'idToken': idToken }
+    // FIXME: This is the source of a second request to all products!!!!
+    const products = await requests.listProducts()
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const expiringDate = new Date(today);
+    expiringDate.setUTCDate(today.getUTCDate() + daysBefore + 1);
+
+    // Add logging for debugging
+    console.log('Today:', today.toISOString());
+    console.log('Expiring Date:', expiringDate.toISOString());
+    console.log('Products:', products);
+
+    const expiringProducts = products.filter(product => {
+      if (!product.expiration_date || product.expiration_date === "No Expiration" || product.wasted) {
+        return false;
+      }
+
+      const expirationDate = parseDate(product.expiration_date);
+
+      // Validate date
+      if (!expirationDate) {
+        console.error(`Invalid date for product ${product.product_name}: ${product.expiration_date}`);
+        return false;
+      }
+
+      expirationDate.setUTCHours(0, 0, 0, 0);
+      console.log(`Product: ${product.product_name}, Expiration Date: ${expirationDate.toISOString()}`);
+      return expirationDate <= expiringDate && expirationDate >= today;
     });
 
-    if (response.status === 200) {
-      const products: Product[] = response.data;
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-      const expiringDate = new Date(today);
-      expiringDate.setUTCDate(today.getUTCDate() + daysBefore + 1);
-
-      // Add logging for debugging
-      console.log('Today:', today.toISOString());
-      console.log('Expiring Date:', expiringDate.toISOString());
-      console.log('Products:', products);
-
-      const expiringProducts = products.filter(product => {
-        if (!product.expiration_date || product.expiration_date === "No Expiration" || product.wasted) {
-          return false;
-        }
-
-        const expirationDate = parseDate(product.expiration_date);
-
-        // Validate date
-        if (!expirationDate) {
-          console.error(`Invalid date for product ${product.product_name}: ${product.expiration_date}`);
-          return false;
-        }
-
-        expirationDate.setUTCHours(0, 0, 0, 0);
-        console.log(`Product: ${product.product_name}, Expiration Date: ${expirationDate.toISOString()}`);
-        return expirationDate <= expiringDate && expirationDate >= today;
-      });
-
-      console.log('Filtered Expiring Products:', expiringProducts);
-      return expiringProducts;
-    } else {
-      throw new Error('Failed to fetch products');
-    }
+    console.log('Filtered Expiring Products:', expiringProducts);
+    return expiringProducts;
   } catch (error) {
     console.error('Failed to fetch products', error);
     throw error;
@@ -126,12 +110,12 @@ function parseDate(dateString: string): Date | null {
 }
 
 // Function to schedule daily notifications
-export async function scheduleDailyNotification(idToken: string) {
+export async function scheduleDailyNotification(idToken: string, requests: Requests) {
   try {
     console.log('Scheduling daily notifications');
 
     // Fetch notification settings from the backend
-    const settings = await fetchNotificationSettings(idToken);
+    const settings = await fetchNotificationSettings(idToken, requests);
 
     if (!settings.notificationsEnabled) {
       console.log('Notifications are disabled');
@@ -140,7 +124,7 @@ export async function scheduleDailyNotification(idToken: string) {
 
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const products = await fetchExpiringProducts(idToken, settings.daysBefore);
+    const products = await fetchExpiringProducts(idToken, settings.daysBefore, requests);
     const productNames = products.map((product: Product) => product.product_name).join(', ');
 
     // Add logging for debugging
@@ -170,21 +154,12 @@ export async function scheduleDailyNotification(idToken: string) {
 }
 
 // Function to fetch notification settings from the backend
-async function fetchNotificationSettings(idToken: string) {
+async function fetchNotificationSettings(idToken: string, requests: Requests) {
   try {
     if (!idToken) {
       throw new Error('idToken is missing');
     }
-
-    const response = await axios.get(`${BASE_URL}/get_notification_settings`, {
-      headers: { 'idToken': idToken }
-    });
-
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      throw new Error('Failed to fetch notification settings');
-    }
+    return await requests.getNotificationSettings();
   } catch (error) {
     console.error('Failed to fetch notification settings', error);
     throw error;
