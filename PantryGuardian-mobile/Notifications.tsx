@@ -13,7 +13,7 @@ export async function registerForPushNotificationsAsync(idToken: string) {
     console.log('Starting push notification registration'); // Debug log
 
     // Ensure Requests.idToken is available
-    if (idToken) {
+    if (!idToken) {
       throw new Error('idToken is missing, cannot save push token');
     }
 
