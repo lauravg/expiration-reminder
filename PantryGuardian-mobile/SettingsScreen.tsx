@@ -5,7 +5,7 @@ import { TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
-import { BASE_URL } from './Requests';
+import Requests, { BASE_URL } from './Requests';
 import axios from 'axios';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -23,6 +23,7 @@ const SettingsScreen = () => {
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const sessionData = new SessionData();
+  const requests = new Requests();
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     notifications: true,
@@ -49,13 +50,9 @@ const SettingsScreen = () => {
       }
 
       try {
-        const locationResponse = await axios.get(`${BASE_URL}/get_locations_categories`, {
-          headers: { 'idToken': sessionData.idToken }
-        });
-        if (locationResponse.status === 200) {
-          setLocations(locationResponse.data.locations);
-          setCategories(locationResponse.data.categories);
-        }
+        const response = await requests.getLocationsAndCategories();
+        setLocations(response.locations);
+        setCategories(response.categories);
       } catch (error) {
         console.error('Failed to load locations and categories', error);
       }
@@ -133,10 +130,8 @@ const SettingsScreen = () => {
     }
 
     try {
-      const response = await axios.post(`${BASE_URL}/add_location`, { location: newLocation }, {
-        headers: { 'idToken': sessionData.idToken }
-      });
-      if (response.status === 200) {
+      const success = await requests.addLocation(newLocation)
+      if (success) {
         setLocations([...locations, newLocation]);
         setNewLocation('');
       }
@@ -147,10 +142,8 @@ const SettingsScreen = () => {
 
   const handleDeleteLocation = async (locationToDelete: string) => {
     try {
-      const response = await axios.post(`${BASE_URL}/delete_location`, { location: locationToDelete }, {
-        headers: { 'idToken': sessionData.idToken }
-      });
-      if (response.status === 200) {
+      const success = await requests.deleteLocation(locationToDelete);
+      if (success) {
         setLocations(locations.filter(location => location !== locationToDelete));
       }
     } catch (error) {
@@ -165,10 +158,8 @@ const SettingsScreen = () => {
     }
 
     try {
-      const response = await axios.post(`${BASE_URL}/add_category`, { category: newCategory }, {
-        headers: { 'idToken': sessionData.idToken }
-      });
-      if (response.status === 200) {
+      const success = await requests.addCategory(newCategory);
+      if (success) {
         setCategories([...categories, newCategory]);
         setNewCategory('');
       }
@@ -179,10 +170,8 @@ const SettingsScreen = () => {
 
   const handleDeleteCategory = async (categoryToDelete: string) => {
     try {
-      const response = await axios.post(`${BASE_URL}/delete_category`, { category: categoryToDelete }, {
-        headers: { 'idToken': sessionData.idToken }
-      });
-      if (response.status === 200) {
+      const success = await requests.deleteCategory(categoryToDelete);
+      if (success) {
         setCategories(categories.filter(category => category !== categoryToDelete));
       }
     } catch (error) {
