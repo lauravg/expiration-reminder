@@ -19,6 +19,7 @@ import WastedProducts from './WastedProductScreen';
 import { registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
 import * as Notifications from 'expo-notifications';
 import { SessionData } from './SessionData';
+import Requests from './Requests';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -116,6 +117,7 @@ export default function App() {
   const [productAdded, setProductAdded] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const requests = new Requests();
   const sessionData = new SessionData();
 
   const toggleAddProductModal = () => {
@@ -137,8 +139,8 @@ export default function App() {
         });
 
         // Schedule daily notification
-        await registerForPushNotificationsAsync(idToken);
-        await scheduleDailyNotification(idToken);
+        await registerForPushNotificationsAsync(idToken, requests);
+        await scheduleDailyNotification(idToken, requests);
 
         return () => {
           Notifications.removeNotificationSubscription(subscription);
