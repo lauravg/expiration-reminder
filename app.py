@@ -260,11 +260,25 @@ def list_products():
 
     # TODO: Add filters
     if request.method != "POST":
-        return "", 405
+        log.warning("Bad request method for list_products")
+        return jsonify([]), 405
+
+    if "householdId" not in request.json:
+        log.warning("householdId not provides for list_products")
+        return jsonify([]), 400
+
+    household_id = request.json["householdId"]
+    log.info(f"Getting products for household with ID: {household_id}")
 
     uid = flask_login.current_user.get_id()
     household = household_manager.get_active_household(uid)
-    products = product_mgr.get_household_products(household.id)
+
+    # Ensure that the user is actually allowed to get products for this household.
+    if uid not in household.participants:
+        log.warning("Permission denied for user to list_products for given household")
+        return jsonify([]), 401
+
+    products = product_mgr.get_household_products(household_id)
 
     log.info(f"Got {len(products)} products!")
 
@@ -284,6 +298,30 @@ def list_products():
                 "wasted": product.wasted,
             }
         )
+    return jsonify(result)
+
+
+@app.route("/list_households", methods=["POST"])
+@token_required
+def list_households():
+    uid = flask_login.current_user.get_id()
+    households = household_manager.get_households_for_user(uid)
+
+    result = []
+    for household in households:
+        result.append(
+            {
+                "id": household.id,
+                "name": household.name,
+                "owner": household.owner_uid == uid,
+                # FIXME/TODO: We need to cache this info so we don't have to query all
+                #             users every time this request is made.
+                "participant_emails": [
+                    user_manager.get_user(uid).email() for uid in household.participants
+                ],
+            }
+        )
+
     return jsonify(result)
 
 

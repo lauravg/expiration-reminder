@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from './Product';
 import { parse } from 'date-fns';
 import Requests, { BASE_URL } from './Requests';
+import { HouseholdManager } from './HouseholdManager';
 
 // Function to request notifications permission and get the token
 export async function registerForPushNotificationsAsync(idToken: string, requests: Requests) {
@@ -47,14 +48,14 @@ export async function registerForPushNotificationsAsync(idToken: string, request
 }
 
 // Function to fetch expiring products from the backend
-export async function fetchExpiringProducts(idToken: string, daysBefore: number, requests: Requests): Promise<Product[]> {
+export async function fetchExpiringProducts(idToken: string, daysBefore: number, requests: Requests, householdManager: HouseholdManager): Promise<Product[]> {
   try {
     if (!idToken) {
       throw new Error('idToken is missing');
     }
 
     // FIXME: This is the source of a second request to all products!!!!
-    const products = await requests.listProducts()
+    const products = await requests.listProducts(await householdManager.getActiveHouseholdId())
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const expiringDate = new Date(today);
@@ -110,7 +111,7 @@ function parseDate(dateString: string): Date | null {
 }
 
 // Function to schedule daily notifications
-export async function scheduleDailyNotification(idToken: string, requests: Requests) {
+export async function scheduleDailyNotification(idToken: string, requests: Requests, householdManager: HouseholdManager) {
   try {
     console.log('Scheduling daily notifications');
 
@@ -124,7 +125,7 @@ export async function scheduleDailyNotification(idToken: string, requests: Reque
 
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const products = await fetchExpiringProducts(idToken, settings.daysBefore, requests);
+    const products = await fetchExpiringProducts(idToken, settings.daysBefore, requests, householdManager);
     const productNames = products.map((product: Product) => product.product_name).join(', ');
 
     // Add logging for debugging

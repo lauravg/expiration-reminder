@@ -20,6 +20,7 @@ import { registerForPushNotificationsAsync, scheduleDailyNotification } from './
 import * as Notifications from 'expo-notifications';
 import { SessionData } from './SessionData';
 import Requests from './Requests';
+import { HouseholdManager } from './HouseholdManager';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -118,6 +119,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const requests = new Requests();
+  const householdManager = new HouseholdManager(requests);
   const sessionData = new SessionData();
 
   const toggleAddProductModal = () => {
@@ -140,7 +142,7 @@ export default function App() {
 
         // Schedule daily notification
         await registerForPushNotificationsAsync(idToken, requests);
-        await scheduleDailyNotification(idToken, requests);
+        await scheduleDailyNotification(idToken, requests, householdManager);
 
         return () => {
           Notifications.removeNotificationSubscription(subscription);

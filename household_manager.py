@@ -118,6 +118,7 @@ class HouseholdManager:
                 return False
         return True
 
+    # Deprecated, active household will be stored on the client side (app).
     def get_active_household(self, uid: str) -> Household | None:
         households = self.get_households_for_user(uid)
         if len(households) == 0:
@@ -125,6 +126,7 @@ class HouseholdManager:
             return None
         return self.get_household(households[0].id)
 
+    # Deprecated, active household will be stored on the client side (app).
     def set_active_household(self, id: str):
         household = self.get_household(id)
         if household is not None:

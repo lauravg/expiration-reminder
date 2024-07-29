@@ -9,6 +9,7 @@ import Requests, { BASE_URL } from './Requests';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SessionData } from './SessionData';
+import { Household, HouseholdManager } from './HouseholdManager';
 
 
 const SettingsScreen = () => {
@@ -19,15 +20,18 @@ const SettingsScreen = () => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [households, setHouseholds] = useState<Household[]>([]);
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const sessionData = new SessionData();
   const requests = new Requests();
+  const householdManager = new HouseholdManager(requests);
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     notifications: true,
     locations: true,
     categories: true,
+    households: true,
   });
 
   useEffect(() => {
@@ -51,6 +55,8 @@ const SettingsScreen = () => {
       } catch (error) {
         console.error('Failed to load locations and categories', error);
       }
+
+      setHouseholds(await householdManager.getHouseholds());
     };
 
     loadSettings();
@@ -160,6 +166,10 @@ const SettingsScreen = () => {
       console.error('Failed to delete category', error);
     }
   };
+
+  const handleActivateHousehold = async (id: string) => {
+    householdManager.setActiveHousehold(id);
+  }
 
   return (
     <ScrollView style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
@@ -302,6 +312,27 @@ const SettingsScreen = () => {
                 Add Category
               </Button>
             </View>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <TouchableOpacity onPress={() => toggleSection('households')} style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Manage Households</Text>
+          <IconButton icon={collapsedSections.households ? "chevron-down" : "chevron-up"} size={20} iconColor={colors.primary} />
+        </TouchableOpacity>
+        {!collapsedSections.households && (
+          <View style={styles.sectionContent}>
+            {households.map(household => (
+              <View key={household.id} style={styles.listItem}>
+                <Text>{household.name}</Text>
+                <Button
+                  onPress={() => handleActivateHousehold(household.id)}
+                  theme={{ colors: { primary: colors.primary } }}>
+                  Activate
+                </Button>
+              </View>
+            ))}
           </View>
         )}
       </View>

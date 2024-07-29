@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import qs from 'qs';
 import { Product } from './Product';
 import { SessionData } from './SessionData'
+import { Household } from './HouseholdManager';
 
 const BASE_URL = "http://127.0.0.1:8081";
 
@@ -70,9 +71,9 @@ class Requests {
     }
   }
 
-  async listProducts(): Promise<Product[]> {
+  async listProducts(householdId: string): Promise<Product[]> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'list_products');
+      const response = await this._make_request(this.sessionData.idToken, 'list_products', { householdId });
 
       if (response.status >= 200 && response.status < 300) {
         console.log('Request successful');
@@ -280,6 +281,25 @@ class Requests {
       return false;
     }
   }
+
+  async listHouseholds(): Promise<Household[]> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'list_households');
+
+      if (response.status >= 200 && response.status < 300) {
+        console.log('Request successful');
+        console.log(response.data);
+        return response.data;
+      } else {
+        console.error('Request failed');
+        return [];
+      }
+    } catch (error) {
+      console.error('Request failed.', error);
+      return [];
+    }
+  }
+
 
   async _make_request(idToken: string, path: string, data: any = {}, retry_if_auth_expired = true): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);

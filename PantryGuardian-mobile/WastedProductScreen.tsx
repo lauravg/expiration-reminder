@@ -6,11 +6,13 @@ import Requests from './Requests';
 import { Product } from './Product';
 import ProductList from './ProductList';
 import { colors } from './theme';
+import { HouseholdManager } from './HouseholdManager';
 
 const WastedProductScreen = () => {
   const [products, setProducts] = useState<Product[]>([]);
 
   const requests = new Requests();
+  const householdManager = new HouseholdManager(requests);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -31,27 +33,29 @@ const WastedProductScreen = () => {
   };
 
   useEffect(() => {
-    requests.listProducts().then((products) => {
-      const wastedProducts = products.filter((product) => product.wasted);
-      const formattedProducts = wastedProducts.map(product => {
-        let formattedExpirationDate = '';
-        if (product.expiration_date) {
-          try {
-            const parsedDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
-
-            if (isValid(parsedDate)) {
-              formattedExpirationDate = format(parsedDate, 'yyyy-MM-dd');
+    householdManager.getActiveHouseholdId().then((hid) => {
+      requests.listProducts(hid).then((products) => {
+        const wastedProducts = products.filter((product) => product.wasted);
+        const formattedProducts = wastedProducts.map(product => {
+          let formattedExpirationDate = '';
+          if (product.expiration_date) {
+            try {
+              const parsedDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
+  
+              if (isValid(parsedDate)) {
+                formattedExpirationDate = format(parsedDate, 'yyyy-MM-dd');
+              }
+            } catch (error) {
+              console.error('Error parsing expiration date:', product.expiration_date, error);
             }
-          } catch (error) {
-            console.error('Error parsing expiration date:', product.expiration_date, error);
           }
-        }
-        return {
-          ...product,
-          expiration_date: formattedExpirationDate ?? '',
-        };
+          return {
+            ...product,
+            expiration_date: formattedExpirationDate ?? '',
+          };
+        });
+        setProducts(formattedProducts);
       });
-      setProducts(formattedProducts);
     });
   }, []);
 

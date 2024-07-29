@@ -11,6 +11,7 @@ import Requests from './Requests';
 import { Product } from './Product';
 import ProductList from './ProductList';
 import { SessionData } from './SessionData';
+import { HouseholdManager } from './HouseholdManager';
 
 interface HomepageProps {
   onProductAdded: () => void;
@@ -23,6 +24,7 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   const displayName = sessionData.userDisplayName;
 
   const requests = new Requests();
+  const householdManager = new HouseholdManager(requests);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -77,14 +79,16 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   };
 
   useEffect(() => {
-    requests.listProducts().then((products) => {
-      const nonWastedProducts = products.filter((product) => !product.wasted);
-      // Schedule notifications for each product
-      nonWastedProducts.forEach(product => {
-        scheduleNotification(product);
+    householdManager.getActiveHouseholdId().then((hid) => {
+      requests.listProducts(hid).then((products) => {
+        const nonWastedProducts = products.filter((product) => !product.wasted);
+        // Schedule notifications for each product
+        nonWastedProducts.forEach(product => {
+          scheduleNotification(product);
+        });
+        setProducts(nonWastedProducts);
       });
-      setProducts(nonWastedProducts);
-    });
+    })
   }, [onProductAdded]);
 
   return (
