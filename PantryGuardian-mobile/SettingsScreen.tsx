@@ -10,6 +10,7 @@ import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
+import { scheduleDailyNotification } from './Notifications';
 
 
 const SettingsScreen = () => {
@@ -73,27 +74,33 @@ const SettingsScreen = () => {
     const newStatus = !notificationsEnabled;
     setNotificationsEnabled(newStatus);
 
-    // Logs an error, if one occurs.
-    requests.saveNotificationSettings({
+    // Save the new settings and schedule the notification
+    const success = await requests.saveNotificationSettings({
       notificationsEnabled: newStatus,
       daysBefore: parseInt(daysBefore, 10),
       hour: notificationTime.getHours(),
       minute: notificationTime.getMinutes(),
     });
 
-    // TODO: What to do when request failed?
+    if (success) {
+      await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
+    }
   };
 
   const handleDaysBeforeChange = async (value: string) => {
     setDaysBefore(value);
 
-      // Logs an error, if one occurs.
-      requests.saveNotificationSettings({
-        notificationsEnabled,
-        daysBefore: parseInt(value, 10),
-        hour: notificationTime.getHours(),
-        minute: notificationTime.getMinutes(),
-      });
+    // Save the new settings and schedule the notification
+    const success = await requests.saveNotificationSettings({
+      notificationsEnabled,
+      daysBefore: parseInt(value, 10),
+      hour: notificationTime.getHours(),
+      minute: notificationTime.getMinutes(),
+    });
+
+    if (success) {
+      await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
+    }
   };
 
   const handleTimeChange = async (event: any, selectedDate?: Date) => {
@@ -101,13 +108,17 @@ const SettingsScreen = () => {
     if (selectedDate) {
       setNotificationTime(selectedDate);
 
-      // Logs an error, if one occurs.
-      requests.saveNotificationSettings({
+      // Save the new settings and schedule the notification
+      const success = await requests.saveNotificationSettings({
         notificationsEnabled,
         daysBefore: parseInt(daysBefore, 10),
         hour: selectedDate.getHours(),
         minute: selectedDate.getMinutes(),
       });
+
+      if (success) {
+        await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
+      }
     }
   };
 
