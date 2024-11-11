@@ -1,6 +1,8 @@
 from absl import logging as log
 import os
 
+from google.cloud import secretmanager
+
 
 class SecretNotFoundException(Exception):
     """Raised when a secret was not found."""
@@ -44,12 +46,13 @@ class SecretsManager:
             log.error("UNKNOWN secret name: '%s'", id)
             return ""
 
-        # 1) Find is as an environment variable
+        # 1) Find it as an environment variable
         env_name = self.__mapping[id][0]
         key = os.environ.get(env_name)
         if key is not None and not key.isspace():
             log.info(f"Found secret '{id}' through environment variable.'")
             return key
+        log.info("Secret not found through env %s", env_name)
 
         # 2) Try to find the secret at the developer "secrets" location.
         file_name = f"./secrets/{env_name}"
@@ -60,7 +63,7 @@ class SecretsManager:
                 log.info(f"Found secret '{id}' through DEV secrets file'")
                 return key
         except:
-            raise SecretNotFoundException(f"Unable to read secret key for '{id}'.")
+            log.info("Unable to read local secret key from '%s'.", file_name)
 
         # 3) Try to find it as the specified secrets file.
         file_name = self.__mapping[id][1]
@@ -71,4 +74,26 @@ class SecretsManager:
                 log.info(f"Found secret '{id}' through local secrets file'")
                 return key
         except:
-            raise SecretNotFoundException(f"Unable to read secret key for '{id}'.")
+            log.info("Secrets file not found. Trying GCloud next...")
+
+        # 4) Try to find the secret through GCloud secrets manager.
+        key = self.__get_from_gcloud(env_name)
+        if key is not None and not key.isspace():
+            log.info(f"Found secret '{id}' in GCloud secrets manager.'")
+            return key
+
+        raise SecretNotFoundException("Unable to read secret key for '%s'.", id)
+
+    def __get_from_gcloud(self, secret_id) -> str:
+        # Create the Secret Manager client.
+        client = secretmanager.SecretManagerServiceClient()
+
+        name = f"projects/pantryguardian-f8381/secrets/{secret_id}/versions/latest"
+
+        try:
+            response = client.access_secret_version(request={"name": name})
+            return response.payload.data.decode("UTF-8")
+        except Exception as err:
+            log.warning(f"Secret not found in GCloud: '{secret_id}'")
+            log.warning(f"Error: {err=}, {type(err)=}")
+            return ""
