@@ -1,22 +1,21 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import qs from 'qs';
 import { Product } from './Product';
-import { SessionData } from './SessionData'
+import { SessionData } from './SessionData';
 import { Household } from './HouseholdManager';
 
 const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
 // const BASE_URL = "http://127.0.0.1:8081";
 
 class Requests {
-  private sessionData = new SessionData()
+  private sessionData = new SessionData();
 
-  constructor() { 
-  }
+  constructor() {}
 
   async handleLogin(email: string, password: string): Promise<boolean> {
     try {
-      const response = await this._make_request("", "auth", {email, password}, false);
-      if (response.status >= 200 && response.status < 300) {
+      const response = await this._make_request("", "auth", { email, password }, false);
+      if (response.status >= 200 && response.status < 300) {        
         // Persist the data we are gettin from the auth request in a secure location.
         this.sessionData.setRefreshToken(response.data.rt);
         this.sessionData.setIdToken(response.data.it);
@@ -36,7 +35,7 @@ class Requests {
   async handleRefresh(): Promise<boolean> {
     try {
       const refresh_token = this.sessionData.refreshToken;
-      const response = await this._make_request("", "auth", {refresh_token}, false);
+      const response = await this._make_request("", "auth", { refresh_token }, false);
 
       if (response.status >= 200 && response.status < 300) {
         // Persist the data we are getting from the auth request in a secure location.
@@ -78,7 +77,7 @@ class Requests {
 
       if (response.status >= 200 && response.status < 300) {
         console.log('Request successful');
-        console.log(response.data);
+        // console.log(response.data);
         return response.data;
       } else {
         console.error('Request failed');
@@ -234,7 +233,7 @@ class Requests {
     }
   }
 
-  async getNotificationSettings(): Promise<{ notificationsEnabled:boolean, daysBefore: number, hour: number, minute: number }> {
+  async getNotificationSettings(): Promise<{ notificationsEnabled: boolean, daysBefore: number, hour: number, minute: number }> {
     try {
       const response = await this._make_request(this.sessionData.idToken, 'get_notification_settings');
       if (response.status === 200) {
@@ -243,7 +242,7 @@ class Requests {
           daysBefore: response.data.daysBefore,
           hour: response.data.hour,
           minute: response.data.minute,
-        }
+        };
       } else {
         throw new Error('Failed to fetch notification settings');
       }
@@ -268,7 +267,7 @@ class Requests {
     }
   }
 
-  async saveNotificationPushToken( obj: any ): Promise<boolean> {
+  async saveNotificationPushToken(obj: any): Promise<boolean> {
     try {
       const response = await this._make_request(this.sessionData.idToken, 'save_push_token', obj);
       if (response.status === 200) {
@@ -301,11 +300,49 @@ class Requests {
     }
   }
 
+  async getBarcodeData(barcode: string): Promise<{ name: string } | null> {
+    try {
+        const response = await this._make_request(this.sessionData.idToken, 'get_barcode', { barcode });
+        if (response.status === 200 && response.data) {
+            return response.data;
+        } else {
+            console.error('Barcode not found in the database');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error fetching barcode data:', error);
+        return null;
+    }
+  }
 
-  async _make_request(idToken: string, path: string, data: any = {}, retry_if_auth_expired = true): Promise<AxiosResponse> {
+
+  async addBarcodeToDatabase(barcodeData: { barcode: string; name: string }): Promise<boolean> {
+    try {
+        console.log("Attempting to add barcode:", barcodeData);
+
+        if (!barcodeData.barcode || !barcodeData.name) {
+            console.error("Barcode or name is missing.");
+            return false;
+        }
+
+        const response = await this._make_request(this.sessionData.idToken, "add_barcode", barcodeData);
+        if (response.status === 200) {
+            console.log("Barcode added successfully");
+            return true;
+        } else {
+            console.error("Failed to add barcode. Response status:", response.status);
+            return false;
+        }
+    } catch (error) {
+        console.error("Failed to add barcode to database:", error);
+        return false;
+    }
+}
+
+  private async _make_request(idToken: string, path: string, data: any = {}, retry_if_auth_expired = true): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);
 
-    const authOrRegister = path == "auth" || path == "register";
+    const authOrRegister = path === "auth" || path === "register";
     const contentType = authOrRegister ? 'application/x-www-form-urlencoded' : 'application/json';
 
     if (!idToken && !authOrRegister) throw new Error('idToken not found');
@@ -315,36 +352,39 @@ class Requests {
       {
         headers: {
           'Content-Type': contentType,
-          'idToken': idToken
+          'idToken': idToken,
         },
         // Prevent axios from following redirects
-        maxRedirects: 0
+        maxRedirects: 0,
       }
     );
+
     try {
       const response = await responsePromise;
-
-      // If we got here, it means no error was thrown, which means we got
-      // a good response status code. Error codes will be handled in the catch block.
-      return new Promise((resolve, reject) => {
-        resolve(response);
-      });
+      // // If we got here, it means no error was thrown, which means we got
+      // // a good response status code. Error codes will be handled in the catch block.
+      // return new Promise((resolve, reject) => {
+      //   resolve(response);
+      // });
+      return response;
     } catch (err: any) {
       if (err?.isAxiosError) {
         const axiosError = err as AxiosError;
         console.error(`Error making request, got response code: ${axiosError.response?.status}`);
         // If we had an auth error, refresh our credentials and try again.
-        if (axiosError.response?.status == 401 && retry_if_auth_expired) {
+        if (axiosError.response?.status === 401 && retry_if_auth_expired) {
           await this.handleRefresh();
           console.log("Sending request a second time after refreshing credentials.");
           return this._make_request(this.sessionData.idToken, path, data, false);
         }
         // TODO: Logout if we got a 401 but no refresh worked.
       }
-      console.error("Request failed:" + err);
-      return new Promise((resolve, reject) => {
-        reject("Request failed: " + err);
-      });
+      // console.error("Request failed:" + err);
+      // return new Promise((resolve, reject) => {
+      //   reject("Request failed: " + err);
+      // });
+      console.error("Request failed:", err);
+      throw new Error("Request failed: " + err);
     }
   }
 }

@@ -769,6 +769,52 @@ def delete_category():
     return jsonify({"success": False, "error": "Unable to delete category"}), 500
 
 
+
+@app.route("/get_barcode", methods=["POST"])
+@token_required
+def get_barcode():
+    try:
+        data = request.json
+        barcode = data.get("barcode")
+        if not barcode:
+            return jsonify({"error": "Barcode is required"}), 400
+
+        barcode_data = barcodes.get_barcode(barcode)
+        if barcode_data:
+            return jsonify({"name": barcode_data.name}), 200
+        else:
+            return jsonify({"error": "Barcode not found"}), 404
+    except Exception as e:
+        log.error(f"Error in get_barcode: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/add_barcode", methods=["POST"])
+@token_required
+def add_barcode():
+    try:
+        data = request.json
+        log.info(f"Received data for adding barcode: {data}")
+        barcode = data.get("barcode")
+        name = data.get("name")
+
+        if not barcode or not name:
+            log.error("Barcode or name is missing in the request.")
+            return jsonify({"error": "Barcode and name are required"}), 400
+
+        # Attempt to add the barcode
+        success = barcodes.add_barcode(Barcode(barcode, name))
+        if not success:
+            log.error("Failed to add barcode to the database.")
+            return jsonify({"error": "Failed to add barcode"}), 500
+
+        log.info(f"Barcode {barcode} added successfully with name {name}")
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        log.error(f"Exception occurred while adding barcode: {e}")
+        return jsonify({"error": str(e)}), 500
+
+        
 def is_url_safe(url: str) -> bool:
     return url in [
         "/",
