@@ -26,6 +26,7 @@ const theme = {
   colors: {
     ...DefaultTheme.colors,
     primary: colors.primary,
+    onPrimary: colors.onPrimary,
     accent: colors.secondary,
     background: colors.background,
     input: colors.input,

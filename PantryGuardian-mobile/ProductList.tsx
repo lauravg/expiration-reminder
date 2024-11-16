@@ -124,7 +124,15 @@ const ProductList: React.FC<ProductListProps> = ({
                                                 {product.location}
                                             </Text>
                                         </View>
-                                        <Text style={[GlobalStyles.expirationTextContainer, product.expiration_date && parse(product.expiration_date ?? '', 'yyyy-MM-dd', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
+                                        <Text
+                                            style={[
+                                                GlobalStyles.expirationTextContainer,
+                                                product.expiration_date && parse(product.expiration_date ?? '', 'yyyy-MM-dd', new Date()) < new Date()
+                                                    ? GlobalStyles.expirationText
+                                                    : { color: colors.onProductBackground },
+                                                calculateDaysLeft(product.expiration_date ?? '') === 'Expired' && { color: 'red' }, // Check if the text is "Expired" and set the color to red
+                                            ]}
+                                        >
                                             {calculateDaysLeft(product.expiration_date ?? '')}
                                         </Text>
                                     </View>

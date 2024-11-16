@@ -126,8 +126,8 @@ const GlobalStyles = StyleSheet.create({
   },
 
   picker: {
-    flex: 1,
-    marginRight: 10,
+    // flex: 1,
+    // marginRight: 10,
   },
 
   detailValue: {

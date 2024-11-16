@@ -4,6 +4,7 @@ import { IconButton } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { format, isValid, parse, addDays, differenceInDays } from 'date-fns';
 import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
@@ -71,7 +72,8 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
             body: `Your product ${product.product_name} will expire in ${daysBefore} days.`,
           },
           trigger: {
-            date: notificationDate,
+            type: SchedulableTriggerInputTypes.DATE, // Use the imported enum or value
+            date: notificationDate.getTime(), // Ensure the date is in milliseconds
           },
         });
       }

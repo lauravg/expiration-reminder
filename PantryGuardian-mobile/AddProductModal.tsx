@@ -5,8 +5,9 @@ import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import GlobalStyles from './GlobalStyles';
-import { colors } from './theme';
+import { colors, theme } from './theme';
 import Requests from './Requests';
+import moment from 'moment';
 
 interface AddProductModalProps {
   visible: boolean;
@@ -72,6 +73,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
 
   // Handle product submission
   const handleAddProduct = async () => {
+    // Validate the expiration date before proceeding
+    if (!validateExpirationDate(expirationDate) && expirationDate !== '') {
+      console.error("Invalid date format. Please use YYYY-MM-DD.");
+      return; // Prevent making the request if the date format is invalid
+    }
+  
     const newProduct = {
       product_name: productName,
       barcode: barcode,
@@ -123,6 +130,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       console.error("Error adding product:", error);
     }
   };
+  
+  // Helper function to validate the date format
+  function validateExpirationDate(date: string): boolean {
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD format
+    return datePattern.test(date);
+  }
+
 
   // Helper function to reset form fields
   const resetForm = () => {
@@ -175,7 +189,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
             <PaperTextInput
               style={GlobalStyles.input}
               mode="outlined"
-              label="Expiration Date (MM/DD/YYYY)"
+              label="Expiration Date (YYYY-MM-DD)"
               value={expirationDate}
               onFocus={() => setIsDatePickerVisible(true)}
               onChangeText={setExpirationDate}
@@ -194,6 +208,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
             <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setCategoryModalVisible(true)}>
               {category ? `Category: ${category}` : 'Select Category'}
             </Button>
+            {/* Clear Button */}
+            <View style={{ alignItems: 'center' }}>
+              <Button
+                mode="contained-tonal"
+                onPress={resetForm}
+                style={[styles.clearButton]}
+              >
+                Clear
+              </Button>
+            </View>
             <Button mode="contained" onPress={handleAddProduct} theme={{ colors: { primary: colors.primary } }}>
               Submit
             </Button>
@@ -255,8 +279,17 @@ const styles = StyleSheet.create({
   },
   cameraView: {
     width: '100%',
-    height: '100%',
+    height: '90%',
   },
+  clearButton: {
+    backgroundColor: colors.productBackground,
+    borderColor: colors.border,
+    color: colors.input,
+    borderWidth: 1,
+    width: '50%',
+    marginBottom: 20,
+    marginTop: 10,
+  }
 });
 
 export default AddProductModal;

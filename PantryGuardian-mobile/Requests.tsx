@@ -4,8 +4,8 @@ import { Product } from './Product';
 import { SessionData } from './SessionData';
 import { Household } from './HouseholdManager';
 
-const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
-// const BASE_URL = "http://127.0.0.1:8081";
+// const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
+const BASE_URL = "http://127.0.0.1:8081";
 
 class Requests {
   private sessionData = new SessionData();
