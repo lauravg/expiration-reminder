@@ -142,10 +142,11 @@ export async function scheduleDailyNotification(idToken: string, requests: Reque
         body: productNames.length > 0 ? `The following products are expiring soon: ${productNames}` : "No products are expiring soon.",
       },
       trigger: {
+        type: 'calendar',
         hour: settings.hour,
         minute: settings.minute,
         repeats: true,
-      },
+      } as Notifications.CalendarTriggerInput,
     });
 
     console.log('Notification scheduled successfully');
