@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar, ActivityIndicator, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,11 +17,12 @@ import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
 import WastedProducts from './WastedProductScreen';
-import { registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
-import * as Notifications from 'expo-notifications';
+import { fetchExpiringProducts, registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
 import { SessionData } from './SessionData';
 import Requests from './Requests';
 import { HouseholdManager } from './HouseholdManager';
+import NotificationModal from './NotificationModal';
+import { Product } from './Product';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -37,18 +39,11 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => {
           let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
-
-          if (route.name === 'Inventory') {
-            iconName = 'kitchen';
-          } else if (route.name === 'Generate Recipe') {
-            iconName = 'restaurant';
-          } else if (route.name === 'Wasted') {
-            iconName = 'compost';
-          } else if (route.name === 'Settings') {
-            iconName = 'settings';
-          } else if (route.name === 'AddProduct') {
-            iconName = 'add';
-          }
+          if (route.name === 'Inventory') iconName = 'kitchen';
+          else if (route.name === 'Generate Recipe') iconName = 'restaurant';
+          else if (route.name === 'Wasted') iconName = 'compost';
+          else if (route.name === 'Settings') iconName = 'settings';
+          else if (route.name === 'AddProduct') iconName = 'add';
 
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
@@ -76,7 +71,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
           headerTitle: 'Wasted Products',
           headerTitleStyle: {
             fontWeight: 'bold',
-            color: colors.primary,
+            color: colors.primary
           },
           headerStyle: {
             backgroundColor: colors.background,
@@ -100,12 +95,12 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
           headerTitle: 'Settings',
           headerTitleStyle: {
             fontWeight: 'bold',
-            color: colors.primary,
+            color: colors.primary
           },
           headerStyle: {
             backgroundColor: colors.background,
-            elevation: 0, // Remove shadow on Android
-            shadowOpacity: 0, // Remove shadow on iOS
+            elevation: 0,
+            shadowOpacity: 0
           },
         })}
       />
@@ -118,6 +113,9 @@ export default function App() {
   const [productAdded, setProductAdded] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNotificationModalVisible, setIsNotificationModalVisible] = useState(false);
+  const [affectedProducts, setAffectedProducts] = useState<Product[]>([]);
+
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
   const sessionData = new SessionData();
@@ -127,7 +125,7 @@ export default function App() {
   };
 
   const handleProductAdded = () => {
-    setProductAdded(productAdded + 1); // Increment to trigger reload
+    setProductAdded(productAdded + 1);
   };
 
   const authenticateAndRegisterForNotifications = async () => {
@@ -136,17 +134,26 @@ export default function App() {
       console.log('Retrieved idToken from AsyncStorage:', idToken);
 
       if (idToken) {
-        const subscription = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
-          console.log(notification);
+        const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
+          console.log('Notification clicked:', response);
+
+          // Fetch notification settings and expiring products
+          const settings = await requests.getNotificationSettings();
+          const products = await fetchExpiringProducts(idToken, settings.daysBefore, requests, householdManager);
+
+          setAffectedProducts(products);
+
+          // Ensure the modal is only shown after the state update
+          setTimeout(() => {
+            setIsNotificationModalVisible(true);
+          }, 100); // Small delay to ensure state is updated
         });
 
-        // Schedule daily notification
+        // Register for push notifications
         await registerForPushNotificationsAsync(idToken, requests);
         await scheduleDailyNotification(idToken, requests, householdManager);
 
-        return () => {
-          Notifications.removeNotificationSubscription(subscription);
-        };
+        return () => Notifications.removeNotificationSubscription(subscription);
       } else {
         console.error('idToken is missing, cannot proceed with push notification registration.');
       }
@@ -189,7 +196,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
-          <Stack.Screen name="Login"  options={{ headerShown: false }}>
+          <Stack.Screen name="Login" options={{ headerShown: false }}>
             {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
           </Stack.Screen>
           <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
@@ -211,7 +218,7 @@ export default function App() {
               headerTitle: 'Profile',
               headerTitleStyle: {
                 fontWeight: 'bold',
-                color: colors.primary,
+                color: colors.primary
               },
               headerStyle: {
                 backgroundColor: colors.background,
@@ -226,6 +233,11 @@ export default function App() {
           visible={addProductModalVisible}
           onClose={toggleAddProductModal}
           onProductAdded={handleProductAdded}
+        />
+        <NotificationModal
+          visible={isNotificationModalVisible}
+          onClose={() => setIsNotificationModalVisible(false)}
+          products={affectedProducts}
         />
       </NavigationContainer>
     </SafeAreaProvider>

@@ -1,5 +1,6 @@
-import { Platform, StyleSheet } from 'react-native';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 import { colors, theme } from './theme';
+const { height: screenHeight } = Dimensions.get('window');
 
 const GlobalStyles = StyleSheet.create({
   // Container
@@ -117,6 +118,17 @@ const GlobalStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+
+  notificationModal: {
+    maxHeight: screenHeight * 0.8,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+
+  notificationModalList: {
+    marginBottom: 20,
+    maxHeight: '100%',
   },
 
   pickerContainer: {

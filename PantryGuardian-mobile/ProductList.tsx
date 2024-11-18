@@ -5,44 +5,8 @@ import { parse, differenceInDays, format, isValid } from 'date-fns';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { Product } from './Product';
+import { calculateDaysLeft } from './utils/dateUtils';
 import EditProductModal from './EditProductModal';
-
-// The calculateDaysLeft function with improved date parsing
-const calculateDaysLeft = (expirationDate: string | null): string => {
-    if (!expirationDate || expirationDate === "No Expiration") {
-        return "";
-    }
-
-    const dateFormats = ['yyyy-MM-dd', 'MMM dd yyyy'];
-
-    let parsedDate: Date | undefined;
-    for (let formatString of dateFormats) {
-        const date = parse(expirationDate, formatString, new Date());
-        if (isValid(date)) {
-            parsedDate = date;
-            break;
-        }
-    }
-
-    if (!parsedDate || !isValid(parsedDate)) {
-        console.error('Error parsing date:', expirationDate);
-        return '';
-    }
-
-    const today = new Date();
-    const daysLeft = differenceInDays(parsedDate, today);
-
-    if (daysLeft > 30) {
-        const monthsLeft = Math.floor(daysLeft / 30);
-        return `${monthsLeft} months`;
-    } else if (daysLeft < 0) {
-        return `Expired`;
-    }
-
-    return `${daysLeft} days`;
-};
-
-
 
 interface ProductListProps {
     products: Product[];
