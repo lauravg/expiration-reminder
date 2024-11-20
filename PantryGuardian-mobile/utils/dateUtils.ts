@@ -1,14 +1,18 @@
-import { parse } from 'date-fns';
+import { parseISO, parse } from 'date-fns';
 
 export const calculateDaysLeft = (expirationDate: string | null): string => {
   if (!expirationDate || expirationDate === "No Expiration") {
     return "";
   }
 
-  // Use date-fns to parse the date in the format "MMM dd yyyy"
-  const parsedDate = parse(expirationDate, 'MMM dd yyyy', new Date());
+  // Try to parse the date using parseISO
+  let parsedDate = parseISO(expirationDate);
+  
+  // If parsing with parseISO fails, try custom parsing
+  if (isNaN(parsedDate.getTime())) {
+    parsedDate = parse(expirationDate, 'MMM dd yyyy', new Date());
+  }
 
-  // Check if the parsed date is valid
   if (isNaN(parsedDate.getTime())) {
     console.error("Error parsing date:", expirationDate);
     return "";
@@ -20,7 +24,7 @@ export const calculateDaysLeft = (expirationDate: string | null): string => {
   if (daysLeft > 30) {
     const monthsLeft = Math.floor(daysLeft / 30);
     return `${monthsLeft} months`;
-  } else if (daysLeft == 1) {
+  } else if (daysLeft === 1) {
     return `${daysLeft} day`;
   } else if (daysLeft < 0) {
     return `Expired`;

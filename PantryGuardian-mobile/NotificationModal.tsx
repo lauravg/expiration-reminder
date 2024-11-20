@@ -30,15 +30,16 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                   <Text style={GlobalStyles.location}>{product.location}</Text>
                 </View>
                 <Text
-  style={[
-    GlobalStyles.expirationTextContainer,
-    product.expiration_date && new Date(product.expiration_date) < new Date()
-      ? GlobalStyles.expirationText
-      : { color: colors.onProductBackground },
-  ]}
->
-  {calculateDaysLeft(product.expiration_date ?? null)}
-</Text>
+                  style={[
+                    GlobalStyles.expirationTextContainer,
+                    product.expiration_date && new Date(product.expiration_date) < new Date()
+                      ? GlobalStyles.expirationText
+                      : { color: colors.onProductBackground },
+                    calculateDaysLeft(product.expiration_date ?? '') === 'Expired' && { color: 'red' },
+                  ]}
+                >
+                  {calculateDaysLeft(product.expiration_date ?? '')}
+                </Text>
               </View>
             </TouchableWithoutFeedback>
           ))}
