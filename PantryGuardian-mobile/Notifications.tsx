@@ -1,18 +1,16 @@
-// notifications.tsx
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from './Product';
 import { parse } from 'date-fns';
-import Requests, { BASE_URL } from './Requests';
+import Requests from './Requests';
 import { HouseholdManager } from './HouseholdManager';
 
 // Function to request notifications permission and get the token
 export async function registerForPushNotificationsAsync(idToken: string, requests: Requests) {
   try {
-    console.log('Starting push notification registration'); // Debug log
+    console.log('Starting push notification registration');
 
-    // Ensure Requests.idToken is available
     if (!idToken) {
       throw new Error('idToken is missing, cannot save push token');
     }
@@ -37,31 +35,35 @@ export async function registerForPushNotificationsAsync(idToken: string, request
     const token = (await Notifications.getExpoPushTokenAsync({
       projectId,
     })).data;
+
     console.log('Push token:', token);
     await AsyncStorage.setItem('expoPushToken', token);
-    await requests.saveNotificationPushToken({ token })
+    await requests.saveNotificationPushToken({ token });
     console.log('Push token saved successfully.');
   } catch (error) {
     console.error('Failed to register for push notifications:', error);
-    // Handle error (e.g., show error message to the user)
   }
 }
 
 // Function to fetch expiring products from the backend
-export async function fetchExpiringProducts(idToken: string, daysBefore: number, requests: Requests, householdManager: HouseholdManager): Promise<Product[]> {
+export async function fetchExpiringProducts(
+  idToken: string,
+  daysBefore: number,
+  requests: Requests,
+  householdManager: HouseholdManager
+): Promise<Product[]> {
   try {
     if (!idToken) {
       throw new Error('idToken is missing');
     }
 
-    // FIXME: This is the source of a second request to all products!!!!
-    const products = await requests.listProducts(await householdManager.getActiveHouseholdId())
+    const products = await requests.listProducts(await householdManager.getActiveHouseholdId());
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
+
     const expiringDate = new Date(today);
     expiringDate.setUTCDate(today.getUTCDate() + daysBefore + 1);
 
-    // Add logging for debugging
     console.log('Today:', today.toISOString());
     console.log('Expiring Date:', expiringDate.toISOString());
     console.log('Products:', products);
@@ -73,7 +75,6 @@ export async function fetchExpiringProducts(idToken: string, daysBefore: number,
 
       const expirationDate = parseDate(product.expiration_date);
 
-      // Validate date
       if (!expirationDate) {
         console.error(`Invalid date for product ${product.product_name}: ${product.expiration_date}`);
         return false;
@@ -87,7 +88,7 @@ export async function fetchExpiringProducts(idToken: string, daysBefore: number,
     console.log('Filtered Expiring Products:', expiringProducts);
     return expiringProducts;
   } catch (error) {
-    console.error('Failed to fetch products', error);
+    console.error('Failed to fetch products:', error);
     throw error;
   }
 }
@@ -111,47 +112,61 @@ function parseDate(dateString: string): Date | null {
 }
 
 // Function to schedule daily notifications
-export async function scheduleDailyNotification(idToken: string, requests: Requests, householdManager: HouseholdManager) {
+let isScheduling = false;
+
+export async function scheduleDailyNotification(
+  idToken: string,
+  requests: Requests,
+  householdManager: HouseholdManager
+) {
+  if (isScheduling) {
+    console.log('Notification scheduling is already in progress. Skipping...');
+    return;
+  }
+
   try {
-    console.log('Scheduling daily notifications');
+    isScheduling = true;
 
-    // Fetch notification settings from the backend
+    console.log('Starting notification scheduling...');
+    await Notifications.cancelAllScheduledNotificationsAsync(); // Clear existing notifications
+
     const settings = await fetchNotificationSettings(idToken, requests);
-
     if (!settings.notificationsEnabled) {
-      console.log('Notifications are disabled');
+      console.log('Notifications are disabled. No notifications will be scheduled.');
       return;
     }
 
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const products = await fetchExpiringProducts(
+      idToken,
+      settings.daysBefore,
+      requests,
+      householdManager
+    );
 
-    const products = await fetchExpiringProducts(idToken, settings.daysBefore, requests, householdManager);
     const productNames = products.map((product: Product) => product.product_name).join(', ');
 
-    // Add logging for debugging
-    console.log('Expiring Products:', productNames);
-
-    const trigger = new Date();
-    trigger.setHours(settings.hour);
-    trigger.setMinutes(settings.minute);
-    trigger.setSeconds(0);
+    console.log('Scheduling new notification with the following products:', productNames);
 
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Expiring Products Alert",
-        body: productNames.length > 0 ? `The following products are expiring soon: ${productNames}` : "No products are expiring soon.",
+        body: productNames.length > 0
+          ? `The following products are expiring soon: ${productNames}`
+          : "No products are expiring soon.",
       },
       trigger: {
-        type: 'calendar',
+        type: 'daily',
         hour: settings.hour,
         minute: settings.minute,
         repeats: true,
-      } as Notifications.CalendarTriggerInput,
+      } as Notifications.DailyTriggerInput,
     });
 
-    console.log('Notification scheduled successfully');
+    console.log('Notification scheduled successfully.');
   } catch (error) {
-    console.error('Failed to schedule notification', error);
+    console.error('Error while scheduling notification:', error);
+  } finally {
+    isScheduling = false;
   }
 }
 
@@ -163,11 +178,12 @@ async function fetchNotificationSettings(idToken: string, requests: Requests) {
     }
     return await requests.getNotificationSettings();
   } catch (error) {
-    console.error('Failed to fetch notification settings', error);
+    console.error('Failed to fetch notification settings:', error);
     throw error;
   }
 }
 
+// Set up notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,

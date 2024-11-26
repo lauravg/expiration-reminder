@@ -1,29 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import { Button, Divider, Avatar, IconButton, List } from 'react-native-paper';
-import { TextInput as PaperTextInput } from 'react-native-paper';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { Button, Divider, Avatar, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
-import Requests, { BASE_URL } from './Requests';
-import RNPickerSelect from 'react-native-picker-select';
+import Requests from './Requests';
+import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 import { scheduleDailyNotification } from './Notifications';
-
+import * as Notifications from 'expo-notifications';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [daysBefore, setDaysBefore] = useState('5');
-  const [notificationTime, setNotificationTime] = useState(new Date(0, 0, 0, 12, 0)); // Default to noon
+  const [daysBefore, setDaysBefore] = useState<string>('5'); // Default to '5'
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [notificationTime, setNotificationTime] = useState(new Date()); // Notification time
+  const [tempNotificationTime, setTempNotificationTime] = useState(notificationTime); // Temporary notification time
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [households, setHouseholds] = useState<Household[]>([]);
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const sessionData = new SessionData();
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
@@ -35,17 +36,28 @@ const SettingsScreen = () => {
     households: true,
   });
 
-  useEffect(() => {
-    // Load saved settings from the database
-    const loadSettings = async () => {
-      if (!sessionData.idToken) return;
+  const pickerItems = [
+    { label: '1 Day', value: '1' },
+    { label: '2 Days', value: '2' },
+    { label: '3 Days', value: '3' },
+    { label: '4 Days', value: '4' },
+    { label: '5 Days', value: '5' },
+    { label: '6 Days', value: '6' },
+    { label: '1 Week', value: '7' },
+    { label: '2 Weeks', value: '14' },
+    { label: '1 Month', value: '30' },
+  ];
 
+  useEffect(() => {
+    // Load saved settings
+    const loadSettings = async () => {
       try {
-        const response = await requests.getNotificationSettings()
+        const response = await requests.getNotificationSettings();
         setNotificationsEnabled(response.notificationsEnabled);
         setDaysBefore(response.daysBefore.toString());
         setNotificationTime(new Date(0, 0, 0, response.hour, response.minute));
       } catch (error) {
+        Alert.alert('Error', 'Failed to load notification settings.');
         console.error('Failed to load notification settings', error);
       }
 
@@ -54,10 +66,16 @@ const SettingsScreen = () => {
         setLocations(response.locations);
         setCategories(response.categories);
       } catch (error) {
+        Alert.alert('Error', 'Failed to load locations and categories.');
         console.error('Failed to load locations and categories', error);
       }
 
-      setHouseholds(await householdManager.getHouseholds());
+      try {
+        setHouseholds(await householdManager.getHouseholds());
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load households.');
+        console.error('Failed to load households', error);
+      }
     };
 
     loadSettings();
@@ -74,7 +92,6 @@ const SettingsScreen = () => {
     const newStatus = !notificationsEnabled;
     setNotificationsEnabled(newStatus);
 
-    // Save the new settings and schedule the notification
     const success = await requests.saveNotificationSettings({
       notificationsEnabled: newStatus,
       daysBefore: parseInt(daysBefore, 10),
@@ -83,42 +100,82 @@ const SettingsScreen = () => {
     });
 
     if (success) {
-      await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
+      if (newStatus) {
+        // Only schedule notifications if they are enabled
+        await handleNotificationSchedule(true);
+      } else {
+        // Cancel notifications if they are disabled
+        await Notifications.cancelAllScheduledNotificationsAsync();
+      }
     }
   };
+  function debounce(func: Function, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
 
-  const handleDaysBeforeChange = async (value: string) => {
+  const handleDaysBeforeChange = debounce(async (value: string | null) => {
+    if (!value) return;
     setDaysBefore(value);
 
-    // Save the new settings and schedule the notification
-    const success = await requests.saveNotificationSettings({
-      notificationsEnabled,
-      daysBefore: parseInt(value, 10),
-      hour: notificationTime.getHours(),
-      minute: notificationTime.getMinutes(),
-    });
-
-    if (success) {
-      await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
-    }
-  };
-
-  const handleTimeChange = async (event: any, selectedDate?: Date) => {
-    setShowTimePicker(false);
-    if (selectedDate) {
-      setNotificationTime(selectedDate);
-
-      // Save the new settings and schedule the notification
+    try {
       const success = await requests.saveNotificationSettings({
         notificationsEnabled,
-        daysBefore: parseInt(daysBefore, 10),
-        hour: selectedDate.getHours(),
-        minute: selectedDate.getMinutes(),
+        daysBefore: parseInt(value, 10),
+        hour: notificationTime.getHours(),
+        minute: notificationTime.getMinutes(),
       });
 
       if (success) {
+        console.log('Notification settings saved, scheduling notification...');
         await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
       }
+    } catch (error) {
+      console.error('Failed to save notification settings or schedule notifications', error);
+    }
+  }, 500); // Adjust the debounce delay as needed
+
+  let isScheduling = false;
+
+  const handleNotificationSchedule = async (success: boolean) => {
+    if (isScheduling) return;
+    isScheduling = true;
+    try {
+      console.log('Attempting to schedule notification...');
+      await scheduleDailyNotification(sessionData.idToken, requests, householdManager);
+      console.log('Notification scheduled successfully.');
+    } catch (error) {
+      console.error('Failed to schedule notification', error);
+    } finally {
+      isScheduling = false;
+    }
+  };
+
+  const handleTimeChange = async (_event: any, selectedDate?: Date) => {
+    if (!selectedDate) return;
+
+    const hour = selectedDate.getHours();
+    const minute = selectedDate.getMinutes();
+
+    // Update the temporary and main notification time
+    setTempNotificationTime(selectedDate);
+    setNotificationTime(selectedDate);
+
+    // Save the updated time to the backend
+    try {
+      const success = await requests.saveNotificationSettings({
+        notificationsEnabled,
+        daysBefore: parseInt(daysBefore, 10),
+        hour,
+        minute,
+      });
+      await handleNotificationSchedule(success);
+    } catch (error) {
+      console.error('Failed to save notification time', error);
+      Alert.alert('Error', 'Failed to save notification time.');
     }
   };
 
@@ -129,7 +186,7 @@ const SettingsScreen = () => {
     }
 
     try {
-      const success = await requests.addLocation(newLocation)
+      const success = await requests.addLocation(newLocation);
       if (success) {
         setLocations([...locations, newLocation]);
         setNewLocation('');
@@ -180,7 +237,7 @@ const SettingsScreen = () => {
 
   const handleActivateHousehold = async (id: string) => {
     householdManager.setActiveHousehold(id);
-  }
+  };
 
   return (
     <ScrollView style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
@@ -196,11 +253,14 @@ const SettingsScreen = () => {
           </View>
         </TouchableOpacity>
       </View>
-
       <View style={styles.section}>
         <TouchableOpacity onPress={() => toggleSection('notifications')} style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Notifications</Text>
-          <IconButton icon={collapsedSections.notifications ? "chevron-down" : "chevron-up"} size={20} iconColor={colors.primary} />
+          <IconButton
+            icon={collapsedSections.notifications ? "chevron-down" : "chevron-up"}
+            size={20}
+            iconColor={colors.primary}
+          />
         </TouchableOpacity>
         {!collapsedSections.notifications && (
           <View style={styles.sectionContent}>
@@ -218,45 +278,72 @@ const SettingsScreen = () => {
               <>
                 <View style={GlobalStyles.preference}>
                   <Text>Days Before Expiration</Text>
-                  <RNPickerSelect
-                    onValueChange={handleDaysBeforeChange}
+                  <DropDownPicker
+                    open={isPickerOpen}
                     value={daysBefore}
-                    items={[
-                      { label: '1', value: '1' },
-                      { label: '2', value: '2' },
-                      { label: '3', value: '3' },
-                      { label: '4', value: '4' },
-                      { label: '5', value: '5' },
-                      { label: '6', value: '6' },
-                      { label: '7', value: '7' },
-                      { label: '2 Weeks', value: '14' },
-                      { label: '1 month', value: '30' },
-                    ]}
-                    style={pickerSelectStyles}
+                    items={pickerItems}
+                    setOpen={setIsPickerOpen}
+                    setValue={(value) => setDaysBefore(value)}
+                    onChangeValue={handleDaysBeforeChange}
+                    style={styles.dropdown}
+                    textStyle={{ fontSize: 16 }}
+                    dropDownContainerStyle={{ backgroundColor: colors.background }}
                   />
                 </View>
                 <Divider />
                 <View style={GlobalStyles.preference}>
                   <Text>Notification Time</Text>
-                  <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                    <Text>{notificationTime.getHours().toString().padStart(2, '0')}:{notificationTime.getMinutes().toString().padStart(2, '0')}</Text>
-                  </TouchableOpacity>
+                  {showTimePicker ? (
+                    <View>
+                      <DateTimePicker
+                        value={tempNotificationTime}
+                        mode="time"
+                        display="default"
+                        onChange={handleTimeChange}
+                      />
+                      <View style={styles.textButtonContainer}>
+                        <Button
+                          onPress={async () => {
+                            setNotificationTime(tempNotificationTime); // Save the selected time
+                            setShowTimePicker(false); // Close the picker
+
+                            // Save the updated time to the backend
+                            const success = await requests.saveNotificationSettings({
+                              notificationsEnabled,
+                              daysBefore: parseInt(daysBefore, 10),
+                              hour: notificationTime.getHours(),
+                              minute: notificationTime.getMinutes(),
+                            });
+                            await handleNotificationSchedule(success);
+
+                          }}
+                        >
+                          <Text style={styles.textButton}>Save</Text>
+                        </Button>
+                        <Button
+                          onPress={() => setShowTimePicker(false)}
+                          theme={{ colors: { primary: colors.primary } }}
+                        >
+                          Cancel
+                        </Button>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                      <Text>
+                        {notificationTime.getHours().toString().padStart(2, '0')}:
+                        {notificationTime.getMinutes().toString().padStart(2, '0')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                {showTimePicker && (
-                  <DateTimePicker
-                    value={notificationTime}
-                    mode="time"
-                    is24Hour={true}
-                    display="default"
-                    onChange={handleTimeChange}
-                  />
-                )}
               </>
             )}
           </View>
         )}
       </View>
 
+      {/* Locations Section */}
       <View style={styles.section}>
         <TouchableOpacity onPress={() => toggleSection('locations')} style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Manage Locations</Text>
@@ -274,23 +361,21 @@ const SettingsScreen = () => {
                 </Button>
               </View>
             ))}
-            <View>
-              <PaperTextInput
-                placeholder="Add new location"
-                value={newLocation}
-                onChangeText={setNewLocation}
-                style={GlobalStyles.simpleInput}
-                theme={{ colors: { primary: colors.primary } }}
-              />
-              <Button onPress={handleAddLocation}
-                theme={{ colors: { primary: colors.primary } }}>
-                Add Location
-              </Button>
-            </View>
+            <PaperTextInput
+              placeholder="Add new location"
+              value={newLocation}
+              onChangeText={setNewLocation}
+              style={GlobalStyles.simpleInput}
+              theme={{ colors: { primary: colors.primary } }}
+            />
+            <Button onPress={handleAddLocation} theme={{ colors: { primary: colors.primary } }}>
+              Add Location
+            </Button>
           </View>
         )}
       </View>
 
+      {/* Categories Section */}
       <View style={styles.section}>
         <TouchableOpacity onPress={() => toggleSection('categories')} style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Manage Categories</Text>
@@ -308,25 +393,21 @@ const SettingsScreen = () => {
                 </Button>
               </View>
             ))}
-            <View>
-              <PaperTextInput
-                placeholder="Add new category"
-                value={newCategory}
-                onChangeText={setNewCategory}
-                style={GlobalStyles.simpleInput}
-                theme={{ colors: { primary: colors.primary } }}
-
-              />
-              <Button
-                onPress={handleAddCategory}
-                theme={{ colors: { primary: colors.primary } }}>
-                Add Category
-              </Button>
-            </View>
+            <PaperTextInput
+              placeholder="Add new category"
+              value={newCategory}
+              onChangeText={setNewCategory}
+              style={GlobalStyles.simpleInput}
+              theme={{ colors: { primary: colors.primary } }}
+            />
+            <Button onPress={handleAddCategory} theme={{ colors: { primary: colors.primary } }}>
+              Add Category
+            </Button>
           </View>
         )}
       </View>
 
+      {/* Households Section */}
       <View style={styles.section}>
         <TouchableOpacity onPress={() => toggleSection('households')} style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Manage Households</Text>
@@ -350,30 +431,6 @@ const SettingsScreen = () => {
     </ScrollView>
   );
 };
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    fontSize: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 4,
-    color: colors.onBackground,
-    textAlign: 'center',
-    paddingRight: 30,
-    paddingLeft: 30,
-  },
-  inputAndroid: {
-    fontSize: 16,
-    paddingVertical: 12,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: 8,
-    color: colors.onBackground,
-    paddingRight: 30,
-    paddingLeft: 30,
-  },
-});
 
 const styles = StyleSheet.create({
   settingsContainer: {
@@ -402,9 +459,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
   },
+  dropdown: {
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    marginVertical: 10, // Add spacing
+  },
+  dropdownContainer: {
+    backgroundColor: colors.background,
+  },
 
   section: {
     marginVertical: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  textButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginTop: 10,
+  },
+
+  timePicker: {
+    alignSelf: 'flex-end',
+  },
+
+  textButton: {
+    fontSize: 14,
+    color: colors.primary,
   },
 });
 
