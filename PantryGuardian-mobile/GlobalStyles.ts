@@ -108,6 +108,7 @@ const GlobalStyles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     elevation: 5,
+    maxHeight: screenHeight * 0.6,
     ...(Platform.OS === 'web' && {
       width: 600,
       alignSelf: 'center',

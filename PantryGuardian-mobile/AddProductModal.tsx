@@ -29,6 +29,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
   const [permission, requestPermission] = useCameraPermissions();
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [note, setNote] = useState('');
   const requests = new Requests();
 
   // Load locations and categories on component mount
@@ -49,7 +50,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
           // Fetch barcode data from the backend
           const barcodeData = await requests.getBarcodeData(barcode);
           if (barcodeData) {
-          // Autofill product name if the barcode exists
+            // Autofill product name if the barcode exists
             setProductName(barcodeData.name);
           } else {
             // Clear product name if barcode doesn't exist
@@ -78,7 +79,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       console.error("Invalid date format. Please use YYYY-MM-DD.");
       return; // Prevent making the request if the date format is invalid
     }
-  
+
     const newProduct = {
       product_name: productName,
       barcode: barcode,
@@ -88,11 +89,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       product_id: '',
       wasted: false,
       creation_date: new Date().toISOString(),
+      note: note,
     };
-  
+
     try {
       console.log("Barcode check condition:", barcode, productName);
-  
+
       // Attempt to fetch barcode data
       let barcodeData = null;
       if (barcode) {
@@ -102,7 +104,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
           console.error("Error fetching barcode data:", error);
         }
       }
-  
+
       // If barcode data is not found, add the barcode to the database
       if (!barcodeData && barcode) {
         console.log("Barcode not found. Adding to database...");
@@ -116,7 +118,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
           console.log("Barcode added successfully");
         }
       }
-  
+
       // Add the product to the database
       const success = await requests.addProduct(newProduct);
       if (success) {
@@ -130,7 +132,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       console.error("Error adding product:", error);
     }
   };
-  
+
   // Helper function to validate the date format
   function validateExpirationDate(date: string): boolean {
     const datePattern = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD format
@@ -251,6 +253,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
             ))}
           </Picker>
         </PaperModal>
+        <PaperTextInput
+          style={GlobalStyles.input}
+          mode="outlined"
+          label="Note (optional)"
+          value={note}
+          onChangeText={setNote}
+        />
       </PaperModal>
 
       {/* Camera Scanner Modal */}

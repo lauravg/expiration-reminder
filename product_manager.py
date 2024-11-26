@@ -20,6 +20,7 @@ class Product:
         household_id: str,
         wasted: bool,
         wasted_timestamp: int,
+        note: str,
     ) -> None:
         self.id = id
         self.barcode = barcode
@@ -31,6 +32,7 @@ class Product:
         self.household_id = household_id
         self.wasted = wasted
         self.wasted_timestamp = wasted_timestamp
+        self.note = note
 
     @property
     def does_expire(self) -> bool:
@@ -47,6 +49,8 @@ class Product:
         yield "household_id", self.household_id
         yield "wasted", self.wasted
         yield "wasted_timestamp", self.wasted_timestamp
+        yield "note", self.note
+
 
     def creation_str(self, format="%b %d %Y") -> str:
         return datetime.utcfromtimestamp(self.created / 1000).strftime(format)
@@ -139,6 +143,7 @@ class ProductManager:
             household_id,
             dict["wasted"],
             wasted_timestamp,
+            dict["note"],
         )
 
     @classmethod

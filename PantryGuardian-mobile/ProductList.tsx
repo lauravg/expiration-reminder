@@ -1,13 +1,12 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { List, Modal as PaperModal, Button, TextInput as PaperTextInput } from 'react-native-paper';
-import { parse, differenceInDays, format, isValid } from 'date-fns';
+import { parse } from 'date-fns';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { Product } from './Product';
 import { calculateDaysLeft } from './utils/dateUtils';
 import EditProductModal from './EditProductModal';
-
 interface ProductListProps {
     products: Product[];
     onDelete: (product: Product) => Promise<void>;
@@ -34,7 +33,7 @@ const ProductList: React.FC<ProductListProps> = ({
         return matchesSearch && matchesFilter;
     });
 
-    const uniqueLocations = ['All', ...new Set(products.map(product => product.location))];
+    const uniqueLocations = ['All', ...new Set(products.map((product) => product.location))];
 
     const handleDelete = async (product: Product) => {
         await onDelete(product);
@@ -69,8 +68,14 @@ const ProductList: React.FC<ProductListProps> = ({
 
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={GlobalStyles.filterContainer}>
                         {uniqueLocations.map((filter) => (
-                            <TouchableOpacity key={filter} onPress={() => setActiveFilter(filter)} style={GlobalStyles.filterButton}>
-                                <Text style={[GlobalStyles.filterText, activeFilter === filter && GlobalStyles.activeFilterText]}>{filter}</Text>
+                            <TouchableOpacity
+                                key={filter}
+                                onPress={() => setActiveFilter(filter)}
+                                style={GlobalStyles.filterButton}
+                            >
+                                <Text style={[GlobalStyles.filterText, activeFilter === filter && GlobalStyles.activeFilterText]}>
+                                    {filter}
+                                </Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -78,26 +83,30 @@ const ProductList: React.FC<ProductListProps> = ({
                     <View style={GlobalStyles.productList}>
                         <List.Section>
                             {filteredProducts.map((product, index) => (
-                                <TouchableWithoutFeedback key={product.product_id} onPress={() => setSelectedProduct(product)}>
-                                    <View style={[GlobalStyles.productContainer, index === filteredProducts.length - 1 && { borderBottomWidth: 0 }]}>
+                                <TouchableWithoutFeedback
+                                    key={product.product_id}
+                                    onPress={() => setSelectedProduct(product)}
+                                >
+                                    <View
+                                        style={[
+                                            GlobalStyles.productContainer,
+                                            index === filteredProducts.length - 1 && { borderBottomWidth: 0 },
+                                        ]}
+                                    >
                                         <View style={GlobalStyles.productInfo}>
-                                            <Text style={GlobalStyles.productName}>
-                                                {product.product_name}
-                                            </Text>
-                                            <Text style={GlobalStyles.location}>
-                                                {product.location}
-                                            </Text>
+                                            <Text style={GlobalStyles.productName}>{product.product_name}</Text>
+                                            <Text style={GlobalStyles.location}>{product.location}</Text>
                                         </View>
                                         <Text
-                                          style={[
-                                            GlobalStyles.expirationTextContainer,
-                                            product.expiration_date && new Date(product.expiration_date) < new Date()
-                                              ? GlobalStyles.expirationText
-                                              : { color: colors.onProductBackground },
-                                            calculateDaysLeft(product.expiration_date ?? '') === 'Expired' && { color: 'red' },
-                                          ]}
+                                            style={[
+                                                GlobalStyles.expirationTextContainer,
+                                                product.expiration_date && new Date(product.expiration_date) < new Date()
+                                                    ? GlobalStyles.expirationText
+                                                    : { color: colors.onProductBackground },
+                                                calculateDaysLeft(product.expiration_date ?? '') === 'Expired' && { color: 'red' },
+                                            ]}
                                         >
-                                          {calculateDaysLeft(product.expiration_date ?? '')}
+                                            {calculateDaysLeft(product.expiration_date ?? '')}
                                         </Text>
                                     </View>
                                 </TouchableWithoutFeedback>
@@ -108,46 +117,71 @@ const ProductList: React.FC<ProductListProps> = ({
             </ScrollView>
 
             {selectedProduct && (
-                <PaperModal visible={true} onDismiss={() => setSelectedProduct(null)} contentContainerStyle={GlobalStyles.modalContent}>
+                <PaperModal
+                    visible={true}
+                    onDismiss={() => setSelectedProduct(null)}
+                    contentContainerStyle={GlobalStyles.modalContent}
+                >
                     <Text style={GlobalStyles.modalTitle}>Product Details</Text>
-                    <View style={GlobalStyles.productDetails}>
-                        <View style={GlobalStyles.detailRow}>
-                            <Text style={GlobalStyles.detailLabel}>Product Name:</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.product_name}</Text>
-                        </View>
-                        <View style={GlobalStyles.detailRow}>
-                            <Text style={GlobalStyles.detailLabel}>Creation Date:</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.creation_date}</Text>
-                        </View>
-                        <View style={GlobalStyles.detailRow}>
-                            <Text style={GlobalStyles.detailLabel}>Expiration Date:</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.expiration_date ?? 'N/A'}</Text>
-                        </View>
-                        <View style={GlobalStyles.detailRow}>
-                            <Text style={GlobalStyles.detailLabel}>Time until Expiration:</Text>
-                            <Text style={[GlobalStyles.expirationText, selectedProduct.expiration_date && parse(selectedProduct.expiration_date ?? '', 'yyyy-MM-dd', new Date()) < new Date() ? GlobalStyles.expirationText : { color: colors.onProductBackground }]}>
-                                {calculateDaysLeft(selectedProduct.expiration_date ?? '')}
-                            </Text>
-                        </View>
-                        <View style={GlobalStyles.detailRow}>
-                            <Text style={GlobalStyles.detailLabel}>Location:</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
-                        </View>
-                        {selectedProduct.category && (
+                    <ScrollView style={{ maxHeight: '80%' }} showsVerticalScrollIndicator={false}>
+                        <View style={GlobalStyles.productDetails}>
                             <View style={GlobalStyles.detailRow}>
-                                <Text style={GlobalStyles.detailLabel}>Category:</Text>
-                                <Text style={GlobalStyles.detailValue}>{selectedProduct.category}</Text>
+                                <Text style={GlobalStyles.detailLabel}>Product Name:</Text>
+                                <Text style={GlobalStyles.detailValue}>{selectedProduct.product_name}</Text>
                             </View>
-                        )}
-                    </View>
+                            <View style={GlobalStyles.detailRow}>
+                                <Text style={GlobalStyles.detailLabel}>Creation Date:</Text>
+                                <Text style={GlobalStyles.detailValue}>{selectedProduct.creation_date}</Text>
+                            </View>
+                            <View style={GlobalStyles.detailRow}>
+                                <Text style={GlobalStyles.detailLabel}>Expiration Date:</Text>
+                                <Text style={GlobalStyles.detailValue}>{selectedProduct.expiration_date ?? 'N/A'}</Text>
+                            </View>
+                            <View style={GlobalStyles.detailRow}>
+                                <Text style={GlobalStyles.detailLabel}>Time until Expiration:</Text>
+                                <Text
+                                    style={[
+                                        GlobalStyles.expirationText,
+                                        selectedProduct.expiration_date &&
+                                        parse(selectedProduct.expiration_date ?? '', 'yyyy-MM-dd', new Date()) <
+                                        new Date()
+                                            ? GlobalStyles.expirationText
+                                            : { color: colors.onProductBackground },
+                                    ]}
+                                >
+                                    {calculateDaysLeft(selectedProduct.expiration_date ?? '')}
+                                </Text>
+                            </View>
+                            <View style={GlobalStyles.detailRow}>
+                                <Text style={GlobalStyles.detailLabel}>Location:</Text>
+                                <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
+                            </View>
+                            {selectedProduct.category && (
+                                <View style={GlobalStyles.detailRow}>
+                                    <Text style={GlobalStyles.detailLabel}>Category:</Text>
+                                    <Text style={GlobalStyles.detailValue}>{selectedProduct.category}</Text>
+                                </View>
+                            )}
+                            <View style={GlobalStyles.detailRow}>
+                                <Text style={GlobalStyles.detailLabel}>Note:</Text>
+                                <Text style={GlobalStyles.detailValue}>{selectedProduct.note}</Text>
+                            </View>
+                        </View>
+                    </ScrollView>
                     <View style={GlobalStyles.modalButton}>
-                        <Button theme={{ colors: { primary: colors.primary } }} onPress={() => {
-                            setEditProductModalVisible(true);
-                            setSelectedProduct(selectedProduct);
-                        }}>
+                        <Button
+                            theme={{ colors: { primary: colors.primary } }}
+                            onPress={() => {
+                                setEditProductModalVisible(true);
+                                setSelectedProduct(selectedProduct);
+                            }}
+                        >
                             Modify
                         </Button>
-                        <Button theme={{ colors: { primary: colors.primary } }} onPress={() => handleDelete(selectedProduct)}>
+                        <Button
+                            theme={{ colors: { primary: colors.primary } }}
+                            onPress={() => handleDelete(selectedProduct)}
+                        >
                             Delete
                         </Button>
                         {showWasteButton && onWaste && (

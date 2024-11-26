@@ -296,6 +296,7 @@ def list_products():
                 and product.expires < int(datetime.utcnow().timestamp() * 1000),
                 "creation_date": product.creation_str(),
                 "wasted": product.wasted,
+                "note": product.note or "",
             }
         )
     return jsonify(result)
@@ -445,6 +446,7 @@ def add_product():
             household_id=household.id,
             wasted=False,
             wasted_timestamp=0,
+            note=data.get("note", ""),
         )
 
         if not product_mgr.add_product(product):
@@ -491,7 +493,7 @@ def update_product(id):
         product.product_name = data.get("product_name", product.product_name)
         product.location = data.get("location", product.location)
         product.category = data.get("category", product.category)
-
+        product.note = data.get("note", product.note)
         expiration_date = data.get("expiration_date")
         if expiration_date:
             product.expires = ProductManager.parse_import_date(expiration_date)
@@ -574,6 +576,7 @@ def get_expiring_products():
             "expired": product.expires < int(datetime.utcnow().timestamp() * 1000),
             "creation_date": product.creation_str(),
             "wasted": product.wasted,
+            "note": product.note,
         }
         for product in expiring_products
     ]

@@ -27,6 +27,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [note, setNote] = useState<string>('');
   const requests = new Requests()
 
   useEffect(() => {
@@ -53,6 +54,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
       setProductName(product.product_name);
       setLocation(product.location || '');
       setCategory(product.category || '');
+      setNote(product.note || '');
     }
   }, [product]);
 
@@ -83,11 +85,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         expiration_date: expirationDate,
         location: location,
         category: category,
+        note: note,
       };
       onUpdateProduct(updatedProduct);
       onClose();
-    } else {
-      console.error('No product to update');
     }
   };
 
@@ -143,6 +144,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
           ))}
         </Picker>
       </PaperModal>
+      <PaperTextInput
+          style={GlobalStyles.input}
+          mode="outlined"
+          label="Note (optional)"
+          value={note}
+          onChangeText={setNote}
+        />
     </PaperModal>
   );
 };

@@ -7,4 +7,5 @@ export interface Product {
   barcode?: string;
   wasted: boolean;
   creation_date?: string;
+  note?: string;
 }
