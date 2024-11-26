@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { IconButton } from 'react-native-paper';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { format, isValid, parse, addDays, differenceInDays } from 'date-fns';
 import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
@@ -80,18 +80,23 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
     }
   };
 
-  useEffect(() => {
-    householdManager.getActiveHouseholdId().then((hid) => {
-      requests.listProducts(hid).then((products) => {
-        const nonWastedProducts = products.filter((product) => !product.wasted);
-        // Schedule notifications for each product
-        nonWastedProducts.forEach(product => {
-          scheduleNotification(product);
+  useFocusEffect(
+    React.useCallback(() => {
+      householdManager.getActiveHouseholdId().then((hid) => {
+        console.log('Active Household ID (Homepage):', hid); // Debug household ID
+        requests.listProducts(hid).then((products) => {
+          const nonWastedProducts = products.filter((product) => !product.wasted);
+          // Schedule notifications for each product
+          nonWastedProducts.forEach(product => {
+            scheduleNotification(product);
+          });
+          setProducts(nonWastedProducts);
+        }).catch((error) => {
+          console.error('Error fetching products on Homepage:', error);
         });
-        setProducts(nonWastedProducts);
       });
-    })
-  }, [onProductAdded]);
+    }, [onProductAdded]) // Refresh when products are added
+  );
 
   return (
     <View style={[GlobalStyles.container, GlobalStyles.background]}>
