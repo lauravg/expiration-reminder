@@ -285,9 +285,9 @@ const SettingsScreen = () => {
                     setOpen={setIsPickerOpen}
                     setValue={(value) => setDaysBefore(value)}
                     onChangeValue={handleDaysBeforeChange}
-                    style={styles.dropdown}
+                    style={GlobalStyles.dropdown}
                     textStyle={{ fontSize: 16 }}
-                    dropDownContainerStyle={{ backgroundColor: colors.background }}
+                    containerStyle={GlobalStyles.dropdown}
                   />
                 </View>
                 <Divider />
@@ -459,17 +459,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
   },
-  dropdown: {
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    backgroundColor: colors.background,
-    marginVertical: 10, // Add spacing
-  },
-  dropdownContainer: {
-    backgroundColor: colors.background,
-  },
-
   section: {
     marginVertical: 10,
   },

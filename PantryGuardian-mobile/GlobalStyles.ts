@@ -143,6 +143,15 @@ const GlobalStyles = StyleSheet.create({
     // marginRight: 10,
   },
 
+  dropdown: {
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: colors.primaryLightLight,
+    maxWidth: 150,
+    alignSelf: 'flex-end', 
+  },
+
   detailValue: {
     flex: 1,
   },
