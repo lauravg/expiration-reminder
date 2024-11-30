@@ -35,10 +35,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
   // Load locations and categories on component mount
   useEffect(() => {
     const loadLocationsAndCategories = async () => {
-      const response = await requests.getLocationsAndCategories();
-      setLocations(response.locations || []);
-      setCategories(response.categories || []);
+      try {
+        const response = await requests.getLocationsAndCategories();
+        console.log("Locations fetched:", response.locations);
+        console.log("Categories fetched:", response.categories);
+        setLocations(response.locations || []);
+        setCategories(response.categories || []);
+      } catch (error) {
+        console.error("Error fetching locations and categories:", error);
+      }
     };
+
     loadLocationsAndCategories();
   }, []);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, FlatList } from 'react-native';
 import { Button, Divider, Avatar, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
@@ -35,6 +35,67 @@ const SettingsScreen = () => {
     categories: true,
     households: true,
   });
+
+  const settingsData = [
+    {
+      key: 'account',
+      title: 'Account',
+      icon: 'account',
+      onPress: () => navigation.navigate({ name: 'Profile', params: {} }),
+    },
+    {
+      key: 'notifications',
+      title: 'Notifications',
+      icon: 'bell',
+      onPress: () => toggleSection('notifications'),
+      extra: (
+        <IconButton
+          icon={collapsedSections.notifications ? 'chevron-down' : 'chevron-up'}
+          size={20}
+          iconColor={colors.secondary}
+        />
+      ),
+    },
+    {
+      key: 'locations',
+      title: 'Manage Locations',
+      icon: 'map-marker',
+      onPress: () => toggleSection('locations'),
+      extra: (
+        <IconButton
+          icon={collapsedSections.locations ? 'chevron-down' : 'chevron-up'}
+          size={20}
+          iconColor={colors.secondary}
+        />
+      ),
+    },
+    {
+      key: 'categories',
+      title: 'Manage Categories',
+      icon: 'folder',
+      onPress: () => toggleSection('categories'),
+      extra: (
+        <IconButton
+          icon={collapsedSections.categories ? 'chevron-down' : 'chevron-up'}
+          size={20}
+          iconColor={colors.secondary}
+        />
+      ),
+    },
+    {
+      key: 'households',
+      title: 'Manage Households',
+      icon: 'home',
+      onPress: () => toggleSection('households'),
+      extra: (
+        <IconButton
+          icon={collapsedSections.households ? 'chevron-down' : 'chevron-up'}
+          size={20}
+          iconColor={colors.secondary}
+        />
+      ),
+    },
+  ];
 
   const pickerItems = [
     { label: '1 Day', value: '1' },
@@ -240,195 +301,151 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, styles.sectionHeader]}>Account</Text>
-        <TouchableOpacity onPress={() => navigation.navigate({ name: 'Profile', params: {} })}>
-          <View style={GlobalStyles.accountContainer}>
-            <Avatar.Icon size={48} icon="account" theme={{ colors: { primary: colors.primary } }} />
-            <View style={GlobalStyles.accountInfo}>
-              <Text style={GlobalStyles.accountText}>{sessionData.userDisplayName}</Text>
-              <Text style={GlobalStyles.accountEmail}>{sessionData.userEmail}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.section}>
-        <TouchableOpacity onPress={() => toggleSection('notifications')} style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <IconButton
-            icon={collapsedSections.notifications ? "chevron-down" : "chevron-up"}
-            size={20}
-            iconColor={colors.primary}
-          />
-        </TouchableOpacity>
-        {!collapsedSections.notifications && (
-          <View style={styles.sectionContent}>
-            <View style={GlobalStyles.preference}>
-              <Text>Enable Notifications</Text>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={toggleNotifications}
-                thumbColor={colors.onPrimary}
-                trackColor={{ false: colors.secondary, true: colors.primaryLight }}
-              />
-            </View>
-            <Divider />
-            {notificationsEnabled && (
-              <>
+    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>  
+      {/* Settings List */}
+      <FlatList
+        data={settingsData}
+        style={styles.header}
+        keyExtractor={(item) => item.key}
+        renderItem={({ item }) => (
+          <View>
+            {/* Section Header */}
+            <TouchableOpacity style={styles.itemContainer} onPress={item.onPress}>
+              <View style={styles.itemContent}>
+                <Avatar.Icon size={36} icon={item.icon} style={styles.itemIcon} />
+                <Text style={styles.itemTitle}>{item.title}</Text>
+              </View>
+              {/* Chevron or Additional Icon */}
+              {item.extra || <IconButton icon="chevron-down" size={20} iconColor={colors.secondary} />}
+            </TouchableOpacity>
+  
+            {/* Expandable Section for Notifications */}
+            {item.key === 'notifications' && !collapsedSections.notifications && (
+              <View style={styles.sectionContent}>
                 <View style={GlobalStyles.preference}>
-                  <Text>Days Before Expiration</Text>
-                  <DropDownPicker
-                    open={isPickerOpen}
-                    value={daysBefore}
-                    items={pickerItems}
-                    setOpen={setIsPickerOpen}
-                    setValue={(value) => setDaysBefore(value)}
-                    onChangeValue={handleDaysBeforeChange}
-                    style={GlobalStyles.dropdown}
-                    textStyle={{ fontSize: 16 }}
-                    containerStyle={GlobalStyles.dropdown}
+                  <Text>Enable Notifications</Text>
+                  <Switch
+                    value={notificationsEnabled}
+                    onValueChange={toggleNotifications}
+                    thumbColor={colors.onPrimary}
+                    trackColor={{ false: colors.secondary, true: colors.primaryLight }}
                   />
                 </View>
                 <Divider />
-                <View style={GlobalStyles.preference}>
-                  <Text>Notification Time</Text>
-                  {showTimePicker ? (
-                    <View>
-                      <DateTimePicker
-                        value={tempNotificationTime}
-                        mode="time"
-                        display="default"
-                        onChange={handleTimeChange}
+                {notificationsEnabled && (
+                  <>
+                    <View style={GlobalStyles.preference}>
+                      <Text>Days Before Expiration</Text>
+                      <DropDownPicker
+                        open={isPickerOpen}
+                        value={daysBefore}
+                        items={pickerItems}
+                        setOpen={setIsPickerOpen}
+                        setValue={(value) => setDaysBefore(value)}
+                        onChangeValue={handleDaysBeforeChange}
+                        style={GlobalStyles.dropdown}
+                        textStyle={{ fontSize: 16 }}
+                        containerStyle={GlobalStyles.dropdown}
                       />
-                      <View style={styles.textButtonContainer}>
-                        <Button
-                          onPress={async () => {
-                            setNotificationTime(tempNotificationTime); // Save the selected time
-                            setShowTimePicker(false); // Close the picker
-
-                            // Save the updated time to the backend
-                            const success = await requests.saveNotificationSettings({
-                              notificationsEnabled,
-                              daysBefore: parseInt(daysBefore, 10),
-                              hour: notificationTime.getHours(),
-                              minute: notificationTime.getMinutes(),
-                            });
-                            await handleNotificationSchedule(success);
-
-                          }}
-                        >
-                          <Text style={styles.textButton}>Save</Text>
-                        </Button>
-                        <Button
-                          onPress={() => setShowTimePicker(false)}
-                          theme={{ colors: { primary: colors.primary } }}
-                        >
-                          Cancel
-                        </Button>
-                      </View>
                     </View>
-                  ) : (
-                    <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                      <Text>
-                        {notificationTime.getHours().toString().padStart(2, '0')}:
-                        {notificationTime.getMinutes().toString().padStart(2, '0')}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </>
+                    <Divider />
+                    <View style={GlobalStyles.preference}>
+                      <Text>Notification Time</Text>
+                      {showTimePicker ? (
+                        <DateTimePicker
+                          value={tempNotificationTime}
+                          mode="time"
+                          display="default"
+                          onChange={handleTimeChange}
+                        />
+                      ) : (
+                        <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                          <Text>
+                            {notificationTime.getHours().toString().padStart(2, '0')}:
+                            {notificationTime.getMinutes().toString().padStart(2, '0')}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+  
+            {/* Expandable Section for Locations */}
+            {item.key === 'locations' && !collapsedSections.locations && (
+              <View style={styles.sectionContent}>
+                {locations.map((location) => (
+                  <View key={location} style={styles.listItem}>
+                    <Text>{location}</Text>
+                    <Button
+                      onPress={() => handleDeleteLocation(location)}
+                      theme={{ colors: { primary: colors.primary } }}
+                    >
+                      Delete
+                    </Button>
+                  </View>
+                ))}
+                <PaperTextInput
+                  placeholder="Add new location"
+                  value={newLocation}
+                  onChangeText={setNewLocation}
+                  style={GlobalStyles.simpleInput}
+                  theme={{ colors: { primary: colors.primary } }}
+                />
+                <Button onPress={handleAddLocation} theme={{ colors: { primary: colors.primary } }}>
+                  Add Location
+                </Button>
+              </View>
+            )}
+  
+            {/* Expandable Section for Categories */}
+            {item.key === 'categories' && !collapsedSections.categories && (
+              <View style={styles.sectionContent}>
+                {categories.map((category) => (
+                  <View key={category} style={styles.listItem}>
+                    <Text>{category}</Text>
+                    <Button
+                      onPress={() => handleDeleteCategory(category)}
+                      theme={{ colors: { primary: colors.primary } }}
+                    >
+                      Delete
+                    </Button>
+                  </View>
+                ))}
+                <PaperTextInput
+                  placeholder="Add new category"
+                  value={newCategory}
+                  onChangeText={setNewCategory}
+                  style={GlobalStyles.simpleInput}
+                  theme={{ colors: { primary: colors.primary } }}
+                />
+                <Button onPress={handleAddCategory} theme={{ colors: { primary: colors.primary } }}>
+                  Add Category
+                </Button>
+              </View>
+            )}
+  
+            {/* Expandable Section for Households */}
+            {item.key === 'households' && !collapsedSections.households && (
+              <View style={styles.sectionContent}>
+                {households.map((household) => (
+                  <View key={household.id} style={styles.listItem}>
+                    <Text>{household.name}</Text>
+                    <Button
+                      onPress={() => handleActivateHousehold(household.id)}
+                      theme={{ colors: { primary: colors.primary } }}
+                    >
+                      Activate
+                    </Button>
+                  </View>
+                ))}
+              </View>
             )}
           </View>
         )}
-      </View>
-
-      {/* Locations Section */}
-      <View style={styles.section}>
-        <TouchableOpacity onPress={() => toggleSection('locations')} style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Manage Locations</Text>
-          <IconButton icon={collapsedSections.locations ? "chevron-down" : "chevron-up"} size={20} iconColor={colors.primary} />
-        </TouchableOpacity>
-        {!collapsedSections.locations && (
-          <View style={styles.sectionContent}>
-            {locations.map(location => (
-              <View key={location} style={styles.listItem}>
-                <Text>{location}</Text>
-                <Button
-                  onPress={() => handleDeleteLocation(location)}
-                  theme={{ colors: { primary: colors.primary } }}>
-                  Delete
-                </Button>
-              </View>
-            ))}
-            <PaperTextInput
-              placeholder="Add new location"
-              value={newLocation}
-              onChangeText={setNewLocation}
-              style={GlobalStyles.simpleInput}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-            <Button onPress={handleAddLocation} theme={{ colors: { primary: colors.primary } }}>
-              Add Location
-            </Button>
-          </View>
-        )}
-      </View>
-
-      {/* Categories Section */}
-      <View style={styles.section}>
-        <TouchableOpacity onPress={() => toggleSection('categories')} style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Manage Categories</Text>
-          <IconButton icon={collapsedSections.categories ? "chevron-down" : "chevron-up"} size={20} iconColor={colors.primary} />
-        </TouchableOpacity>
-        {!collapsedSections.categories && (
-          <View style={styles.sectionContent}>
-            {categories.map(category => (
-              <View key={category} style={styles.listItem}>
-                <Text>{category}</Text>
-                <Button
-                  onPress={() => handleDeleteCategory(category)}
-                  theme={{ colors: { primary: colors.primary } }}>
-                  Delete
-                </Button>
-              </View>
-            ))}
-            <PaperTextInput
-              placeholder="Add new category"
-              value={newCategory}
-              onChangeText={setNewCategory}
-              style={GlobalStyles.simpleInput}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-            <Button onPress={handleAddCategory} theme={{ colors: { primary: colors.primary } }}>
-              Add Category
-            </Button>
-          </View>
-        )}
-      </View>
-
-      {/* Households Section */}
-      <View style={styles.section}>
-        <TouchableOpacity onPress={() => toggleSection('households')} style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Manage Households</Text>
-          <IconButton icon={collapsedSections.households ? "chevron-down" : "chevron-up"} size={20} iconColor={colors.primary} />
-        </TouchableOpacity>
-        {!collapsedSections.households && (
-          <View style={styles.sectionContent}>
-            {households.map(household => (
-              <View key={household.id} style={styles.listItem}>
-                <Text>{household.name}</Text>
-                <Button
-                  onPress={() => handleActivateHousehold(household.id)}
-                  theme={{ colors: { primary: colors.primary } }}>
-                  Activate
-                </Button>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+      />
+    </View>
   );
 };
 
@@ -472,14 +489,38 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginTop: 10,
   },
-
   timePicker: {
     alignSelf: 'flex-end',
   },
-
   textButton: {
     fontSize: 14,
     color: colors.primary,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    marginBottom: 8,
+    elevation: 1,
+  },
+  itemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemIcon: {
+    backgroundColor: colors.primary,
+    marginRight: 16,
+  },
+  itemTitle: {
+    fontSize: 16,
+    color: colors.onSecondary,
+  },
+  header: {
+    marginTop: 20,
   },
 });
 

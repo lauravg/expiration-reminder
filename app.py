@@ -671,18 +671,16 @@ def save_push_token():
 @token_required
 def get_locations_categories():
     user = flask_login.current_user
-    doc_ref = firestore.collection("users").document(user.get_id())
-    doc = doc_ref.get()
-    if doc.exists:
-        user_data = doc.to_dict()
-        locations = user_data.get("locations", ["Pantry", "Fridge", "Freezer"])
-        categories = user_data.get(
-            "categories", ["Veggies", "Fruits", "Baking", "Spices", "Others"]
-        )
-        return jsonify({"locations": locations, "categories": categories})
-    else:
-        return jsonify({"locations": [], "categories": []})
-
+    try:
+        doc_ref = firestore.collection("users").document(user.get_id())
+        doc = doc_ref.get()
+        user_data = doc.to_dict() if doc.exists else {}
+        locations = user_data.get("locations", [])
+        categories = user_data.get("categories", [])
+        return jsonify({"locations": locations, "categories": categories}), 200
+    except Exception as e:
+        log.error(f"Error fetching locations and categories: {e}")
+        return jsonify({"error": "Failed to fetch locations and categories"}), 500
 
 @app.route("/add_location", methods=["POST"])
 @token_required

@@ -10,48 +10,55 @@ const BASE_URL = "http://127.0.0.1:8081";
 class Requests {
   private sessionData = new SessionData();
 
-  constructor() {}
+  constructor() { }
 
+  // Helper method to set session data consistently
+  private setSessionData(data: any): void {
+    this.sessionData.setIdToken(data.it);
+    this.sessionData.setRefreshToken(data.rt);
+    this.sessionData.setUserDisplayName(data.display_name || "");
+    this.sessionData.setUserEmail(data.user_email || "");
+    this.sessionData.setUserPhotoUrl(data.user_photo_url || "");
+  }
+
+
+  // Logs in the user and sets session data
   async handleLogin(email: string, password: string): Promise<boolean> {
     try {
       const response = await this._make_request("", "auth", { email, password }, false);
-      if (response.status >= 200 && response.status < 300) {        
-        // Persist the data we are gettin from the auth request in a secure location.
-        this.sessionData.setRefreshToken(response.data.rt);
-        this.sessionData.setIdToken(response.data.it);
-        this.sessionData.setUserDisplayName(response.data.display_name);
-        this.sessionData.setUserEmail(response.data.user_email);
-        this.sessionData.setUserPhotoUrl(response.data.user_photo_url);
-      } else {
-        throw new Error(`Login failed. Return code was ${response.status}`);
+      if (response.status >= 200 && response.status < 300) {
+        this.setSessionData(response.data); // Use helper method
+        console.info("Login successful");
+        return true;
       }
+      throw new Error(`Login failed. Return code was ${response.status}`);
     } catch (error) {
-      throw new Error('Login failed: ' + error);
+      console.error("Login failed:", error);
+      throw new Error("Login failed: " + error);
     }
-    console.info('Login successful (user/pass)');
-    return true;
   }
 
+  // Refreshes the session token
   async handleRefresh(): Promise<boolean> {
     try {
       const refresh_token = this.sessionData.refreshToken;
+      if (!refresh_token) {
+        throw new Error("Refresh token is missing. Cannot refresh login.");
+      }
+
       const response = await this._make_request("", "auth", { refresh_token }, false);
 
       if (response.status >= 200 && response.status < 300) {
-        // Persist the data we are getting from the auth request in a secure location.
-        this.sessionData.setRefreshToken(response.data.rt);
-        this.sessionData.setIdToken(response.data.it);
-        this.sessionData.setUserDisplayName(response.data.display_name);
-        this.sessionData.setUserEmail(response.data.user_email);
-        this.sessionData.setUserPhotoUrl(response.data.user_photo_url);
+        this.setSessionData(response.data); // Use helper method
+        console.info("Login successful via refresh");
+        return true;
       } else {
-        throw new Error(`Login failed. Return code was ${response.status}`);
+        throw new Error(`Refresh failed. Return code was ${response.status}`);
       }
     } catch (error) {
-      throw new Error('Login failed: ' + error);
+      console.error("Error refreshing session:", error);
+      return false;
     }
-    console.info('Login successful via refresh');
-    return true;
   }
 
   async register(name: string, email: string, password: string): Promise<boolean> {
@@ -220,8 +227,15 @@ class Requests {
   }
 
   async getLocationsAndCategories(): Promise<{ locations: string[], categories: string[] }> {
+    const idToken = this.sessionData.idToken;
+
+    if (!idToken) {
+      console.error('idToken is missing! User might not be logged in.');
+      return { locations: [], categories: [] };
+    }
+
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'get_locations_categories');
+      const response = await this._make_request(idToken, 'get_locations_categories');
       if (response.status === 200) {
         return response.data;
       } else {
@@ -302,87 +316,83 @@ class Requests {
 
   async getBarcodeData(barcode: string): Promise<{ name: string } | null> {
     try {
-        const response = await this._make_request(this.sessionData.idToken, 'get_barcode', { barcode });
-        if (response.status === 200 && response.data) {
-            return response.data;
-        } else {
-            console.error('Barcode not found in the database');
-            return null;
-        }
-    } catch (error) {
-        console.error('Error fetching barcode data:', error);
+      const response = await this._make_request(this.sessionData.idToken, 'get_barcode', { barcode });
+      if (response.status === 200 && response.data) {
+        return response.data;
+      } else {
+        console.error('Barcode not found in the database');
         return null;
+      }
+    } catch (error) {
+      console.error('Error fetching barcode data:', error);
+      return null;
     }
   }
 
 
   async addBarcodeToDatabase(barcodeData: { barcode: string; name: string }): Promise<boolean> {
     try {
-        console.log("Attempting to add barcode:", barcodeData);
+      console.log("Attempting to add barcode:", barcodeData);
 
-        if (!barcodeData.barcode || !barcodeData.name) {
-            console.error("Barcode or name is missing.");
-            return false;
-        }
-
-        const response = await this._make_request(this.sessionData.idToken, "add_barcode", barcodeData);
-        if (response.status === 200) {
-            console.log("Barcode added successfully");
-            return true;
-        } else {
-            console.error("Failed to add barcode. Response status:", response.status);
-            return false;
-        }
-    } catch (error) {
-        console.error("Failed to add barcode to database:", error);
+      if (!barcodeData.barcode || !barcodeData.name) {
+        console.error("Barcode or name is missing.");
         return false;
-    }
-}
+      }
 
-  private async _make_request(idToken: string, path: string, data: any = {}, retry_if_auth_expired = true): Promise<AxiosResponse> {
+      const response = await this._make_request(this.sessionData.idToken, "add_barcode", barcodeData);
+      if (response.status === 200) {
+        console.log("Barcode added successfully");
+        return true;
+      } else {
+        console.error("Failed to add barcode. Response status:", response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error("Failed to add barcode to database:", error);
+      return false;
+    }
+  }
+
+  private async _make_request(
+    idToken: string | undefined,
+    path: string,
+    data: any = {},
+    retry_if_auth_expired = true
+  ): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);
 
     const authOrRegister = path === "auth" || path === "register";
     const contentType = authOrRegister ? 'application/x-www-form-urlencoded' : 'application/json';
 
-    if (!idToken && !authOrRegister) throw new Error('idToken not found');
-    const responsePromise = axios.post(
-      `${BASE_URL}/${path}`,
-      authOrRegister ? qs.stringify(data) : data,
-      {
-        headers: {
-          'Content-Type': contentType,
-          'idToken': idToken,
-        },
-        // Prevent axios from following redirects
-        maxRedirects: 0,
-      }
-    );
+    if (!idToken && !authOrRegister) {
+      throw new Error('idToken is missing! Ensure you are logged in.');
+    }
+
+    const headers = {
+      'Content-Type': contentType,
+      ...(idToken ? { 'idToken': idToken } : {}),
+    };
 
     try {
-      const response = await responsePromise;
-      // // If we got here, it means no error was thrown, which means we got
-      // // a good response status code. Error codes will be handled in the catch block.
-      // return new Promise((resolve, reject) => {
-      //   resolve(response);
-      // });
+      const response = await axios.post(
+        `${BASE_URL}/${path}`,
+        authOrRegister ? qs.stringify(data) : data,
+        { headers, maxRedirects: 0 }
+      );
       return response;
     } catch (err: any) {
       if (err?.isAxiosError) {
         const axiosError = err as AxiosError;
-        console.error(`Error making request, got response code: ${axiosError.response?.status}`);
-        // If we had an auth error, refresh our credentials and try again.
+        console.error(`Error making request, response code: ${axiosError.response?.status}`);
         if (axiosError.response?.status === 401 && retry_if_auth_expired) {
-          await this.handleRefresh();
-          console.log("Sending request a second time after refreshing credentials.");
-          return this._make_request(this.sessionData.idToken, path, data, false);
+          console.log("Refreshing idToken...");
+          const refreshed = await this.handleRefresh();
+          if (refreshed) {
+            const newIdToken = this.sessionData.idToken;
+            return this._make_request(newIdToken, path, data, false);
+          }
         }
-        // TODO: Logout if we got a 401 but no refresh worked.
       }
-      // console.error("Request failed:" + err);
-      // return new Promise((resolve, reject) => {
-      //   reject("Request failed: " + err);
-      // });
       console.error("Request failed:", err);
       throw new Error("Request failed: " + err);
     }

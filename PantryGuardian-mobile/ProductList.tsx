@@ -33,7 +33,9 @@ const ProductList: React.FC<ProductListProps> = ({
         return matchesSearch && matchesFilter;
     });
 
-    const uniqueLocations = ['All', ...new Set(products.map((product) => product.location))];
+    const uniqueLocations = ['All', ...new Set(products.map((product) => product.location))].filter(
+        (loc): loc is string => loc !== undefined
+    );
 
     const handleDelete = async (product: Product) => {
         await onDelete(product);
@@ -70,7 +72,7 @@ const ProductList: React.FC<ProductListProps> = ({
                         {uniqueLocations.map((filter) => (
                             <TouchableOpacity
                                 key={filter}
-                                onPress={() => setActiveFilter(filter)}
+                                onPress={() => setActiveFilter(filter || '')}
                                 style={GlobalStyles.filterButton}
                             >
                                 <Text style={[GlobalStyles.filterText, activeFilter === filter && GlobalStyles.activeFilterText]}>
@@ -145,8 +147,8 @@ const ProductList: React.FC<ProductListProps> = ({
                                         selectedProduct.expiration_date &&
                                         parse(selectedProduct.expiration_date ?? '', 'yyyy-MM-dd', new Date()) <
                                         new Date()
-                                            ? GlobalStyles.expirationText
-                                            : { color: colors.onProductBackground },
+                                        ? GlobalStyles.expirationText
+                                        : { color: colors.onProductBackground },
                                     ]}
                                 >
                                     {calculateDaysLeft(selectedProduct.expiration_date ?? '')}
@@ -198,6 +200,7 @@ const ProductList: React.FC<ProductListProps> = ({
                 onClose={() => setEditProductModalVisible(false)}
                 product={selectedProduct}
                 onUpdateProduct={handleUpdateProduct}
+                locations={uniqueLocations}
             />
         </View>
     );

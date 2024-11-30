@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableWithoutFeedback } from 'react-native';
+import { View, TouchableWithoutFeedback, Text } from 'react-native';
 import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
@@ -14,7 +14,8 @@ interface EditProductModalProps {
   visible: boolean;
   onClose: () => void;
   product: Product | null;
-  onUpdateProduct: (product: Product) => void;
+  onUpdateProduct: (product: Product) => Promise<void>;
+  locations: string[]; // Must be strictly string[]
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, product, onUpdateProduct }) => {
@@ -31,13 +32,19 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const requests = new Requests()
 
   useEffect(() => {
-      const loadLocationsAndCategories = async () => {
+    const loadLocationsAndCategories = async () => {
+      try {
         const response = await requests.getLocationsAndCategories();
-        setLocations(response.locations);
-        setCategories(response.categories);
-      };
+        console.log("Locations fetched:", response.locations);
+        console.log("Categories fetched:", response.categories);
+        setLocations(response.locations || []); // Ensure the state is updated with fetched locations
+        setCategories(response.categories || []); // Ensure the state is updated with fetched categories
+      } catch (error) {
+        console.error("Error fetching locations and categories:", error);
+      }
+    };
 
-      loadLocationsAndCategories();
+    loadLocationsAndCategories();
   }, []);
 
   useEffect(() => {
@@ -57,6 +64,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
       setNote(product.note || '');
     }
   }, [product]);
+
+  // Add the following here:
+  useEffect(() => {
+    console.log("Received locations in EditProductModal:", locations);
+  }, [locations]);
+
 
   const handleExpirationDateChange = (date: string) => {
     setExpirationDate(date);
@@ -113,7 +126,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
           />
           <PaperTextInput style={GlobalStyles.input} mode="outlined" label="Barcode Number (optional)" />
           <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setLocationModalVisible(true)}>
-            {location ? 'Location: ' + location : 'Select Location'}
+            <Text>{location ? `Location: ${location}` : 'Select Location'}</Text>
           </Button>
           <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setCategoryModalVisible(true)}>
             {category ? 'Category: ' + category : 'Select Category'}
@@ -125,15 +138,21 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         </View>
       </TouchableWithoutFeedback>
 
-      <PaperModal visible={locationModalVisible} onDismiss={() => setLocationModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
-        <View style={GlobalStyles.pickerContainer}>
-          <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={handleLocationChange}>
-            <Picker.Item label="Select Location" value="" />
-            {locations.map((loc) => (
-              <Picker.Item key={loc} label={loc} value={loc} />
-            ))}
-          </Picker>
-        </View>
+      <PaperModal
+        visible={locationModalVisible}
+        onDismiss={() => setLocationModalVisible(false)}
+        contentContainerStyle={GlobalStyles.modalContent}
+      >
+        <Picker
+          selectedValue={location}
+          style={GlobalStyles.picker}
+          onValueChange={(itemValue) => setLocation(itemValue)}
+        >
+          <Picker.Item label="Select Location" value="" />
+          {locations.map((loc) => (
+            <Picker.Item key={loc} label={loc} value={loc} />
+          ))}
+        </Picker>
       </PaperModal>
 
       <PaperModal visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
@@ -145,12 +164,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         </Picker>
       </PaperModal>
       <PaperTextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Note (optional)"
-          value={note}
-          onChangeText={setNote}
-        />
+        style={GlobalStyles.input}
+        mode="outlined"
+        label="Note (optional)"
+        value={note}
+        onChangeText={setNote}
+      />
     </PaperModal>
   );
 };
