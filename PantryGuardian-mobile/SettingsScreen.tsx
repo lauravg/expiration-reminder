@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, FlatList } from 'react-native';
-import { Button, Divider, Avatar, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Avatar, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
@@ -34,7 +34,29 @@ const SettingsScreen = () => {
     locations: true,
     categories: true,
     households: true,
+    subscription: true,
   });
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action is irreversible.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            // Add logic for deleting account
+            sessionData.eraseAllData();
+            navigation.navigate({ name: 'Login', params: { } });
+            Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
+          },
+        },
+      ]
+    );
+  };
+
 
   const settingsData = [
     {
@@ -58,7 +80,7 @@ const SettingsScreen = () => {
     },
     {
       key: 'locations',
-      title: 'Manage Locations',
+      title: 'Product Locations',
       icon: 'map-marker',
       onPress: () => toggleSection('locations'),
       extra: (
@@ -71,7 +93,7 @@ const SettingsScreen = () => {
     },
     {
       key: 'categories',
-      title: 'Manage Categories',
+      title: 'Product Categories',
       icon: 'folder',
       onPress: () => toggleSection('categories'),
       extra: (
@@ -94,6 +116,25 @@ const SettingsScreen = () => {
           iconColor={colors.secondary}
         />
       ),
+    },
+    {
+      key: 'subscription',
+      title: 'Subscription',
+      icon: 'card-account-details',
+      onPress: () => toggleSection('subscription'),
+      extra: (
+        <IconButton
+          icon={collapsedSections.subscription ? 'chevron-down' : 'chevron-up'}
+          size={20}
+          iconColor={colors.secondary}
+        />
+      ),
+    },
+    {
+      key: 'deleteAccount',
+      title: 'Delete Account',
+      icon: 'delete',
+      onPress: handleDeleteAccount,
     },
   ];
 
@@ -331,7 +372,6 @@ const SettingsScreen = () => {
                     trackColor={{ false: colors.secondary, true: colors.primaryLight }}
                   />
                 </View>
-                <Divider />
                 {notificationsEnabled && (
                   <>
                     <View style={GlobalStyles.preference}>
@@ -348,7 +388,6 @@ const SettingsScreen = () => {
                         containerStyle={GlobalStyles.dropdown}
                       />
                     </View>
-                    <Divider />
                     <View style={GlobalStyles.preference}>
                       <Text>Notification Time</Text>
                       {showTimePicker ? (
@@ -442,6 +481,21 @@ const SettingsScreen = () => {
                 ))}
               </View>
             )}
+
+            {/* Expandable Section for Subscription */}
+            {item.key === 'subscription' && !collapsedSections.subscription && (
+              <View style={styles.sectionContent}>
+                <Text style={styles.subscriptionText}>You are currently on a Free Plan.</Text>
+                <Button
+                  mode="contained"
+                  onPress={() => navigation.navigate({ name: 'SubscriptionScreen', params: { }})}
+                  theme={{ colors: { primary: colors.primary } }}
+                  style={styles.subscriptionButton}
+                >
+                  Upgrade Plan
+                </Button>
+              </View>
+            )}
           </View>
         )}
       />
@@ -502,7 +556,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.input,
     borderRadius: 8,
     marginBottom: 8,
     elevation: 1,
@@ -522,6 +576,15 @@ const styles = StyleSheet.create({
   header: {
     marginTop: 20,
   },
+  subscriptionText: {
+    fontSize: 16,
+    color: colors.secondary,
+    marginBottom: 10,
+  },
+  subscriptionButton: {
+    marginTop: 10,
+  }
+
 });
 
 export default SettingsScreen;

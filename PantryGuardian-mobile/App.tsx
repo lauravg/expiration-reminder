@@ -16,6 +16,7 @@ import ProfileScreen from './ProfileScreen';
 import CustomTabBar from './CustomTabBar';
 import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
+import SubscriptionScreen from './SubscriptionScreen';
 import WastedProducts from './WastedProductScreen';
 import { fetchExpiringProducts, registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
 import { SessionData } from './SessionData';
@@ -227,8 +228,32 @@ export default function App() {
               },
             })}
           />
+          <Stack.Screen
+            name="SubscriptionScreen"
+            component={SubscriptionScreen}
+            options={({ navigation }) => ({
+              headerLeft: () => (
+                <IconButton
+                  icon="arrow-left"
+                  size={24}
+                  iconColor={colors.icon}
+                  onPress={() => navigation.goBack()}
+                />
+              ),
+              headerTitle: 'Subscription',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+                color: colors.primary,
+              },
+              headerStyle: {
+                backgroundColor: colors.background,
+                elevation: 0, // Remove shadow on Android
+                shadowOpacity: 0, // Remove shadow on iOS
+              },
+            })}
+          />
         </Stack.Navigator>
-        <StatusBar/>
+        <StatusBar />
         <AddProductModal
           visible={addProductModalVisible}
           onClose={toggleAddProductModal}

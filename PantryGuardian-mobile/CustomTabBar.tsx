@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 80,
-    backgroundColor: colors.navBackground,
+    backgroundColor: colors.whiteBackground,
     borderTopColor: colors.border,
     borderWidth: .3,
     paddingBottom: 20,

@@ -11,7 +11,7 @@ const colors = {
   background: 'rgba(56, 142, 60, .1)',
   input: 'rgba(255,255,255,.6)',  
   productBackground: 'rgba(255,255,255,.8)',
-  navBackground: '#FFFFFF',
+  whiteBackground: '#FFFFFF',
   border: '#dddddd',
   error: '#B00020',
   onPrimary: '#FFFFFF',
