@@ -5,6 +5,8 @@ import { colors } from './theme';
 import * as ImagePicker from 'expo-image-picker';
 import { SessionData } from './SessionData';
 import Requests from './Requests';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+
 const ProfileScreen = () => {
   const sessionData = new SessionData();
   const [profileImage, setProfileImage] = useState<string | null>(sessionData.userPhotoUrl || null);
@@ -17,6 +19,12 @@ const ProfileScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  type RootStackParamList = {
+    Profile: undefined;
+    Login: undefined; // Add other routes as needed
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -44,9 +52,16 @@ const ProfileScreen = () => {
 
   };
 
-  const handleLogout = () => {
-    sessionData.eraseAllData();
-    alert('Logged out successfully!');
+  const handleLogout = async () => {
+    try {
+      const requests = new Requests();
+      await requests.logout(); // Notify the server
+      sessionData.eraseAllData(); // Clear client-side session data
+      navigation.navigate('Login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Failed to log out. Please try again.');
+    }
   };
 
   return (

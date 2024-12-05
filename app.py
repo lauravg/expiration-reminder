@@ -187,6 +187,20 @@ def login():
     return render_template("login.html", next_url=next_url)
 
 
+@app.route("/logout", methods=["POST"])
+@token_required
+def logout():
+    """
+    Logs out the currently logged-in user.
+    """
+    try:
+        user = flask_login.current_user
+        flask_login.logout_user()
+        return jsonify({"success": True, "message": "Logged out successfully"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/change_password", methods=["POST"])
 @login_required
 def change_password():
@@ -215,7 +229,7 @@ def change_password():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-        
+
 @app.route("/auth", methods=["POST"])
 def auth_route():
     """

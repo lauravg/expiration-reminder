@@ -38,6 +38,22 @@ class Requests {
     }
   }
 
+  async logout(): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, "logout");
+      if (response.status === 200 && response.data.success) {
+        console.log("Logout successful on server.");
+        return true;
+      } else {
+        console.error("Failed to log out on server.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+      return false;
+    }
+  }
+
   // Refreshes the session token
   async handleRefresh(): Promise<boolean> {
     try {
