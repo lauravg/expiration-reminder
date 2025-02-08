@@ -1,6 +1,9 @@
 # expiration-reminder
 
-## Set up the project
+The projects consists of two part: The Python/Flask based backend, and the react-native/expo
+based frontend. Both need to be configured and executed separately.
+
+## Set up the backend project
 `python -m venv venv`
 `pip install -r requirements.txt`
 
@@ -18,3 +21,6 @@ First, build the image:
 
 Then, start the app through docker compose:
 ```docker compose up```
+
+## Start mobile app
+The code for the mobile app is inside the folder `PantryGuardian-mobile`.
