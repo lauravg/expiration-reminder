@@ -80,6 +80,9 @@ class BarcodeManager:
             response = requests.get(
                 f"https://world.openfoodfacts.org/api/v2/product/{code}.json"
             )
+            if response.status_code == 404:
+                log.info("Barcode not found in Open Food Facts: %s", code)
+                return None
             if response.status_code != 200:
                 log.error("Failed to request barcode: %s", response.status_code)
                 return None

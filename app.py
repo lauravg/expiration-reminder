@@ -217,18 +217,30 @@ def change_password():
 
         # Check if the new password meets the minimum length requirement
         if len(new_password) < 8:
-            return jsonify({"success": False, "error": "New password must be at least 8 characters"}), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "New password must be at least 8 characters",
+                    }
+                ),
+                400,
+            )
 
         # Replace this with your logic for password validation
-        if not validate_user_password(current_user.id, current_password): # type: ignore
-            return jsonify({"success": False, "error": "Incorrect current password"}), 401
+        if not validate_user_password(current_user.id, current_password):  # type: ignore
+            return (
+                jsonify({"success": False, "error": "Incorrect current password"}),
+                401,
+            )
 
         # Update the user's password
-        update_user_password(current_user.id, new_password) # type: ignore
+        update_user_password(current_user.id, new_password)  # type: ignore
         return jsonify({"success": True}), 200
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route("/auth", methods=["POST"])
 def auth_route():
@@ -725,6 +737,7 @@ def get_locations_categories():
         log.error(f"Error fetching locations and categories: {e}")
         return jsonify({"error": "Failed to fetch locations and categories"}), 500
 
+
 @app.route("/add_location", methods=["POST"])
 @token_required
 def add_location():
@@ -813,7 +826,6 @@ def delete_category():
     return jsonify({"success": False, "error": "Unable to delete category"}), 500
 
 
-
 @app.route("/get_barcode", methods=["POST"])
 @token_required
 def get_barcode():
@@ -827,7 +839,7 @@ def get_barcode():
         if barcode_data:
             return jsonify({"name": barcode_data.name}), 200
         else:
-            return jsonify({"error": "Barcode not found"}), 404
+            return jsonify({"error": "Barcode not found"}), 200
     except Exception as e:
         log.error(f"Error in get_barcode: {e}")
         return jsonify({"error": str(e)}), 500
@@ -858,7 +870,7 @@ def add_barcode():
         log.error(f"Exception occurred while adding barcode: {e}")
         return jsonify({"error": str(e)}), 500
 
-        
+
 def is_url_safe(url: str) -> bool:
     return url in [
         "/",
