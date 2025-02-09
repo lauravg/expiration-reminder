@@ -105,7 +105,6 @@ const GlobalStyles = StyleSheet.create({
   // Category Chips
   categoriesContainer: {
     paddingHorizontal: 20,
-    paddingTop: 32,
     paddingBottom: 12,
     flexDirection: 'row',
   },
@@ -145,7 +144,7 @@ const GlobalStyles = StyleSheet.create({
   productRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 8,
   },
 
   productCardGrid: {
@@ -256,25 +255,23 @@ const GlobalStyles = StyleSheet.create({
   },
 
   expirationBadgeExpiring: {
-    backgroundColor: 'rgba(255, 176, 32, 0.1)',
-  },
-
-  expirationBadgeExpired: {
-    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+    backgroundColor: colors.warning,
   },
 
   expirationText: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
+    marginTop: 2,
   },
 
   expirationTextExpiring: {
-    color: colors.warning,
+    color: 'white',
   },
 
   expirationTextExpired: {
-    color: colors.error,
+    color: 'white',
+    fontWeight: '600',
   },
 
   // FAB
@@ -429,6 +426,170 @@ const GlobalStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-});
 
+  input: {
+    width: '100%',
+    marginBottom: 20,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    height: 56,
+    fontSize: 16,
+  },
+
+  buttonContainer: {
+    // Define your button container styles here
+  },
+
+  button: {
+    width: '100%',
+    marginTop: 16,
+    marginBottom: 20,
+    borderRadius: 12,
+    paddingVertical: 12,
+    height: 56,
+  },
+
+  pickerContainer: {
+    // Define your picker container styles here
+  },
+
+  picker: {
+    // Define your picker styles here
+  },
+
+  loginContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: colors.primary,
+  },
+
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.primary,
+    position: 'absolute',
+  },
+
+  loginLogo: {
+    width: 200,
+    height: 200,
+    marginBottom: 40,
+    resizeMode: 'contain',
+  },
+
+  errorMessage: {
+    color: colors.error,
+    marginTop: 12,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+
+  registerLink: {
+    color: colors.textInverse,
+    marginTop: 24,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+
+  productContainer: {
+    // Define your product container styles here
+  },
+
+  productInfo: {
+    // Define your product info styles here
+  },
+
+  productName: {
+    // Define your product name styles here
+  },
+
+  location: {
+    // Define your location styles here
+  },
+
+  expirationTextContainer: {
+    // Define your expiration text container styles here
+  },
+
+  // Add new styles for settings screen
+  preference: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+
+  dropdown: {
+    width: 150,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+  },
+
+  simpleInput: {
+    marginBottom: 10,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+  },
+
+  filterActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+
+  filterActionButton: {
+    margin: 0,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 20,
+  },
+
+  headerContainer: {
+    marginBottom: 10,
+  },
+  
+  iconContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingRight: 10,
+    marginBottom: 5,
+  },
+  
+  icon: {
+    marginLeft: 15,
+    color: '#666',
+  },
+
+  expirationBadgeExpired: {
+    backgroundColor: colors.error,
+    opacity: 0.6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+
+  
+  expirationBadgeWarning: {
+    backgroundColor: colors.warning,
+    opacity: 0.6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  
+  expirationTextWarning: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+});
 export default GlobalStyles;

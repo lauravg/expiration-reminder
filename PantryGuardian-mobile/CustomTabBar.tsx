@@ -43,7 +43,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
         let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
         if (route.name === 'Inventory') {
           iconName = 'list';
-        } else if (route.name === 'Generate Recipe') {
+        } else if (route.name === 'Recipe') {
           iconName = 'restaurant';
         } else if (route.name === 'Wasted') {
           iconName = 'compost';
@@ -79,13 +79,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
     borderTopWidth: 0.3,
-    paddingBottom: 20,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
   },
   tabButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 12,
+    paddingBottom: 4,
+    marginHorizontal: 4,
   },
   tabButtonFocused: {
     backgroundColor: colors.surfaceVariant,
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 6,
     color: colors.textSecondary,
   },
   tabLabelFocused: {

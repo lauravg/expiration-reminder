@@ -57,7 +57,11 @@ const ProfileScreen = () => {
       const requests = new Requests();
       await requests.logout(); // Notify the server
       sessionData.eraseAllData(); // Clear client-side session data
-      navigation.navigate('Login');
+      // Reset navigation state and navigate to Login
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
     } catch (error) {
       console.error('Logout failed:', error);
       alert('Failed to log out. Please try again.');

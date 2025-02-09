@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { Button, TextInput as PaperTextInput, TextInput} from 'react-native-paper';
+import { Button, TextInput as PaperTextInput, TextInput } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { colors } from './theme';
@@ -35,52 +36,175 @@ const RegistrationScreen = () => {
   };
 
   return (
-    <View style={[GlobalStyles.container, GlobalStyles.loginContainer]}>
-      <Image style={GlobalStyles.loginLogo} source={require('./assets/green-logo.png')} />
-      <PaperTextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Name"
-          value={name}
-          onChangeText={text => setName(text)}
-        />
-        <PaperTextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Email"
-          value={email}
-          onChangeText={text => setEmail(text)}
-        />
-        <TextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Password"
-          value={password}
-          onChangeText={text => setPassword(text)}
-          secureTextEntry={!showPassword}
-          right={
-            <TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'}
-              onPress={() => setShowPassword(!showPassword)}
-            />
-          }
-        />
-        <TextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Confirm Password"
-          value={confirmPassword}
-          onChangeText={text => setConfirmPassword(text)}
-          secureTextEntry={!showPassword}
-          right={
-            <TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'}
-              onPress={() => setShowPassword(!showPassword)}
-            />
-          }
-        />
-        <Button mode="contained" theme={{ colors: {primary: colors.primary} }} style={GlobalStyles.button} onPress={handleRegistration}>Register</Button>
-        {error ? <Text style={GlobalStyles.errorMessage}>{error}</Text> : null}
-      </View>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[GlobalStyles.container, styles.container]}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.logoContainer}>
+          <MaterialCommunityIcons 
+            name="food-apple" 
+            size={64} 
+            color={colors.primary} 
+            style={styles.icon}
+          />
+          <Text style={styles.appName}>Create Account</Text>
+          <Text style={styles.tagline}>Join PantryGuardian today</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <PaperTextInput
+            style={styles.input}
+            mode="flat"
+            label="Name"
+            value={name}
+            onChangeText={text => setName(text)}
+            left={<TextInput.Icon icon="account" color={colors.primary} />}
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
+          <PaperTextInput
+            style={styles.input}
+            mode="flat"
+            label="Email"
+            value={email}
+            onChangeText={text => setEmail(text)}
+            left={<TextInput.Icon icon="email" color={colors.primary} />}
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
+          <PaperTextInput
+            style={styles.input}
+            mode="flat"
+            label="Password"
+            value={password}
+            onChangeText={text => setPassword(text)}
+            secureTextEntry={!showPassword}
+            left={<TextInput.Icon icon="lock" color={colors.primary} />}
+            right={
+              <TextInput.Icon 
+                icon={showPassword ? 'eye-off' : 'eye'}
+                onPress={() => setShowPassword(!showPassword)}
+                color={colors.primary}
+              />
+            }
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
+          <PaperTextInput
+            style={styles.input}
+            mode="flat"
+            label="Confirm Password"
+            value={confirmPassword}
+            onChangeText={text => setConfirmPassword(text)}
+            secureTextEntry={!showPassword}
+            left={<TextInput.Icon icon="lock-check" color={colors.primary} />}
+            right={
+              <TextInput.Icon 
+                icon={showPassword ? 'eye-off' : 'eye'}
+                onPress={() => setShowPassword(!showPassword)}
+                color={colors.primary}
+              />
+            }
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
+          {error ? <Text style={styles.errorMessage}>{error}</Text> : null}
+
+          <Button 
+            mode="contained" 
+            onPress={handleRegistration}
+            style={styles.registerButton}
+            contentStyle={styles.registerButtonContent}
+            labelStyle={styles.registerButtonLabel}
+          >
+            Create Account
+          </Button>
+
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={styles.loginContainer}
+          >
+            <Text style={styles.loginText}>
+              Already have an account? <Text style={styles.loginLink}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 48,
+  },
+  icon: {
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  formContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  input: {
+    width: '100%',
+    marginBottom: 16,
+    backgroundColor: 'transparent',
+  },
+  registerButton: {
+    width: '100%',
+    marginTop: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+  },
+  registerButtonContent: {
+    height: 48,
+  },
+  registerButtonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  errorMessage: {
+    color: colors.error,
+    marginTop: 8,
+    marginBottom: 8,
+    fontSize: 14,
+  },
+  loginContainer: {
+    marginTop: 24,
+  },
+  loginText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  loginLink: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+});
 
 export default RegistrationScreen;

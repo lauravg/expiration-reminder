@@ -8,9 +8,15 @@ import ProductList from './ProductList';
 import { colors } from './theme';
 import { HouseholdManager } from './HouseholdManager';
 import { useFocusEffect } from '@react-navigation/native';
+import { getViewIcon } from './iconUtils';
 
 const WastedProductScreen = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'simple'>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
@@ -31,6 +37,14 @@ const WastedProductScreen = () => {
     } else {
       console.error('Failed to update product');
     }
+  };
+
+  const handleWaste = async (product: Product) => {
+    // Implementation of handleWaste function
+  };
+
+  const handleSort = () => {
+    // Implementation of handleSort function
   };
 
   useFocusEffect(
@@ -89,13 +103,24 @@ const WastedProductScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
       <ProductList
         products={products}
         onDelete={handleDelete}
         onUpdateProduct={handleUpdateProduct}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        searchQuery={searchQuery}
+        searchTerm={searchTerm}
+        onSort={handleSort}
+        sortMenuVisible={sortMenuVisible}
+        setSortMenuVisible={setSortMenuVisible}
+        menuVisible={menuVisible}
+        setMenuVisible={setMenuVisible}
+        showWasteButton={true}
+        onWaste={handleWaste}
+        getViewIcon={getViewIcon}
       />
     </View>
   );

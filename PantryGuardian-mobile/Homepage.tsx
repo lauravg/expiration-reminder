@@ -14,6 +14,7 @@ import ProductList from './ProductList';
 import { SessionData } from './SessionData';
 import { HouseholdManager } from './HouseholdManager';
 import { StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type SortOption = 'name' | 'expiration' | 'location' | 'category';
 
@@ -173,122 +174,62 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
     return 'sort-descending';
   };
 
+  const getExpiringCount = () => {
+    return products.filter(product => {
+      const daysLeft = calculateDaysLeft(product.expiration_date ?? '');
+      return !isNaN(parseInt(daysLeft)) && parseInt(daysLeft) <= 7;
+    }).length;
+  };
+
+  const calculateDaysLeft = (expirationDate: string): string => {
+    if (!expirationDate) return 'No date';
+    const expDate = parse(expirationDate, 'yyyy-MM-dd', new Date());
+    if (!isValid(expDate)) return 'Invalid date';
+    const days = differenceInDays(expDate, new Date());
+    if (days < 0) return 'Expired';
+    return days.toString();
+  };
+
   return (
     <View style={GlobalStyles.container}>
       <View style={[GlobalStyles.header, styles.headerContainer]}>
-        <View style={GlobalStyles.headerTop}>
-          <View style={styles.headerTitleContainer}>
-            <Text style={GlobalStyles.headerTitle}>Your Pantry</Text>
-            <Text style={styles.headerSubtitle}>Keep track of your food items</Text>
-          </View>
-          <View style={GlobalStyles.headerActions}>
-            <Menu
-              visible={sortMenuVisible}
-              onDismiss={() => setSortMenuVisible(false)}
-              anchor={
-                <IconButton 
-                  icon={getSortIcon()}
-                  iconColor={colors.textInverse}
-                  size={24}
-                  style={styles.sortButton}
-                  onPress={() => setSortMenuVisible(true)}
+        <View style={styles.headerContent}>
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <IconButton
+                icon="magnify"
+                iconColor={colors.textSecondary}
+                size={24}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                placeholder="Search products..."
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                style={styles.searchInput}
+                placeholderTextColor={colors.textSecondary}
+              />
+              {searchQuery.length > 0 && (
+                <IconButton
+                  icon="close"
+                  iconColor={colors.textSecondary}
+                  size={20}
+                  onPress={handleClearSearch}
+                  style={styles.clearIcon}
                 />
-              }
-            >
-              <Menu.Item 
-                onPress={() => handleSort('name')}
-                title="Sort by Name"
-                leadingIcon={sortBy === 'name' ? (sortAscending ? 'sort-alphabetical-ascending' : 'sort-alphabetical-descending') : 'sort-alphabetical-ascending'}
-              />
-              <Menu.Item 
-                onPress={() => handleSort('expiration')}
-                title="Sort by Expiration"
-                leadingIcon={sortBy === 'expiration' ? (sortAscending ? 'calendar-arrow-up' : 'calendar-arrow-down') : 'calendar'}
-              />
-              <Menu.Item 
-                onPress={() => handleSort('location')}
-                title="Sort by Location"
-                leadingIcon={sortBy === 'location' ? (sortAscending ? 'sort-ascending' : 'sort-descending') : 'map-marker'}
-              />
-              <Menu.Item 
-                onPress={() => handleSort('category')}
-                title="Sort by Category"
-                leadingIcon={sortBy === 'category' ? (sortAscending ? 'sort-ascending' : 'sort-descending') : 'shape'}
-              />
-            </Menu>
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <IconButton 
-                  icon={getViewIcon()}
-                  iconColor={colors.textInverse}
-                  size={24}
-                  style={GlobalStyles.viewToggle}
-                  onPress={() => setMenuVisible(true)}
-                />
-              }
-            >
-              <Menu.Item 
-                onPress={() => { 
-                  setViewMode('grid');
-                  setMenuVisible(false);
-                }} 
-                title="Grid View"
-                leadingIcon="view-grid-outline"
-              />
-              <Menu.Item 
-                onPress={() => {
-                  setViewMode('list');
-                  setMenuVisible(false);
-                }} 
-                title="List View"
-                leadingIcon="view-list-outline"
-              />
-              <Menu.Item 
-                onPress={() => {
-                  setViewMode('simple');
-                  setMenuVisible(false);
-                }} 
-                title="Simple List"
-                leadingIcon="format-list-text"
-              />
-            </Menu>
+              )}
+            </View>
             <IconButton
               icon="bell-outline"
               iconColor={colors.textInverse}
               size={24}
+              style={styles.actionButton}
               onPress={() => {}}
             />
           </View>
         </View>
       </View>
-      <View style={[GlobalStyles.searchContainer, styles.searchContainer]}>
-        <View style={styles.searchInputContainer}>
-          <IconButton
-            icon="magnify"
-            iconColor={colors.textSecondary}
-            size={20}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            placeholder="Search products..."
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            style={styles.searchInput}
-            placeholderTextColor={colors.textSecondary}
-          />
-          {searchQuery.length > 0 && (
-            <IconButton
-              icon="close"
-              iconColor={colors.textSecondary}
-              size={20}
-              onPress={handleClearSearch}
-              style={styles.clearIcon}
-            />
-          )}
-        </View>
-      </View>
+
       <ProductList
         products={getSortedProducts(products)}
         onDelete={handleDelete}
@@ -299,6 +240,12 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
         onViewModeChange={setViewMode}
         searchQuery={searchQuery}
         searchTerm={searchTerm}
+        onSort={(option: string) => handleSort(option as SortOption)} // Cast option to SortOption
+        sortMenuVisible={sortMenuVisible}
+        setSortMenuVisible={setSortMenuVisible}
+        menuVisible={menuVisible}
+        setMenuVisible={setMenuVisible}
+        getViewIcon={getViewIcon}
       />
     </View>
   );
@@ -306,44 +253,29 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    paddingBottom: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 0,
   },
-  headerTitleContainer: {
-    flex: 1,
-  },
-  headerSubtitle: {
-    color: colors.textInverse,
-    opacity: 0.8,
-    fontSize: 14,
-    marginTop: 4,
+  headerContent: {
+    width: '100%',
   },
   searchContainer: {
-    marginTop: -30,
-    zIndex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 16,
+    gap: 12,
   },
-  searchInputContainer: {
+  searchInputWrapper: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: 12,
-    paddingHorizontal: 8,
     height: 48,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   searchIcon: {
-    margin: 0,
-  },
-  clearIcon: {
     margin: 0,
   },
   searchInput: {
@@ -351,10 +283,16 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: 16,
     color: colors.textPrimary,
-    paddingHorizontal: 8,
   },
-  sortButton: {
-    marginRight: 8,
+  clearIcon: {
+    margin: 0,
+  },
+  actionButton: {
+    margin: 0,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
   },
 });
 

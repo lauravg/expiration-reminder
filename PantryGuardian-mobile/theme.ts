@@ -31,6 +31,7 @@ interface Colors {
   hover: string;
   pressed: string;
   disabled: string;
+  secondary: string;
 }
 
 export const colors: Colors = {
@@ -39,6 +40,7 @@ export const colors: Colors = {
   primaryLight: '#3D3D3D',    
   primaryDark: '#1A1A1A',
   accent: '#03DAC5',          // Warm orange for accents
+  secondary: '#03dac6',
   
   // Background Colors
   background: '#F5F5F5',      // Light gray for main background

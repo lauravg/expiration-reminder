@@ -10,6 +10,8 @@ export interface Product {
   wasted: boolean;
   creation_date?: string;
   note?: string;
+  isExpired: boolean;
+  daysUntilExpiration: number;
 }
 
 interface ProductProps {

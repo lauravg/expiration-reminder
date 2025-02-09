@@ -41,7 +41,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
         tabBarIcon: ({ color, size }) => {
           let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
           if (route.name === 'Inventory') iconName = 'kitchen';
-          else if (route.name === 'Generate Recipe') iconName = 'restaurant';
+          else if (route.name === 'Recipe') iconName = 'restaurant';
           else if (route.name === 'Wasted') iconName = 'compost';
           else if (route.name === 'Settings') iconName = 'settings';
           else if (route.name === 'AddProduct') iconName = 'add';
@@ -53,7 +53,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
       <Tab.Screen name="Inventory" options={{ headerShown: false }}>
         {() => <Homepage onProductAdded={onProductAdded} />}
       </Tab.Screen>
-      <Tab.Screen name="Generate Recipe" component={Recipes} options={{ headerShown: false }} />
+      <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }} />
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
         {() => null}
       </Tab.Screen>

@@ -103,7 +103,7 @@ const RecipeScreen = () => {
                 contentStyle={styles.buttonContent}
                 icon="chef-hat"
               >
-                Generate Recipe
+                Recipe
               </Button>
               <Button
                 mode="contained-tonal"

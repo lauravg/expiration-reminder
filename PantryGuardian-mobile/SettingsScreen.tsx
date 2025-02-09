@@ -368,7 +368,7 @@ const SettingsScreen = () => {
                   <Switch
                     value={notificationsEnabled}
                     onValueChange={toggleNotifications}
-                    thumbColor={colors.onPrimary}
+                    thumbColor={colors.textInverse}
                     trackColor={{ false: colors.secondary, true: colors.primaryLight }}
                   />
                 </View>
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 16,
-    color: colors.onSecondary,
+    color: colors.textPrimary,
   },
   header: {
     marginTop: 20,
