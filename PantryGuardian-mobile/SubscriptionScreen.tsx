@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   feature: {
     fontSize: 14,
-    color: colors.onBackground,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   checkIcon: {
