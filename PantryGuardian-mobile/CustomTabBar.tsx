@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import {colors} from './theme'
+import { colors, theme } from './theme';
+
 interface CustomTabBarProps extends BottomTabBarProps {
   toggleAddProductModal: () => void;
 }
@@ -30,17 +31,18 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
           return (
             <TouchableOpacity
               key={route.key}
-              onPress={toggleAddProductModal} // Handle the modal toggle here
+              onPress={toggleAddProductModal}
               style={styles.addButton}
+              activeOpacity={0.8}
             >
-              <MaterialIcons name="add" size={40} color={colors.onPrimary} />
+              <MaterialIcons name="add" size={32} color={colors.textInverse} />
             </TouchableOpacity>
           );
         }
 
-        let iconName: keyof typeof MaterialIcons.glyphMap = 'circle'; // Default icon
+        let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
         if (route.name === 'Inventory') {
-          iconName = 'kitchen';
+          iconName = 'list';
         } else if (route.name === 'Generate Recipe') {
           iconName = 'restaurant';
         } else if (route.name === 'Wasted') {
@@ -53,13 +55,17 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
           <TouchableOpacity
             key={route.key}
             onPress={onPress}
-            style={styles.tabButton}
+            style={[styles.tabButton, isFocused && styles.tabButtonFocused]}
+            activeOpacity={0.7}
           >
-            <MaterialIcons
-              name={iconName}
-              size={24}
-              color={isFocused ? colors.primary : colors.icon}
+            <MaterialIcons 
+              name={iconName} 
+              size={24} 
+              color={isFocused ? colors.primary : colors.textSecondary} 
             />
+            <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
+              {route.name}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -70,26 +76,43 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 80,
-    backgroundColor: colors.whiteBackground,
+    backgroundColor: colors.surface,
     borderTopColor: colors.border,
-    borderWidth: .3,
+    borderTopWidth: 0.3,
     paddingBottom: 20,
   },
   tabButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // TBD change tabButton color
+    paddingTop: 8,
+  },
+  tabButtonFocused: {
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: theme.roundness,
   },
   addButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
     backgroundColor: colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: -20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  tabLabel: {
+    fontSize: 12,
+    marginTop: 4,
+    color: colors.textSecondary,
+  },
+  tabLabelFocused: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
 

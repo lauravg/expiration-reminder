@@ -220,11 +220,11 @@ def change_password():
             return jsonify({"success": False, "error": "New password must be at least 8 characters"}), 400
 
         # Replace this with your logic for password validation
-        if not validate_user_password(current_user.id, current_password):
+        if not validate_user_password(current_user.id, current_password): # type: ignore
             return jsonify({"success": False, "error": "Incorrect current password"}), 401
 
         # Update the user's password
-        update_user_password(current_user.id, new_password)
+        update_user_password(current_user.id, new_password) # type: ignore
         return jsonify({"success": True}), 200
 
     except Exception as e:

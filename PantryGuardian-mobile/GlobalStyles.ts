@@ -1,324 +1,433 @@
 import { Dimensions, Platform, StyleSheet } from 'react-native';
 import { colors, theme } from './theme';
-const { height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const GlobalStyles = StyleSheet.create({
-  // Container
+  // Base Container Styles
   container: {
     flex: 1,
-    paddingTop: 60,
-    ...(Platform.OS === 'web' && {
-      width: '80%',
-      justifyContent: 'center',
-      alignSelf: 'center',
-    }),
+    backgroundColor: colors.background,
   },
 
   containerWithHeader: {
     flex: 1,
+    backgroundColor: colors.background,
   },
 
   content: {
     flex: 1,
-    paddingHorizontal: 30,
-    paddingBottom: 30,
-    justifyContent: 'center',
   },
 
-  background: {
-    backgroundColor: colors.background,
-  },
-
-  // Login and Registration
-  loginContainer: {
-    justifyContent: 'center',
-    paddingVertical: 60,
-    ...(Platform.OS === 'web' && {
-      width: 600,
-      alignSelf: 'center',
-    }),
-  },
-
-  loginLogo: {
-    borderRadius: 100,
-    width: 250,
-    height: 250,
-    marginBottom: 40,
-    alignSelf: 'center',
-  },
-
-  registerLink: {
-    textAlign: 'center',
-    marginTop: 20,
-    color: colors.primary,
-  },
-
-  // Header
+  // Header Styles
   header: {
-    paddingLeft: 30,
-    paddingRight: 15,
+    backgroundColor: colors.primary,
+    paddingTop: Platform.OS === 'ios' ? 48 : 32,
+    paddingBottom: 0,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
 
   headerLeft: {
-    marginTop: 10,
-    flexDirection: 'column',
+    flex: 1,
   },
 
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: colors.textInverse,
+    letterSpacing: -0.5,
   },
 
-  sectionHeader: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: colors.primary,
-    textAlign: 'center',
-  },
-
-  // Filter
-  filterContainer: {
-    flexDirection: 'row',
-    marginVertical: 10,
-  },
-
-  filterButton: {
-    paddingHorizontal: 10,
-  },
-
-  filterText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.secondary,
-  },
-
-  activeFilterText: {
-    fontSize: 16,
-    color: colors.primary,
-    textDecorationLine: 'underline',
-  },
-
-  // Modal
-  modalContent: {
-    backgroundColor: colors.productBackground,
-    padding: 20,
-    borderRadius: 10,
-    elevation: 5,
-    maxHeight: screenHeight * 0.6,
-    ...(Platform.OS === 'web' && {
-      width: 600,
-      alignSelf: 'center',
-    }),
-  },
-
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-
-  notificationModal: {
-    maxHeight: screenHeight * 0.8,
-    justifyContent: 'center',
+  headerTop: {
     paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
 
-  notificationModalList: {
-    marginBottom: 20,
-    maxHeight: '100%',
-  },
-
-  pickerContainer: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
   },
 
-  picker: {
-    // flex: 1,
-    // marginRight: 10,
+  viewToggle: {
+    marginRight: 8,
   },
 
-  dropdown: {
-    borderColor: colors.border,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.textInverse,
+    letterSpacing: -0.5,
+  },
+
+  // Search Bar
+  searchContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    marginHorizontal: 20,
+    backgroundColor: colors.surface,
+    borderRadius: 15,
+    padding: 12,
+    shadowColor: colors.card.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  searchInput: {
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 10,
+    height: 40,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  searchIcon: {
+    marginRight: 12,
+    opacity: 0.7,
+  },
+
+  // Category Chips
+  categoriesContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 12,
+    flexDirection: 'row',
+  },
+
+  categoryChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginRight: 10,
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderRadius: 8,
-    backgroundColor: colors.primaryLightLight,
-    maxWidth: 150,
-    alignSelf: 'flex-end', 
+    borderColor: 'transparent',
   },
 
-  detailValue: {
+  categoryChipActive: {
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+  },
+
+  categoryText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+
+  categoryTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+
+  // Grid View Styles
+  productGrid: {
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+  },
+
+  productRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+
+  productCardGrid: {
+    width: (screenWidth - 50) / 2,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 15,
+    shadowColor: colors.card.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  // List View Styles
+  productList: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+
+  productCardList: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    marginBottom: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: colors.card.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  productImagePlaceholderGrid: {
+    width: '100%',
+    height: 120,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 15,
+    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  productImagePlaceholderList: {
+    width: 80,
+    height: 80,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+
+  productInfoList: {
     flex: 1,
   },
 
-  // Button
-  button: {
-    marginTop: 20,
+  productNameGrid: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
 
-  buttonRow: {
+  productNameList: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+
+  productLocationGrid: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+
+  productLocationList: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  locationIcon: {
+    marginRight: 4,
+    opacity: 0.6,
+  },
+
+  expirationContainerGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  expirationContainerList: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  expirationBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: colors.surfaceVariant,
+  },
+
+  expirationBadgeExpiring: {
+    backgroundColor: 'rgba(255, 176, 32, 0.1)',
+  },
+
+  expirationBadgeExpired: {
+    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+  },
+
+  expirationText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+
+  expirationTextExpiring: {
+    color: colors.warning,
+  },
+
+  expirationTextExpired: {
+    color: colors.error,
+  },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  // Keep existing modal styles
+  modalContent: {
+    backgroundColor: colors.surface,
+    margin: 20,
+    borderRadius: 20,
+    padding: 24,
+    maxHeight: screenHeight * 0.8,
+  },
+
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    alignItems: 'center',
+    marginBottom: 24,
   },
 
-  modalButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 20,
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
 
-  // Input
-  input: {
-    marginBottom: 10,
-    backgroundColor: colors.input,
+  modalClose: {
+    padding: 8,
+    marginRight: -8,
   },
 
-  simpleInput: {
-    marginBottom: 10,
-    backgroundColor: 'transparent',
-  },
-
-  // Search
-  searchInput: {
-    marginVertical: 10,
-    backgroundColor: colors.input,
-  },
-
-  // Product Details (Modal)
-  productDetails: {
-    flexDirection: 'column',
-    marginBottom: 5,
+  detailCard: {
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
   },
 
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 5,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+
+  detailIcon: {
+    width: 24,
+    alignItems: 'center',
+    marginRight: 12,
+    opacity: 0.5,
   },
 
   detailLabel: {
-    fontWeight: 'bold',
-    marginRight: 10,
+    flex: 1,
+    fontSize: 15,
+    color: colors.textSecondary,
+    letterSpacing: -0.2,
   },
 
-  // Product Container
-  productList: {
-    ...(Platform.OS === 'web' && {
-      width: '80%',
-      height: 600,
-      alignSelf: 'center',
-      borderRadius: 10,
-      boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.1)',
-      padding: 60,
-    }),
-  },
-
-  productContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderRadius: 10,
-    borderColor: colors.border,
-    backgroundColor: colors.productBackground,
-  },
-
-  // Product Information
-  productInfo: {
-    width: '65%',
-    flexDirection: 'column',
-  },
-
-  productName: {
-    fontSize: 16,
-    flexWrap: 'wrap',
+  detailValue: {
+    fontSize: 15,
+    color: colors.textPrimary,
     fontWeight: '500',
-    width: '100%',
+    letterSpacing: -0.2,
   },
 
-  location: {
-    marginTop: 5,
-    fontSize: 12,
-    ...(Platform.OS === 'web' && {
-      width: 120,
-      fontSize: 14,
-      height: 25,
-      alignContent: 'center',
-    }),
-  },
-
-  expirationText: {
-    color: colors.error,
-  },
-
-  expirationTextContainer: {
-    textAlign: 'center',
-    width: '25%',
-  },
-
-  // Error
-  errorMessage: {
-    color: colors.error,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-
-  // Settings
-  preference: {
+  actionButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    marginTop: 8,
   },
 
-  accountContainer: {
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 6,
+    borderRadius: 12,
+    paddingVertical: 12,
+    backgroundColor: colors.surfaceVariant,
+    elevation: 0,
+  },
+
+  actionButtonPrimary: {
+    backgroundColor: colors.primary,
+  },
+
+  actionButtonDanger: {
+    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+  },
+
+  actionButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+  },
+
+  actionButtonTextPrimary: {
+    color: colors.textInverse,
+  },
+
+  actionButtonTextDanger: {
+    color: colors.error,
+  },
+
+  // Simple List View Styles
+  productListSimple: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+
+  productCardSimple: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    marginBottom: 8,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
   },
 
-  accountInfo: {
-    marginLeft: 16,
+  productInfoSimple: {
+    flex: 1,
+    marginRight: 12,
   },
 
-  accountText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-
-  accountEmail: {
-    fontSize: 14,
-    color: colors.secondary,
-  },
-
-  // Recipe Screen
-  card: {
-    marginTop: 16,
-    backgroundColor: colors.productBackground,
-    borderRadius: 8,
-    elevation: 4,
-  },
-  
-  recipeText: {
+  productNameSimple: {
     fontSize: 16,
-    color: colors.onBackground,
-    lineHeight: 24,
+    fontWeight: '500',
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
 
-  buttonContainer: {
+  productLocationSimple: {
+    fontSize: 14,
+    color: colors.textSecondary,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
+    alignItems: 'center',
   },
 });
 

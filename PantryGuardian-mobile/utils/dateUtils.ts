@@ -1,34 +1,29 @@
-import { parseISO, parse } from 'date-fns';
+import { parse, differenceInDays } from 'date-fns';
 
-export const calculateDaysLeft = (expirationDate: string | null): string => {
-  if (!expirationDate || expirationDate === "No Expiration") {
-    return "";
-  }
+export const calculateDaysLeft = (expirationDate: string): string => {
+    if (!expirationDate) return 'No date';
 
-  // Try to parse the date using parseISO
-  let parsedDate = parseISO(expirationDate);
-  
-  // If parsing with parseISO fails, try custom parsing
-  if (isNaN(parsedDate.getTime())) {
-    parsedDate = parse(expirationDate, 'MMM dd yyyy', new Date());
-  }
+    const expDate = parse(expirationDate, 'yyyy-MM-dd', new Date());
+    const today = new Date();
+    const daysLeft = differenceInDays(expDate, today);
 
-  if (isNaN(parsedDate.getTime())) {
-    console.error("Error parsing date:", expirationDate);
-    return "";
-  }
+    if (daysLeft < 0) return 'Expired';
+    if (daysLeft === 0) return 'Today';
+    if (daysLeft === 1) return '1 day';
+    return `${daysLeft} days`;
+};
 
-  const today = new Date();
-  const daysLeft = Math.floor((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+export const getDaysLeftPercentage = (expirationDate: string): number => {
+    if (!expirationDate) return 100;
 
-  if (daysLeft > 30) {
-    const monthsLeft = Math.floor(daysLeft / 30);
-    return `${monthsLeft} months`;
-  } else if (daysLeft === 1) {
-    return `${daysLeft} day`;
-  } else if (daysLeft < 0) {
-    return `Expired`;
-  }
-
-  return `${daysLeft} days`;
+    const expDate = parse(expirationDate, 'yyyy-MM-dd', new Date());
+    const today = new Date();
+    const daysLeft = differenceInDays(expDate, today);
+    
+    // Consider 30 days as 100%
+    const totalDays = 30;
+    const percentage = ((totalDays - daysLeft) / totalDays) * 100;
+    
+    // Clamp between 0 and 100
+    return Math.min(Math.max(percentage, 0), 100);
 };

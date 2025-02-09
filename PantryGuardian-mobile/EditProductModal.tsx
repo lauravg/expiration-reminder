@@ -125,13 +125,29 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
             onChangeText={text => setExpirationDate(text)}
           />
           <PaperTextInput style={GlobalStyles.input} mode="outlined" label="Barcode Number (optional)" />
-          <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setLocationModalVisible(true)}>
-            <Text>{location ? `Location: ${location}` : 'Select Location'}</Text>
-          </Button>
-          <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setCategoryModalVisible(true)}>
-            {category ? 'Category: ' + category : 'Select Category'}
-          </Button>
-          <Button mode="contained" theme={{ colors: { primary: colors.primary } }} onPress={handleUpdateProduct}>
+          <View style={GlobalStyles.buttonContainer}>
+            <Button
+              mode="outlined"
+              style={GlobalStyles.actionButton}
+              labelStyle={GlobalStyles.actionButtonText}
+              onPress={() => setLocationModalVisible(true)}
+            >
+              {location ? `Location: ${location}` : 'Select Location'}
+            </Button>
+            <Button
+              mode="outlined"
+              style={GlobalStyles.actionButton}
+              labelStyle={GlobalStyles.actionButtonText}
+              onPress={() => setCategoryModalVisible(true)}
+            >
+              {category ? `Category: ${category}` : 'Select Category'}
+            </Button>
+          </View>
+          <Button
+            mode="contained"
+            style={[GlobalStyles.button, { marginTop: 16 }]}
+            onPress={handleUpdateProduct}
+          >
             Update
           </Button>
           {isDatePickerVisible && <Calendar onDayPress={(day: any) => handleExpirationDateChange(day.dateString)} />}
@@ -143,25 +159,37 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         onDismiss={() => setLocationModalVisible(false)}
         contentContainerStyle={GlobalStyles.modalContent}
       >
-        <Picker
-          selectedValue={location}
-          style={GlobalStyles.picker}
-          onValueChange={(itemValue) => setLocation(itemValue)}
-        >
-          <Picker.Item label="Select Location" value="" />
-          {locations.map((loc) => (
-            <Picker.Item key={loc} label={loc} value={loc} />
-          ))}
-        </Picker>
+        <View style={GlobalStyles.pickerContainer}>
+          <Picker
+            selectedValue={location}
+            style={GlobalStyles.picker}
+            onValueChange={(itemValue) => setLocation(itemValue)}
+          >
+            <Picker.Item label="Select Location" value="" />
+            {locations.map((loc) => (
+              <Picker.Item key={loc} label={loc} value={loc} />
+            ))}
+          </Picker>
+        </View>
       </PaperModal>
 
-      <PaperModal visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} contentContainerStyle={GlobalStyles.modalContent}>
-        <Picker selectedValue={category} style={GlobalStyles.input} onValueChange={(itemValue) => handleCategoryChange(itemValue)}>
-          <Picker.Item label="Select Category" value="" />
-          {categories.map((cat) => (
-            <Picker.Item key={cat} label={cat} value={cat} />
-          ))}
-        </Picker>
+      <PaperModal
+        visible={categoryModalVisible}
+        onDismiss={() => setCategoryModalVisible(false)}
+        contentContainerStyle={GlobalStyles.modalContent}
+      >
+        <View style={GlobalStyles.pickerContainer}>
+          <Picker
+            selectedValue={category}
+            style={GlobalStyles.picker}
+            onValueChange={(itemValue) => handleCategoryChange(itemValue)}
+          >
+            <Picker.Item label="Select Category" value="" />
+            {categories.map((cat) => (
+              <Picker.Item key={cat} label={cat} value={cat} />
+            ))}
+          </Picker>
+        </View>
       </PaperModal>
       <PaperTextInput
         style={GlobalStyles.input}

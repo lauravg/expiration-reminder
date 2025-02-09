@@ -6,7 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
-import { IconButton } from 'react-native-paper';
+import { IconButton, Provider as PaperProvider } from 'react-native-paper';
 import { colors } from './theme';
 import Homepage from './Homepage';
 import Login from './LoginScreen';
@@ -65,7 +65,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
             <IconButton
               icon="arrow-left"
               size={24}
-              iconColor={colors.icon}
+              iconColor={colors.textPrimary}
               onPress={() => navigation.goBack()}
             />
           ),
@@ -89,7 +89,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
             <IconButton
               icon="arrow-left"
               size={24}
-              iconColor={colors.icon}
+              iconColor={colors.textPrimary}
               onPress={() => navigation.goBack()}
             />
           ),
@@ -187,84 +187,88 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <PaperProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </PaperProvider>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login">
-          <Stack.Screen name="Login" options={{ headerShown: false }}>
-            {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
-          </Stack.Screen>
-          <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
-          <Stack.Screen name="Main" options={{ headerShown: false }}>
-            {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onProductAdded={handleProductAdded} />}
-          </Stack.Screen>
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={({ navigation }) => ({
-              headerLeft: () => (
-                <IconButton
-                  icon="arrow-left"
-                  size={24}
-                  iconColor={colors.icon}
-                  onPress={() => navigation.goBack()}
-                />
-              ),
-              headerTitle: 'Profile',
-              headerTitleStyle: {
-                fontWeight: 'bold',
-                color: colors.primary
-              },
-              headerStyle: {
-                backgroundColor: colors.background,
-                elevation: 0, // Remove shadow on Android
-                shadowOpacity: 0, // Remove shadow on iOS
-              },
-            })}
+    <PaperProvider>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <Stack.Navigator initialRouteName="Login">
+            <Stack.Screen name="Login" options={{ headerShown: false }}>
+              {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
+            </Stack.Screen>
+            <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
+            <Stack.Screen name="Main" options={{ headerShown: false }}>
+              {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onProductAdded={handleProductAdded} />}
+            </Stack.Screen>
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={({ navigation }) => ({
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Profile',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0, // Remove shadow on Android
+                  shadowOpacity: 0, // Remove shadow on iOS
+                },
+              })}
+            />
+            <Stack.Screen
+              name="SubscriptionScreen"
+              component={SubscriptionScreen}
+              options={({ navigation }) => ({
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Subscription',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary,
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0, // Remove shadow on Android
+                  shadowOpacity: 0, // Remove shadow on iOS
+                },
+              })}
+            />
+          </Stack.Navigator>
+          <StatusBar />
+          <AddProductModal
+            visible={addProductModalVisible}
+            onClose={toggleAddProductModal}
+            onProductAdded={handleProductAdded}
           />
-          <Stack.Screen
-            name="SubscriptionScreen"
-            component={SubscriptionScreen}
-            options={({ navigation }) => ({
-              headerLeft: () => (
-                <IconButton
-                  icon="arrow-left"
-                  size={24}
-                  iconColor={colors.icon}
-                  onPress={() => navigation.goBack()}
-                />
-              ),
-              headerTitle: 'Subscription',
-              headerTitleStyle: {
-                fontWeight: 'bold',
-                color: colors.primary,
-              },
-              headerStyle: {
-                backgroundColor: colors.background,
-                elevation: 0, // Remove shadow on Android
-                shadowOpacity: 0, // Remove shadow on iOS
-              },
-            })}
+          <NotificationModal
+            visible={isNotificationModalVisible}
+            onClose={() => setIsNotificationModalVisible(false)}
+            products={affectedProducts}
           />
-        </Stack.Navigator>
-        <StatusBar />
-        <AddProductModal
-          visible={addProductModalVisible}
-          onClose={toggleAddProductModal}
-          onProductAdded={handleProductAdded}
-        />
-        <NotificationModal
-          visible={isNotificationModalVisible}
-          onClose={() => setIsNotificationModalVisible(false)}
-          products={affectedProducts}
-        />
-      </NavigationContainer>
-    </SafeAreaProvider>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </PaperProvider>
   );
 }
