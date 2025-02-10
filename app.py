@@ -464,6 +464,12 @@ def set_default_notification_settings(user_id):
                 "daysBefore": 5,
                 "hour": 12,
                 "minute": 0,
+            },
+            "view_settings": {
+                "viewMode": "grid",
+                "sortBy": "expirationDate",
+                "hideExpired": False,
+                "activeFilter": "All"
             }
         }
         doc_ref.set(default_settings, merge=True)
@@ -887,6 +893,66 @@ def is_url_safe(url: str) -> bool:
 def on_terminate(signal, frame):
     log.info("Received terminate signal at %s" % datetime.now())
     sys.exit(0)
+
+
+@app.route("/save_view_settings", methods=["POST"])
+@token_required
+def save_view_settings():
+    """
+    Save user's view settings to Firestore
+    """
+    try:
+        user = flask_login.current_user
+        data = request.json
+        doc_ref = firestore.collection("users").document(user.get_id())
+        
+        # Update the view settings
+        doc_ref.update({
+            "view_settings": {
+                "viewMode": data.get("viewMode", "grid"),
+                "sortBy": data.get("sortBy", "expirationDate"),
+                "hideExpired": data.get("hideExpired", False),
+                "activeFilter": data.get("activeFilter", "All")
+            }
+        })
+        
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        log.error(f"Error saving view settings: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/get_view_settings", methods=["POST"])
+@token_required
+def get_view_settings():
+    """
+    Get user's view settings from Firestore
+    """
+    try:
+        user = flask_login.current_user
+        doc_ref = firestore.collection("users").document(user.get_id())
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            settings = doc.to_dict().get("view_settings", {})
+            return jsonify({
+                "viewMode": settings.get("viewMode", "grid"),
+                "sortBy": settings.get("sortBy", "expirationDate"),
+                "hideExpired": settings.get("hideExpired", False),
+                "activeFilter": settings.get("activeFilter", "All")
+            }), 200
+        else:
+            # Return default settings if document doesn't exist
+            return jsonify({
+                "viewMode": "grid",
+                "sortBy": "expirationDate",
+                "hideExpired": False,
+                "activeFilter": "All"
+            }), 200
+            
+    except Exception as e:
+        log.error(f"Error getting view settings: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # Initialize and start a schedule thread for sending emails

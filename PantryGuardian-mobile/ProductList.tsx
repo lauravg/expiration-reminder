@@ -9,6 +9,7 @@ import { Product } from './Product';
 import { calculateDaysLeft } from './utils/dateUtils';
 import EditProductModal from './EditProductModal';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Requests from './Requests';
 
 type ViewMode = 'grid' | 'list' | 'simple';
 
@@ -53,6 +54,42 @@ const ProductList: React.FC<ProductListProps> = ({
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
     const [sortBy, setSortBy] = useState('expirationDate');
     const [hideExpired, setHideExpired] = useState(false);
+    const requests = new Requests();
+
+    // Load saved view settings
+    useEffect(() => {
+        const loadViewSettings = async () => {
+            try {
+                const settings = await requests.getViewSettings();
+                if (settings) {
+                    onViewModeChange(settings.viewMode as ViewMode);
+                    setSortBy(settings.sortBy);
+                    setHideExpired(settings.hideExpired);
+                    setActiveFilter(settings.activeFilter);
+                }
+            } catch (error) {
+                console.error('Failed to load view settings:', error);
+            }
+        };
+        loadViewSettings();
+    }, []);
+
+    // Save view settings whenever they change
+    useEffect(() => {
+        const saveViewSettings = async () => {
+            try {
+                await requests.saveViewSettings({
+                    viewMode,
+                    sortBy,
+                    hideExpired,
+                    activeFilter
+                });
+            } catch (error) {
+                console.error('Failed to save view settings:', error);
+            }
+        };
+        saveViewSettings();
+    }, [viewMode, sortBy, hideExpired, activeFilter]);
 
     const handleSort = (products: Product[]) => {
         switch (sortBy) {

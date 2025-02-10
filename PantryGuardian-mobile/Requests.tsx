@@ -369,6 +369,39 @@ class Requests {
     }
   }
 
+  async saveViewSettings(settings: {
+    viewMode: string,
+    sortBy: string,
+    hideExpired: boolean,
+    activeFilter: string
+  }): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'save_view_settings', settings);
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error saving view settings:', error);
+      return false;
+    }
+  }
+
+  async getViewSettings(): Promise<{
+    viewMode: string,
+    sortBy: string,
+    hideExpired: boolean,
+    activeFilter: string
+  } | null> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'get_view_settings', {});
+      if (response.status === 200) {
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching view settings:', error);
+      return null;
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,
