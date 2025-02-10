@@ -325,11 +325,12 @@ const GlobalStyles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
+    maxHeight: 300,
   },
 
   detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 12,
   },
 
@@ -352,6 +353,8 @@ const GlobalStyles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '500',
     letterSpacing: -0.2,
+    flex: 1,
+    flexWrap: 'wrap',
   },
 
   actionButtonContainer: {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { Modal as PaperModal, Button, TextInput, IconButton, FAB, Menu } from 'react-native-paper';
-import { parse } from 'date-fns';
+import { parse, isValid } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
@@ -22,6 +22,12 @@ interface ProductListProps {
     onViewModeChange: (mode: ViewMode) => void;
     searchQuery: string;
     searchTerm: string;
+    onSort: (option: string) => void;
+    sortMenuVisible: boolean;
+    setSortMenuVisible: (visible: boolean) => void;
+    menuVisible: boolean;
+    setMenuVisible: (visible: boolean) => void;
+    getViewIcon: () => 'view-grid-outline' | 'view-list-outline' | 'format-list-text';
 }
 
 const ProductList: React.FC<ProductListProps> = ({
@@ -34,22 +40,53 @@ const ProductList: React.FC<ProductListProps> = ({
     onViewModeChange,
     searchQuery,
     searchTerm,
+    onSort,
+    sortMenuVisible,
+    setSortMenuVisible,
+    menuVisible,
+    setMenuVisible,
+    getViewIcon,
 }) => {
     const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
     const [activeFilter, setActiveFilter] = React.useState('All');
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
-    const [menuVisible, setMenuVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-    const [sortMenuVisible, setSortMenuVisible] = useState(false);
-    const [sortBy, setSortBy] = useState('expirationDate'); // 'expirationDate', 'name', 'location'
+    const [sortBy, setSortBy] = useState('expirationDate');
+    const [hideExpired, setHideExpired] = useState(false);
 
     const handleSort = (products: Product[]) => {
         switch (sortBy) {
             case 'expirationDate':
                 return [...products].sort((a, b) => {
-                    const dateA = a.expiration_date ? new Date(a.expiration_date).getTime() : Infinity;
-                    const dateB = b.expiration_date ? new Date(b.expiration_date).getTime() : Infinity;
-                    return dateA - dateB;
+                    // Handle special cases first
+                    if (!a.expiration_date && !b.expiration_date) return 0;
+                    if (!a.expiration_date) return 1;
+                    if (!b.expiration_date) return -1;
+                    if (a.expiration_date === 'No Expiration' && b.expiration_date === 'No Expiration') return 0;
+                    if (a.expiration_date === 'No Expiration') return 1;
+                    if (b.expiration_date === 'No Expiration') return -1;
+
+                    try {
+                        const dateA = parse(a.expiration_date, 'MMM dd yyyy', new Date());
+                        const dateB = parse(b.expiration_date, 'MMM dd yyyy', new Date());
+                        
+                        if (!isValid(dateA) && !isValid(dateB)) return 0;
+                        if (!isValid(dateA)) return 1;
+                        if (!isValid(dateB)) return -1;
+
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        dateA.setHours(0, 0, 0, 0);
+                        dateB.setHours(0, 0, 0, 0);
+                        
+                        const diffA = Math.ceil((dateA.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        const diffB = Math.ceil((dateB.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        return diffA - diffB;
+                    } catch (error) {
+                        console.error('Error parsing dates:', error);
+                        return 0;
+                    }
                 });
             case 'name':
                 return [...products].sort((a, b) => a.product_name.localeCompare(b.product_name));
@@ -65,6 +102,7 @@ const ProductList: React.FC<ProductListProps> = ({
     };
 
     const filteredProducts = useMemo(() => {
+        // First apply location filter
         let filtered = products;
         
         if (activeFilter === 'No Location') {
@@ -73,23 +111,99 @@ const ProductList: React.FC<ProductListProps> = ({
             filtered = products.filter(product => product.location === activeFilter);
         }
 
-        return handleSort(filtered);
-    }, [products, activeFilter, sortBy]);
+        // Apply hide expired filter if enabled
+        if (hideExpired) {
+            filtered = filtered.filter(product => {
+                if (!product.expiration_date || product.expiration_date === 'No Expiration') return true;
+                try {
+                    const expDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
+                    if (!isValid(expDate)) return true;
+                    
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    expDate.setHours(0, 0, 0, 0);
+                    
+                    return expDate.getTime() >= today.getTime();
+                } catch (error) {
+                    console.error('Error parsing date:', error);
+                    return true;
+                }
+            });
+        }
+
+        // Then apply search filter if there's a search query
+        if (searchQuery) {
+            filtered = filtered.filter(product => {
+                const searchLower = searchQuery.toLowerCase();
+                return (
+                    product.product_name.toLowerCase().includes(searchLower) ||
+                    (product.location || '').toLowerCase().includes(searchLower) ||
+                    (product.category || '').toLowerCase().includes(searchLower) ||
+                    (product.note || '').toLowerCase().includes(searchLower)
+                );
+            });
+        }
+
+        // Then sort the filtered results
+        switch (sortBy) {
+            case 'expirationDate':
+                return filtered.sort((a, b) => {
+                    // Handle special cases first
+                    if (!a.expiration_date && !b.expiration_date) return 0;
+                    if (!a.expiration_date) return 1;
+                    if (!b.expiration_date) return -1;
+                    if (a.expiration_date === 'No Expiration' && b.expiration_date === 'No Expiration') return 0;
+                    if (a.expiration_date === 'No Expiration') return 1;
+                    if (b.expiration_date === 'No Expiration') return -1;
+
+                    try {
+                        const dateA = parse(a.expiration_date, 'MMM dd yyyy', new Date());
+                        const dateB = parse(b.expiration_date, 'MMM dd yyyy', new Date());
+                        
+                        if (!isValid(dateA) && !isValid(dateB)) return 0;
+                        if (!isValid(dateA)) return 1;
+                        if (!isValid(dateB)) return -1;
+
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        dateA.setHours(0, 0, 0, 0);
+                        dateB.setHours(0, 0, 0, 0);
+                        
+                        const diffA = Math.ceil((dateA.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        const diffB = Math.ceil((dateB.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        return diffA - diffB;
+                    } catch (error) {
+                        console.error('Error parsing dates:', error);
+                        return 0;
+                    }
+                });
+            case 'name':
+                return filtered.sort((a, b) => a.product_name.localeCompare(b.product_name));
+            case 'location':
+                return filtered.sort((a, b) => {
+                    const locA = a.location || '';
+                    const locB = b.location || '';
+                    return locA.localeCompare(locB);
+                });
+            default:
+                return filtered;
+        }
+    }, [products, activeFilter, sortBy, searchQuery, hideExpired]);
 
     const getDaysUntilExpiration = (expirationDate: string | undefined | null) => {
-        if (!expirationDate) return null;
+        if (!expirationDate || expirationDate === 'No Expiration') return null;
         
         try {
-            const expDate = new Date(expirationDate);
-            if (isNaN(expDate.getTime())) {
+            const expDate = parse(expirationDate, 'MMM dd yyyy', new Date());
+            if (!isValid(expDate)) {
                 console.log('Invalid date format:', expirationDate);
                 return null;
             }
             
             const today = new Date();
-            
-            expDate.setHours(0, 0, 0, 0);
             today.setHours(0, 0, 0, 0);
+            expDate.setHours(0, 0, 0, 0);
             
             const diffTime = expDate.getTime() - today.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -101,12 +215,12 @@ const ProductList: React.FC<ProductListProps> = ({
     };
 
     const getExpirationText = (daysUntilExpiration: number | null) => {
-        if (daysUntilExpiration === null) return 'Not expiring';
+        if (daysUntilExpiration === null) return 'No Expiration';
         if (isNaN(daysUntilExpiration)) return 'Invalid date';
         if (daysUntilExpiration < 0) return `Expired ${Math.abs(daysUntilExpiration)} days ago`;
         if (daysUntilExpiration === 0) return 'Expires today';
-        if (daysUntilExpiration === 1) return '1 day';
-        return `${daysUntilExpiration} days`;
+        if (daysUntilExpiration === 1) return '1 day left';
+        return `${daysUntilExpiration} days left`;
     };
 
     const uniqueLocations = ['All', 'No Location', ...new Set(products
@@ -147,17 +261,6 @@ const ProductList: React.FC<ProductListProps> = ({
             };
         }
         return {};
-    };
-
-    const getViewIcon = () => {
-        switch (viewMode) {
-            case 'grid':
-                return 'view-grid-outline';
-            case 'list':
-                return 'view-list-outline';
-            case 'simple':
-                return 'format-list-text';
-        }
     };
 
     const renderProductGrid = () => {
@@ -337,6 +440,14 @@ const ProductList: React.FC<ProductListProps> = ({
                             }
                         >
                             <Menu.Item 
+                                leadingIcon={hideExpired ? "checkbox-marked" : "checkbox-blank-outline"}
+                                onPress={() => {
+                                    setHideExpired(!hideExpired);
+                                    setFilterMenuVisible(false);
+                                }} 
+                                title="Hide Expired Products"
+                            />
+                            <Menu.Item 
                                 leadingIcon="apps"
                                 onPress={() => {
                                     setActiveFilter('All');
@@ -508,7 +619,7 @@ const ProductList: React.FC<ProductListProps> = ({
                         />
                     </View>
 
-                    <View style={GlobalStyles.detailCard}>
+                    <ScrollView style={GlobalStyles.detailCard}>
                         <View style={GlobalStyles.detailRow}>
                             <View style={GlobalStyles.detailIcon}>
                                 <Icon name="food-outline" size={20} color={colors.textSecondary} />
@@ -557,7 +668,7 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Text style={GlobalStyles.detailValue}>{selectedProduct.note}</Text>
                             </View>
                         )}
-                    </View>
+                    </ScrollView>
 
                     <View style={GlobalStyles.actionButtonContainer}>
                         <Button

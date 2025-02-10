@@ -110,7 +110,7 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
     }, [onProductAdded]) // Refresh when products are added
   );
 
-  const getViewIcon = () => {
+  const getViewIcon = (): 'view-grid-outline' | 'view-list-outline' | 'format-list-text' => {
     switch (viewMode) {
       case 'grid':
         return 'view-grid-outline';
@@ -131,7 +131,19 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   };
 
   const getSortedProducts = (productsToSort: Product[]) => {
-    return [...productsToSort].sort((a, b) => {
+    // First filter by search query
+    const filteredProducts = productsToSort.filter(product => {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        product.product_name.toLowerCase().includes(searchLower) ||
+        (product.location || '').toLowerCase().includes(searchLower) ||
+        (product.category || '').toLowerCase().includes(searchLower) ||
+        (product.note || '').toLowerCase().includes(searchLower)
+      );
+    });
+
+    // Then sort the filtered results
+    return [...filteredProducts].sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
         case 'name':
