@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Platform } from 'react-native';
-import { IconButton, Menu, FAB } from 'react-native-paper';
+import { IconButton, Menu, FAB, Modal as PaperModal } from 'react-native-paper';
 import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { format, isValid, parse, addDays, differenceInDays } from 'date-fns';
 import * as Notifications from 'expo-notifications';
@@ -15,6 +15,7 @@ import { SessionData } from './SessionData';
 import { HouseholdManager } from './HouseholdManager';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ExpiringProductsModal from './ExpiringProductsModal';
 
 type SortOption = 'name' | 'expiration' | 'location' | 'category';
 
@@ -38,6 +39,9 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [sortAscending, setSortAscending] = useState(true);
+  const [isExpiringModalVisible, setIsExpiringModalVisible] = useState(false);
+  const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -195,11 +199,64 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
 
   const calculateDaysLeft = (expirationDate: string): string => {
     if (!expirationDate) return 'No date';
-    const expDate = parse(expirationDate, 'yyyy-MM-dd', new Date());
-    if (!isValid(expDate)) return 'Invalid date';
-    const days = differenceInDays(expDate, new Date());
-    if (days < 0) return 'Expired';
-    return days.toString();
+    try {
+      const expDate = parse(expirationDate, 'yyyy-MM-dd', new Date());
+      if (!isValid(expDate)) {
+        console.log(`Invalid date format for: ${expirationDate}`);
+        return 'Invalid date';
+      }
+      const days = differenceInDays(expDate, new Date());
+      console.log(`Days left for ${expirationDate}: ${days}`);
+      if (days < 0) return 'Expired';
+      return days.toString();
+    } catch (error) {
+      console.error(`Error parsing date: ${expirationDate}`, error);
+      return 'Invalid date';
+    }
+  };
+
+  const handleBellPress = async () => {
+    console.log('Bell pressed - checking expiring products...');
+    const daysBefore = parseInt(await AsyncStorage.getItem('daysBefore') || '5', 10);
+    console.log('Days before threshold:', daysBefore);
+    
+    const filtered = products.filter(product => {
+      if (!product.expiration_date || product.expiration_date === 'No Expiration') {
+        console.log(`Skipping product ${product.product_name}: No expiration date`);
+        return false;
+      }
+      try {
+        const expDate = parse(product.expiration_date, 'LLL dd yyyy', new Date());
+        if (!isValid(expDate)) {
+          console.log(`Invalid date format for: ${product.expiration_date}`);
+          return false;
+        }
+        const daysLeft = differenceInDays(expDate, new Date());
+        console.log(`Product ${product.product_name}: ${daysLeft} days left`);
+        
+        // Include products that:
+        // 1. Have not expired (daysLeft >= 0)
+        // 2. Will expire within the notification threshold
+        const shouldInclude = daysLeft >= 0 && daysLeft <= daysBefore;
+        console.log(`Including ${product.product_name}? ${shouldInclude} (expires in ${daysLeft} days, threshold: ${daysBefore} days)`);
+        return shouldInclude;
+      } catch (error) {
+        console.error(`Error processing date for ${product.product_name}:`, error);
+        return false;
+      }
+    });
+    
+    console.log('Found expiring products:', filtered.length);
+    console.log('Expiring products:', filtered);
+    
+    // Force state update by creating a new array
+    setExpiringProducts([...filtered]);
+    setIsExpiringModalVisible(true);
+  };
+
+  const handleProductPress = (product: Product) => {
+    setSelectedProduct(product);
+    setIsExpiringModalVisible(false);
   };
 
   return (
@@ -236,7 +293,7 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
               iconColor={colors.textInverse}
               size={24}
               style={styles.actionButton}
-              onPress={() => {}}
+              onPress={handleBellPress}
             />
           </View>
         </View>
@@ -252,13 +309,99 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
         onViewModeChange={setViewMode}
         searchQuery={searchQuery}
         searchTerm={searchTerm}
-        onSort={(option: string) => handleSort(option as SortOption)} // Cast option to SortOption
+        onSort={(option: string) => handleSort(option as SortOption)}
         sortMenuVisible={sortMenuVisible}
         setSortMenuVisible={setSortMenuVisible}
         menuVisible={menuVisible}
         setMenuVisible={setMenuVisible}
         getViewIcon={getViewIcon}
       />
+
+      <ExpiringProductsModal
+        visible={isExpiringModalVisible}
+        onClose={() => {
+          console.log('Closing expiring products modal');
+          setIsExpiringModalVisible(false);
+        }}
+        products={expiringProducts}
+        onProductPress={(product) => {
+          console.log('Product pressed:', product);
+          setSelectedProduct(product);
+          setIsExpiringModalVisible(false);
+        }}
+        onDelete={handleDelete}
+        onWaste={handleWaste}
+        onUpdateProduct={handleUpdateProduct}
+      />
+
+      {selectedProduct && (
+        <PaperModal
+          visible={true}
+          onDismiss={() => setSelectedProduct(null)}
+          contentContainerStyle={GlobalStyles.modalContent}
+        >
+          <View style={GlobalStyles.modalHeader}>
+            <Text style={GlobalStyles.modalTitle}>Product Details</Text>
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={() => setSelectedProduct(null)}
+              style={GlobalStyles.modalClose}
+            />
+          </View>
+
+          <View style={GlobalStyles.detailCard}>
+            <View style={GlobalStyles.detailRow}>
+              <View style={GlobalStyles.detailIcon}>
+                <MaterialCommunityIcons name="food-outline" size={20} color={colors.textSecondary} />
+              </View>
+              <Text style={GlobalStyles.detailLabel}>Product Name</Text>
+              <Text style={GlobalStyles.detailValue}>{selectedProduct.product_name}</Text>
+            </View>
+            <View style={GlobalStyles.detailRow}>
+              <View style={GlobalStyles.detailIcon}>
+                <MaterialCommunityIcons name="calendar-outline" size={20} color={colors.textSecondary} />
+              </View>
+              <Text style={GlobalStyles.detailLabel}>Creation Date</Text>
+              <Text style={GlobalStyles.detailValue}>{selectedProduct.creation_date}</Text>
+            </View>
+            <View style={GlobalStyles.detailRow}>
+              <View style={GlobalStyles.detailIcon}>
+                <MaterialCommunityIcons name="calendar-clock" size={20} color={colors.textSecondary} />
+              </View>
+              <Text style={GlobalStyles.detailLabel}>Expiration Date</Text>
+              <Text style={GlobalStyles.detailValue}>
+                {selectedProduct.expiration_date ?? 'N/A'}
+              </Text>
+            </View>
+            <View style={GlobalStyles.detailRow}>
+              <View style={GlobalStyles.detailIcon}>
+                <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.textSecondary} />
+              </View>
+              <Text style={GlobalStyles.detailLabel}>Location</Text>
+              <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
+            </View>
+            {selectedProduct.category && (
+              <View style={GlobalStyles.detailRow}>
+                <View style={GlobalStyles.detailIcon}>
+                  <MaterialCommunityIcons name="tag-outline" size={20} color={colors.textSecondary} />
+                </View>
+                <Text style={GlobalStyles.detailLabel}>Category</Text>
+                <Text style={GlobalStyles.detailValue}>{selectedProduct.category}</Text>
+              </View>
+            )}
+            {selectedProduct.note && (
+              <View style={GlobalStyles.detailRow}>
+                <View style={GlobalStyles.detailIcon}>
+                  <MaterialCommunityIcons name="note-text-outline" size={20} color={colors.textSecondary} />
+                </View>
+                <Text style={GlobalStyles.detailLabel}>Note</Text>
+                <Text style={GlobalStyles.detailValue}>{selectedProduct.note}</Text>
+              </View>
+            )}
+          </View>
+        </PaperModal>
+      )}
     </View>
   );
 };

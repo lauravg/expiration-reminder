@@ -34,7 +34,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                     GlobalStyles.expirationTextContainer,
                     product.expiration_date && new Date(product.expiration_date) < new Date()
                       ? GlobalStyles.expirationText
-                      : { color: colors.onProductBackground },
+                      : { color: colors.textSecondary },
                     calculateDaysLeft(product.expiration_date ?? '') === 'Expired' && { color: 'red' },
                   ]}
                 >
