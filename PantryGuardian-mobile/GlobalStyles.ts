@@ -365,10 +365,10 @@ const GlobalStyles = StyleSheet.create({
 
   actionButton: {
     flex: 1,
-    marginHorizontal: 6,
+    marginHorizontal: 4,
     borderRadius: 12,
     paddingVertical: 12,
-    backgroundColor: colors.surfaceVariant,
+    backgroundColor: colors.primaryLight,
     elevation: 0,
   },
 
