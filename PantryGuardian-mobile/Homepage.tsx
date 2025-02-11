@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Platform } from 'react-native';
-import { IconButton, Menu, FAB, Modal as PaperModal } from 'react-native-paper';
+import { IconButton, Menu, FAB, Modal as PaperModal, Button } from 'react-native-paper';
 import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { format, isValid, parse, addDays, differenceInDays } from 'date-fns';
 import * as Notifications from 'expo-notifications';
@@ -315,6 +315,8 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
         menuVisible={menuVisible}
         setMenuVisible={setMenuVisible}
         getViewIcon={getViewIcon}
+        selectedProduct={selectedProduct}
+        onProductSelect={setSelectedProduct}
       />
 
       <ExpiringProductsModal
@@ -334,74 +336,7 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
         onUpdateProduct={handleUpdateProduct}
       />
 
-      {selectedProduct && (
-        <PaperModal
-          visible={true}
-          onDismiss={() => setSelectedProduct(null)}
-          contentContainerStyle={GlobalStyles.modalContent}
-        >
-          <View style={GlobalStyles.modalHeader}>
-            <Text style={GlobalStyles.modalTitle}>Product Details</Text>
-            <IconButton
-              icon="close"
-              size={24}
-              onPress={() => setSelectedProduct(null)}
-              style={GlobalStyles.modalClose}
-            />
-          </View>
-
-          <View style={GlobalStyles.detailCard}>
-            <View style={GlobalStyles.detailRow}>
-              <View style={GlobalStyles.detailIcon}>
-                <MaterialCommunityIcons name="food-outline" size={20} color={colors.textSecondary} />
-              </View>
-              <Text style={GlobalStyles.detailLabel}>Product Name</Text>
-              <Text style={GlobalStyles.detailValue}>{selectedProduct.product_name}</Text>
-            </View>
-            <View style={GlobalStyles.detailRow}>
-              <View style={GlobalStyles.detailIcon}>
-                <MaterialCommunityIcons name="calendar-outline" size={20} color={colors.textSecondary} />
-              </View>
-              <Text style={GlobalStyles.detailLabel}>Creation Date</Text>
-              <Text style={GlobalStyles.detailValue}>{selectedProduct.creation_date}</Text>
-            </View>
-            <View style={GlobalStyles.detailRow}>
-              <View style={GlobalStyles.detailIcon}>
-                <MaterialCommunityIcons name="calendar-clock" size={20} color={colors.textSecondary} />
-              </View>
-              <Text style={GlobalStyles.detailLabel}>Expiration Date</Text>
-              <Text style={GlobalStyles.detailValue}>
-                {selectedProduct.expiration_date ?? 'N/A'}
-              </Text>
-            </View>
-            <View style={GlobalStyles.detailRow}>
-              <View style={GlobalStyles.detailIcon}>
-                <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.textSecondary} />
-              </View>
-              <Text style={GlobalStyles.detailLabel}>Location</Text>
-              <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
-            </View>
-            {selectedProduct.category && (
-              <View style={GlobalStyles.detailRow}>
-                <View style={GlobalStyles.detailIcon}>
-                  <MaterialCommunityIcons name="tag-outline" size={20} color={colors.textSecondary} />
-                </View>
-                <Text style={GlobalStyles.detailLabel}>Category</Text>
-                <Text style={GlobalStyles.detailValue}>{selectedProduct.category}</Text>
-              </View>
-            )}
-            {selectedProduct.note && (
-              <View style={GlobalStyles.detailRow}>
-                <View style={GlobalStyles.detailIcon}>
-                  <MaterialCommunityIcons name="note-text-outline" size={20} color={colors.textSecondary} />
-                </View>
-                <Text style={GlobalStyles.detailLabel}>Note</Text>
-                <Text style={GlobalStyles.detailValue}>{selectedProduct.note}</Text>
-              </View>
-            )}
-          </View>
-        </PaperModal>
-      )}
+      {/* Product details modal is handled by ProductList component */}
     </View>
   );
 };
@@ -448,6 +383,23 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 20,
+  },
+  buttonContainer: {
+    marginTop: 24,
+    gap: 12,
+    padding: 16,
+  },
+  button: {
+    borderRadius: 8,
+  },
+  editButton: {
+    backgroundColor: colors.primary,
+  },
+  wasteButton: {
+    backgroundColor: colors.warning,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
   },
 });
 

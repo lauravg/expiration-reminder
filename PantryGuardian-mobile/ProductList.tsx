@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { Modal as PaperModal, Button, TextInput, IconButton, FAB, Menu } from 'react-native-paper';
+import { Picker } from '@react-native-picker/picker';
 import { parse, isValid } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import GlobalStyles from './GlobalStyles';
@@ -29,6 +30,21 @@ interface ProductListProps {
     menuVisible: boolean;
     setMenuVisible: (visible: boolean) => void;
     getViewIcon: () => 'view-grid-outline' | 'view-list-outline' | 'format-list-text';
+    selectedProduct?: Product | null;
+    onProductSelect?: (product: Product | null) => void;
+}
+
+interface LocationItem {
+    id: string;
+    name: string;
+}
+
+interface EditProductModalProps {
+    visible: boolean;
+    onClose: () => void;
+    product: Product | null;
+    onUpdateProduct: (product: Product) => Promise<void>;
+    locations: string[];
 }
 
 const ProductList: React.FC<ProductListProps> = ({
@@ -47,9 +63,22 @@ const ProductList: React.FC<ProductListProps> = ({
     menuVisible,
     setMenuVisible,
     getViewIcon,
+    selectedProduct: externalSelectedProduct,
+    onProductSelect,
 }) => {
-    const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
-    const [activeFilter, setActiveFilter] = React.useState('All');
+    const [internalSelectedProduct, setInternalSelectedProduct] = React.useState<Product | null>(null);
+    
+    // Use either external or internal state based on whether onProductSelect is provided
+    const effectiveSelectedProduct = onProductSelect ? (externalSelectedProduct || null) : internalSelectedProduct;
+    const setEffectiveSelectedProduct = (product: Product | null) => {
+        if (onProductSelect) {
+            onProductSelect(product);
+        } else {
+            setInternalSelectedProduct(product);
+        }
+    };
+
+    const [activeFilter, setActiveFilter] = React.useState<string>('All');
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
     const [sortBy, setSortBy] = useState('expirationDate');
@@ -260,28 +289,48 @@ const ProductList: React.FC<ProductListProps> = ({
         return `${daysUntilExpiration} days left`;
     };
 
-    const uniqueLocations = ['All', 'No Location', ...new Set(products
-        .filter(product => product?.location)
-        .map(product => product.location)
-        .filter(Boolean)
-    )].filter((loc): loc is string => typeof loc === 'string');
+    // Keep original string array for the picker
+    const locationStrings = useMemo(() => {
+        const uniqueLocations = new Set(products
+            .filter(product => product?.location && typeof product.location === 'string')
+            .map(product => product.location as string));
+        return ['No Location', ...Array.from(uniqueLocations)];
+    }, [products]);
+
+    // Create location items for the filter list
+    const locationItems = useMemo<LocationItem[]>(() => {
+        const items: LocationItem[] = [
+            { id: 'filter-all', name: 'All' }
+        ];
+        
+        locationStrings.forEach(loc => {
+            if (loc !== 'All') {
+                items.push({
+                    id: `filter-${loc.toLowerCase().replace(/\s+/g, '-')}`,
+                    name: loc
+                });
+            }
+        });
+        
+        return items;
+    }, [locationStrings]);
 
     const handleDelete = async (product: Product) => {
         await onDelete(product);
-        setSelectedProduct(null);
+        setEffectiveSelectedProduct(null);
     };
 
     const handleWaste = async (product: Product) => {
         if (onWaste) {
             await onWaste(product);
-            setSelectedProduct(null);
+            setEffectiveSelectedProduct(null);
         }
     };
 
     const handleUpdateProduct = async (updatedProduct: Product) => {
         await onUpdateProduct(updatedProduct);
         setEditProductModalVisible(false);
-        setSelectedProduct(null);
+        setEffectiveSelectedProduct(null);
     };
 
     const getExpirationStyles = (daysUntilExpiration: number | null) => {
@@ -361,7 +410,7 @@ const ProductList: React.FC<ProductListProps> = ({
                 <TouchableOpacity
                     key={product.product_id}
                     style={GlobalStyles.productCardGrid}
-                    onPress={() => setSelectedProduct(product)}
+                    onPress={() => setEffectiveSelectedProduct(product)}
                 >
                     <View style={GlobalStyles.productImagePlaceholderGrid}>
                         <Icon name="food" size={40} color={colors.textSecondary} style={{ opacity: 0.5 }} />
@@ -388,7 +437,7 @@ const ProductList: React.FC<ProductListProps> = ({
                 <TouchableOpacity
                     key={product.product_id}
                     style={GlobalStyles.productCardList}
-                    onPress={() => setSelectedProduct(product)}
+                    onPress={() => setEffectiveSelectedProduct(product)}
                 >
                     <View style={GlobalStyles.productImagePlaceholderList}>
                         <Icon name="food" size={32} color={colors.textSecondary} style={{ opacity: 0.5 }} />
@@ -425,7 +474,7 @@ const ProductList: React.FC<ProductListProps> = ({
             <TouchableOpacity
                 key={product.product_id}
                 style={GlobalStyles.productCardSimple}
-                onPress={() => setSelectedProduct(product)}
+                onPress={() => setEffectiveSelectedProduct(product)}
             >
                 <View style={GlobalStyles.productInfoSimple}>
                     <Text style={GlobalStyles.productNameSimple} numberOfLines={1}>
@@ -607,22 +656,22 @@ const ProductList: React.FC<ProductListProps> = ({
                         showsHorizontalScrollIndicator={false} 
                         style={GlobalStyles.categoriesContainer}
                     >
-                        {uniqueLocations.map((location) => (
+                        {locationItems.map((location) => (
                             <TouchableOpacity
-                                key={location}
-                                onPress={() => setActiveFilter(location)}
+                                key={location.id}
+                                onPress={() => setActiveFilter(location.name)}
                                 style={[
                                     GlobalStyles.categoryChip,
-                                    activeFilter === location && GlobalStyles.categoryChipActive
+                                    activeFilter === location.name && GlobalStyles.categoryChipActive
                                 ]}
                             >
                                 <Text
                                     style={[
                                         GlobalStyles.categoryText,
-                                        activeFilter === location && GlobalStyles.categoryTextActive
+                                        activeFilter === location.name && GlobalStyles.categoryTextActive
                                     ]}
                                 >
-                                    {location}
+                                    {location.name}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -640,10 +689,10 @@ const ProductList: React.FC<ProductListProps> = ({
                 </View>
             </ScrollView>
 
-            {selectedProduct && (
+            {effectiveSelectedProduct && (
                 <PaperModal
                     visible={true}
-                    onDismiss={() => setSelectedProduct(null)}
+                    onDismiss={() => setEffectiveSelectedProduct(null)}
                     contentContainerStyle={GlobalStyles.modalContent}
                 >
                     <View style={GlobalStyles.modalHeader}>
@@ -651,7 +700,7 @@ const ProductList: React.FC<ProductListProps> = ({
                         <IconButton
                             icon="close"
                             size={24}
-                            onPress={() => setSelectedProduct(null)}
+                            onPress={() => setEffectiveSelectedProduct(null)}
                             style={GlobalStyles.modalClose}
                         />
                     </View>
@@ -662,14 +711,14 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Icon name="food-outline" size={20} color={colors.textSecondary} />
                             </View>
                             <Text style={GlobalStyles.detailLabel}>Product Name</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.product_name}</Text>
+                            <Text style={GlobalStyles.detailValue}>{effectiveSelectedProduct.product_name}</Text>
                         </View>
                         <View style={GlobalStyles.detailRow}>
                             <View style={GlobalStyles.detailIcon}>
                                 <Icon name="calendar-outline" size={20} color={colors.textSecondary} />
                             </View>
                             <Text style={GlobalStyles.detailLabel}>Creation Date</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.creation_date}</Text>
+                            <Text style={GlobalStyles.detailValue}>{effectiveSelectedProduct.creation_date}</Text>
                         </View>
                         <View style={GlobalStyles.detailRow}>
                             <View style={GlobalStyles.detailIcon}>
@@ -677,7 +726,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             </View>
                             <Text style={GlobalStyles.detailLabel}>Expiration Date</Text>
                             <Text style={GlobalStyles.detailValue}>
-                                {selectedProduct.expiration_date ?? 'N/A'}
+                                {effectiveSelectedProduct.expiration_date ?? 'N/A'}
                             </Text>
                         </View>
                         <View style={GlobalStyles.detailRow}>
@@ -685,24 +734,24 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Icon name="map-marker-outline" size={20} color={colors.textSecondary} />
                             </View>
                             <Text style={GlobalStyles.detailLabel}>Location</Text>
-                            <Text style={GlobalStyles.detailValue}>{selectedProduct.location}</Text>
+                            <Text style={GlobalStyles.detailValue}>{effectiveSelectedProduct.location}</Text>
                         </View>
-                        {selectedProduct.category && (
+                        {effectiveSelectedProduct.category && (
                             <View style={GlobalStyles.detailRow}>
                                 <View style={GlobalStyles.detailIcon}>
                                     <Icon name="tag-outline" size={20} color={colors.textSecondary} />
                                 </View>
                                 <Text style={GlobalStyles.detailLabel}>Category</Text>
-                                <Text style={GlobalStyles.detailValue}>{selectedProduct.category}</Text>
+                                <Text style={GlobalStyles.detailValue}>{effectiveSelectedProduct.category}</Text>
                             </View>
                         )}
-                        {selectedProduct.note && (
+                        {effectiveSelectedProduct.note && (
                             <View style={GlobalStyles.detailRow}>
                                 <View style={GlobalStyles.detailIcon}>
                                     <Icon name="note-text-outline" size={20} color={colors.textSecondary} />
                                 </View>
                                 <Text style={GlobalStyles.detailLabel}>Note</Text>
-                                <Text style={GlobalStyles.detailValue}>{selectedProduct.note}</Text>
+                                <Text style={GlobalStyles.detailValue}>{effectiveSelectedProduct.note}</Text>
                             </View>
                         )}
                     </ScrollView>
@@ -723,7 +772,7 @@ const ProductList: React.FC<ProductListProps> = ({
                                 mode="contained"
                                 style={GlobalStyles.actionButton}
                                 labelStyle={GlobalStyles.actionButtonText}
-                                onPress={() => handleWaste(selectedProduct)}
+                                onPress={() => handleWaste(effectiveSelectedProduct)}
                             >
                                 Waste
                             </Button>
@@ -732,7 +781,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             mode="contained"
                             style={[GlobalStyles.actionButton, GlobalStyles.actionButtonDanger]}
                             labelStyle={[GlobalStyles.actionButtonText, GlobalStyles.actionButtonTextDanger]}
-                            onPress={() => handleDelete(selectedProduct)}
+                            onPress={() => handleDelete(effectiveSelectedProduct)}
                         >
                             Delete
                         </Button>
@@ -743,9 +792,9 @@ const ProductList: React.FC<ProductListProps> = ({
             <EditProductModal
                 visible={editProductModalVisible}
                 onClose={() => setEditProductModalVisible(false)}
-                product={selectedProduct}
+                product={effectiveSelectedProduct}
                 onUpdateProduct={handleUpdateProduct}
-                locations={uniqueLocations}
+                locations={locationStrings}
             />
         </View>
     );

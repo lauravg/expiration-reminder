@@ -23,24 +23,27 @@ const ExpiringProductsModal: React.FC<ExpiringProductsModalProps> = ({
   onClose,
   products,
   onProductPress,
+  onDelete,
+  onWaste,
+  onUpdateProduct,
 }) => {
-  useEffect(() => {
-    console.log('ExpiringProductsModal - visibility changed:', visible);
-    console.log('ExpiringProductsModal - products:', products);
-  }, [visible, products]);
-
   const calculateDaysLeft = (expirationDate: string): string => {
     if (!expirationDate) return 'No date';
     try {
       const expDate = parse(expirationDate, 'LLL dd yyyy', new Date());
       const days = differenceInDays(expDate, new Date());
-      console.log(`Modal - Calculated days left for ${expirationDate}: ${days}`);
       if (days < 0) return 'Expired';
       return `${days} days`;
     } catch (error) {
       console.error(`Error calculating days left for ${expirationDate}:`, error);
       return 'Invalid date';
     }
+  };
+
+  const handleProductPress = (product: Product) => {
+    console.log('Product pressed in ExpiringProductsModal:', product);
+    onProductPress(product); // Call onProductPress first to show the details
+    onClose(); // Then close the expiring products modal
   };
 
   if (!visible) return null;
@@ -69,12 +72,11 @@ const ExpiringProductsModal: React.FC<ExpiringProductsModalProps> = ({
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
               {products.map((product) => {
                 const daysLeft = calculateDaysLeft(product.expiration_date ?? '');
-                console.log(`Modal - Rendering product ${product.product_name} with days left: ${daysLeft}`);
                 return (
                   <TouchableOpacity
                     key={product.product_id}
                     style={styles.productItem}
-                    onPress={() => onProductPress(product)}
+                    onPress={() => handleProductPress(product)}
                   >
                     <View style={styles.productInfo}>
                       <Text style={styles.productName}>{product.product_name}</Text>
