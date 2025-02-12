@@ -20,10 +20,10 @@ import ExpiringProductsModal from './ExpiringProductsModal';
 type SortOption = 'name' | 'expiration' | 'location' | 'category';
 
 interface HomepageProps {
-  onProductAdded: () => void;
+  onAddProduct: (product: Product) => boolean;
 }
 
-const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
+const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [products, setProducts] = useState<Product[]>([]);
   const sessionData = new SessionData();
@@ -111,7 +111,7 @@ const Homepage: React.FC<HomepageProps> = ({ onProductAdded }) => {
           console.error('Error fetching products on Homepage:', error);
         });
       });
-    }, [onProductAdded]) // Refresh when products are added
+    }, [onAddProduct]) // Refresh when products are added
   );
 
   const getViewIcon = (): 'view-grid-outline' | 'view-list-outline' | 'format-list-text' => {

@@ -8,14 +8,15 @@ import GlobalStyles from './GlobalStyles';
 import { colors, theme } from './theme';
 import Requests from './Requests';
 import moment from 'moment';
+import { Product } from './Product';
 
 interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
-  onProductAdded: () => void;
+  onAddProduct: (product: Product) => boolean;
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onProductAdded }) => {
+const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onAddProduct }) => {
   const [productName, setProductName] = useState('');
   const [barcode, setBarcode] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
@@ -87,7 +88,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       return; // Prevent making the request if the date format is invalid
     }
 
-    const newProduct = {
+
+    const newProduct: Product = {
       product_name: productName,
       barcode: barcode,
       expiration_date: expirationDate,
@@ -97,6 +99,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       wasted: false,
       creation_date: new Date().toISOString(),
       note: note,
+      isExpired: false,
+      daysUntilExpiration: 0
     };
 
     try {
@@ -106,6 +110,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
       let barcodeData = null;
       if (barcode) {
         try {
+          // TODO: Why do we need to do this here?
           barcodeData = await requests.getBarcodeData(barcode);
         } catch (error) {
           console.error("Error fetching barcode data:", error);
@@ -126,15 +131,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onP
         }
       }
 
-      // Add the product to the database
-      const success = await requests.addProduct(newProduct);
+
+      // Will call the onAddProduct callback with the new product.
+      const success = onAddProduct(newProduct);
       if (success) {
-        onProductAdded();
         onClose();
         resetForm();
       } else {
-        console.error("Failed to add product");
+        console.error("Failed to add product!!");
       }
+
     } catch (error) {
       console.error("Error adding product:", error);
     }

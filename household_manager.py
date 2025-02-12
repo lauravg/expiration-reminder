@@ -5,12 +5,14 @@ from google.cloud.firestore_v1 import Query, DocumentSnapshot
 from google.cloud.firestore_v1.base_query import FieldFilter
 import uuid
 
-from user_manager import User
-
 
 class Household:
     def __init__(
-        self, hid: str, owner_uid: str, name: str, participants: list[str]
+        self,
+        hid: str,
+        owner_uid: str,
+        name: str,
+        participants: list[str],
     ) -> None:
         self.id = hid
         self.owner_uid = owner_uid
@@ -27,6 +29,12 @@ class Household:
 class HouseholdManager:
     def __init__(self, firestore) -> None:
         self.__db = firestore
+
+    def user_has_household(self, uid: str, household_id: str) -> bool:
+        household = self.get_household(household_id)
+        if household is None:
+            return False
+        return uid in household.participants
 
     def get_household(self, id: str) -> Household | None:
         if id is None or id.isspace():

@@ -78,7 +78,7 @@ login_manager.login_view = "login"
 
 
 scheduler = BackgroundScheduler()
-scheduler.start()
+# scheduler.start()
 
 
 # Create an instance of SendMail with the app and pt_timezone
@@ -326,10 +326,8 @@ def list_products():
     log.info(f"Getting products for household with ID: {household_id}")
 
     uid = flask_login.current_user.get_id()
-    household = household_manager.get_active_household(uid)
 
-    # Ensure that the user is actually allowed to get products for this household.
-    if uid not in household.participants:
+    if not household_manager.user_has_household(uid, household_id):
         log.warning("Permission denied for user to list_products for given household")
         return jsonify([]), 401
 
@@ -480,34 +478,33 @@ def set_default_notification_settings(user_id):
 def add_product():
     try:
         data = request.json
-        log.info(f"Received new product: {data}")
 
-        household = household_manager.get_active_household(
-            flask_login.current_user.get_id()
-        )
-        if not household:
-            return (
-                jsonify({"success": False, "error": "No active household found"}),
-                404,
-            )
+        print(f"Received data: {data}")
+        product_data = data.get("product")
+        household_id = data.get("householdId")
 
-        expiration_date = data.get("expiration_date")
+        if not product_data:
+            return jsonify({"success": False, "error": "Product data is required"}), 400
+        if not household_id:
+            return jsonify({"success": False, "error": "Household ID is required"}), 400
+
+        expiration_date = product_data.get("expiration_date")
         expires = (
             ProductManager.parse_import_date(expiration_date) if expiration_date else 0
         )
 
         product = Product(
             None,
-            barcode=data.get("barcode", ""),
-            category=data.get("category", ""),
+            barcode=product_data.get("barcode", ""),
+            category=product_data.get("category", ""),
             created=int(datetime.utcnow().timestamp() * 1000),
             expires=expires,
-            location=data.get("location", ""),
-            product_name=data.get("product_name", ""),
-            household_id=household.id,
+            location=product_data.get("location", ""),
+            product_name=product_data.get("product_name", ""),
+            household_id=household_id,
             wasted=False,
             wasted_timestamp=0,
-            note=data.get("note", ""),
+            note=product_data.get("note", ""),
         )
 
         if not product_mgr.add_product(product):
@@ -838,12 +835,18 @@ def get_barcode():
     try:
         data = request.json
         barcode = data.get("barcode")
+        household = household_manager.get_active_household(
+            flask_login.current_user.get_id()
+        )
+
         if not barcode:
             return jsonify({"error": "Barcode is required"}), 400
-
-        barcode_data = barcodes.get_barcode(barcode)
-        if barcode_data:
-            return jsonify({"name": barcode_data.name}), 200
+        if not household:
+            return jsonify({"error": "No active household found"}), 400
+        household_id = household.id
+        product_name = barcodes.get_product_name(barcode, household_id)
+        if product_name:
+            return jsonify({"name": product_name}), 200
         else:
             return jsonify({"error": "Barcode not found"}), 200
     except Exception as e:
@@ -956,11 +959,11 @@ def get_view_settings():
 
 
 # Initialize and start a schedule thread for sending emails
-if not app.debug:
-    send_mail.init_schedule_thread()
-else:
-    log.warning("⚠️ NOT initializing schedule thread in --debug mode ⚠️")
+# if not app.debug:
+#     send_mail.init_schedule_thread()
+# else:
+#     log.warning("⚠️ NOT initializing schedule thread in --debug mode ⚠️")
 
 # Run the Flask app
 if __name__ == "__main__":
-    app.run(debug=True, port=8081)
+    app.run(debug=True, port=5050, host="0.0.0.0")

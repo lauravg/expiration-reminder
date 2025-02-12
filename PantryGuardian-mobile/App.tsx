@@ -30,10 +30,10 @@ const Tab = createBottomTabNavigator();
 
 type MainTabsProps = {
   toggleAddProductModal: () => void;
-  onProductAdded: () => void;
+  onAddProduct: (product: Product) => boolean;
 };
 
-function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
+function MainTabs({ toggleAddProductModal, onAddProduct }: MainTabsProps) {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} toggleAddProductModal={toggleAddProductModal} />}
@@ -51,7 +51,7 @@ function MainTabs({ toggleAddProductModal, onProductAdded }: MainTabsProps) {
       })}
     >
       <Tab.Screen name="Inventory" options={{ headerShown: false }}>
-        {() => <Homepage onProductAdded={onProductAdded} />}
+        {() => <Homepage onAddProduct={onAddProduct} />}
       </Tab.Screen>
       <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }} />
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
@@ -125,8 +125,14 @@ export default function App() {
     setAddProductModalVisible(!addProductModalVisible);
   };
 
-  const handleProductAdded = () => {
-    setProductAdded(productAdded + 1);
+  const handleAddProduct = async (product: Product): Promise<boolean> => {
+    const hid = await householdManager.getActiveHouseholdId()
+    const success = await requests.addProduct(product, hid);
+    console.log("Product added successfully:", success);
+    if (success) {
+      setProductAdded(productAdded + 1);
+    }
+    return success;
   };
 
   const authenticateAndRegisterForNotifications = async () => {
@@ -205,7 +211,7 @@ export default function App() {
             </Stack.Screen>
             <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
             <Stack.Screen name="Main" options={{ headerShown: false }}>
-              {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onProductAdded={handleProductAdded} />}
+              {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onAddProduct={handleAddProduct} />}
             </Stack.Screen>
             <Stack.Screen
               name="Profile"
@@ -260,7 +266,7 @@ export default function App() {
           <AddProductModal
             visible={addProductModalVisible}
             onClose={toggleAddProductModal}
-            onProductAdded={handleProductAdded}
+            onAddProduct={handleAddProduct}
           />
           <NotificationModal
             visible={isNotificationModalVisible}

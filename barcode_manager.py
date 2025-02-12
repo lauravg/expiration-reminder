@@ -3,38 +3,80 @@ import requests
 
 
 class Barcode:
-    def __init__(self, code: str, name: str, household_id: str) -> None:
+    def __init__(self, code: str, names: list[tuple[str, str]]) -> None:
         self.code = code
-        self.name = name
-        # Either household id or e.g. "ext:openfoodfacts"
-        self.household_id = household_id
+        self.names = names
 
     def __iter__(self):
         # Omitting "code" since it is used as the ID.
-        yield "name", self.name
-        yield "household_id", self.household_id
+        yield "names", self.names
 
 
 class BarcodeManager:
     def __init__(self, firestore) -> None:
         self.__db = firestore
 
-    def get_barcode(self, code: str) -> Barcode | None:
-        if not code or code.isspace():
-            log.error("get_barcode(): code must not be empty")
+    def get_product_name(self, barcode: str, household_id: str) -> str | None:
+        """
+        Get a barcode from the household's collection or from the global cache.
+        """
+
+        if not barcode or barcode.isspace():
+            log.error("get_product_name(): barcode must not be empty")
             return None
+        if not household_id or household_id.isspace():
+            log.error("get_product_name(): household_id must not be empty")
+            return None
+
         try:
-            data = self.__db.collection("barcodes").document(code).get().to_dict()
-            if data:
-                return Barcode(code, data.get("name", ""), data.get("household_id", ""))
-            else:
-                log.info(
-                    "Barcode [%s] not found in Firestore, fetching from Open Food Facts",
-                    code,
-                )
-                return self.fetch_open_food_facts(code)
+            # If we have a barcode in the global cache, return it.
+            data = self.__db.collection("barcodes").document(barcode).get().to_dict()
+
+            # If we don't have any data or the data we got does not have data from
+            # the Open Food Facts, fetch from Open Food Facts and store it.
+            if not data:
+                product_name = self.fetch_open_food_facts_name(barcode)
+
+                # If product_name is None, then something went wrong and we don't
+                # want to store is permanently. If the request was successful, but
+                # the resulting name empty, then we couldn't find the product and
+                # we store it as such to avoid future requests.
+                # TODO: We could at some point retry in the future in case the product
+                #       was added to the database.
+                if product_name:
+                    barcode = Barcode(barcode, [(product_name, "ext:openfoodfacts")])
+                    self.add_barcode(barcode)
+                    return
+                else:
+                    log.warning(
+                        "get_product_name(): failed to fetch product name for [%s]",
+                        barcode,
+                    )
+                    return None
+
+            names = data.get("names", [])
+            has_openfoodfacts = False
+            for name, source in names:
+                if source == "ext:openfoodfacts":
+                    has_openfoodfacts = True
+                if source == household_id:
+                    return name
+
+            # If we got here, we didn't have a local houehold name for the product.
+            # If we also don't have a product name from Open Food Facts, then try to add it.
+            if not has_openfoodfacts:
+                product_name = self.fetch_open_food_facts_name(barcode)
+                if product_name:
+                    names.append((product_name, "ext:openfoodfacts"))
+                    self.__db.collection("barcodes").document(barcode).set(
+                        {"names": names}
+                    )
+                    return product_name
+
+            return None
+
         except Exception as err:
-            log.error("[%s] Unable to fetch barcode data: %s", code, err)
+            log.error("[%s] Unable to fetch barcode data: %s", barcode, err)
             return None
 
     def add_barcode(self, barcode: Barcode) -> bool:
@@ -69,7 +111,7 @@ class BarcodeManager:
             log.error("Failed to add barcode [%s]: %s", barcode.code, err)
             return False
 
-    def fetch_open_food_facts(self, code: str) -> Barcode | None:
+    def fetch_open_food_facts_name(self, code: str) -> str | None:
         if not code or code.isspace():
             log.error("fetch_open_food_facts(): code must not be empty")
             return None
@@ -82,7 +124,7 @@ class BarcodeManager:
             )
             if response.status_code == 404:
                 log.info("Barcode not found in Open Food Facts: %s", code)
-                return None
+                return ""
             if response.status_code != 200:
                 log.error("Failed to request barcode: %s", response.status_code)
                 return None
@@ -90,12 +132,7 @@ class BarcodeManager:
             if not data:
                 log.error("Failed to request barcode: %s", data)
                 return None
-
-            return Barcode(
-                code,
-                data.get("product", {}).get("product_name", ""),
-                "ext:openfoodfacts",
-            )
+            return data.get("product", {}).get("product_name", "")
         except Exception as err:
             log.error("Failed to request barcode: %s", err)
             return None

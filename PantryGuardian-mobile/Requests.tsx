@@ -2,15 +2,19 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import qs from 'qs';
 import { Product } from './Product';
 import { SessionData } from './SessionData';
-import { Household } from './HouseholdManager';
+import { Household, HouseholdManager } from './HouseholdManager';
 
 // const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
-const BASE_URL = "http://127.0.0.1:8081";
+// const BASE_URL = "http://127.0.0.1:8081";
+const BASE_URL = "http://192.168.1.43:5050";
 
 class Requests {
   private sessionData = new SessionData();
+  // private householdManager: HouseholdManager;
 
-  constructor() { }
+  // constructor(householdManager: HouseholdManager) {
+  //   this.householdManager = householdManager;
+  // }
 
   // Helper method to set session data consistently
   private setSessionData(data: any): void {
@@ -112,14 +116,15 @@ class Requests {
     }
   }
 
-  async addProduct(product: Product): Promise<boolean> {
+  async addProduct(product: Product, householdId: string): Promise<boolean> {
+    console.log(">>>> Adding product:", product, householdId);
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'add_product', product);
+      const response = await this._make_request(this.sessionData.idToken, 'add_product', {product, householdId});
       if (response.status === 200 && response.data.success) {
         console.log('Product added successfully');
         return true;
       } else {
-        console.error('Failed to add product');
+        console.error('Failed to add product!');
         return false;
       }
     } catch (error) {
@@ -441,9 +446,13 @@ class Requests {
             return this._make_request(newIdToken, path, data, false);
           }
         }
+
+        if (axiosError.response != null) {
+          console.error("Request failed:", (axiosError.response.data as any).error);
+          throw new Error("Request failed: " + (axiosError.response.data as any).error);
+        }
       }
-      console.error("Request failed:", err);
-      throw new Error("Request failed: " + err);
+      throw new Error("Uncaught error: " + err);
     }
   }
 }
