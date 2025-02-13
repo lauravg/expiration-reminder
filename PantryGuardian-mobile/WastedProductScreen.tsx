@@ -17,9 +17,44 @@ const WastedProductScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [sortBy, setSortBy] = useState('name');
 
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
+
+  // Load view settings on mount
+  useEffect(() => {
+    const loadViewSettings = async () => {
+      try {
+        const settings = await requests.getViewSettings();
+        if (settings) {
+          setViewMode(settings.viewMode as 'list' | 'grid' | 'simple');
+          setSortBy(settings.sortBy);
+        }
+      } catch (error) {
+        console.error('Error loading view settings:', error);
+      }
+    };
+    loadViewSettings();
+  }, []);
+
+  // Save view settings whenever they change
+  useEffect(() => {
+    const saveViewSettings = async () => {
+      try {
+        await requests.saveViewSettings({
+          viewMode,
+          sortBy,
+          hideExpired: false,
+          activeFilter: 'All'
+        });
+      } catch (error) {
+        console.error('Error saving view settings:', error);
+      }
+    };
+    saveViewSettings();
+  }, [viewMode, sortBy]);
+
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -43,9 +78,11 @@ const WastedProductScreen = () => {
     // Implementation of handleWaste function
   };
 
-  const handleSort = () => {
-    // Implementation of handleSort function
+  const handleSort = (option: string) => {
+    setSortBy(option);
+    setSortMenuVisible(false);
   };
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -57,24 +94,8 @@ const WastedProductScreen = () => {
         console.log('Active Household ID (WastedProductScreen):', hid); // Debug household ID
         requests.listProducts(hid).then((products) => {
           const wastedProducts = products.filter((product) => product.wasted);
-          const formattedProducts = wastedProducts.map(product => {
-            let formattedExpirationDate = '';
-            if (product.expiration_date) {
-              try {
-                const parsedDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
-                if (isValid(parsedDate)) {
-                  formattedExpirationDate = format(parsedDate, 'yyyy-MM-dd');
-                }
-              } catch (error) {
-                console.error('Error parsing expiration date:', product.expiration_date, error);
-              }
-            }
-            return {
-              ...product,
-              expiration_date: formattedExpirationDate ?? '',
-            };
-          });
-          setProducts(formattedProducts);
+          // No need to format dates here since they're already in the correct format from backend
+          setProducts(wastedProducts);
         }).catch((error) => {
           console.error('Error fetching products on WastedProductScreen:', error);
         });
@@ -103,6 +124,7 @@ const WastedProductScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
+
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
       <ProductList
@@ -118,9 +140,10 @@ const WastedProductScreen = () => {
         setSortMenuVisible={setSortMenuVisible}
         menuVisible={menuVisible}
         setMenuVisible={setMenuVisible}
-        showWasteButton={true}
+        showWasteButton={false}
         onWaste={handleWaste}
         getViewIcon={getViewIcon}
+        sortBy={sortBy}
       />
     </View>
   );

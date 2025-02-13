@@ -43,6 +43,40 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
   const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  // Load view settings on mount
+  useEffect(() => {
+    const loadViewSettings = async () => {
+      try {
+        const settings = await requests.getViewSettings();
+        if (settings) {
+          setViewMode(settings.viewMode as 'grid' | 'list' | 'simple');
+          setSortBy(settings.sortBy as SortOption);
+          // Add any other view settings you want to restore
+        }
+      } catch (error) {
+        console.error('Error loading view settings:', error);
+      }
+    };
+    loadViewSettings();
+  }, []);
+
+  // Save view settings whenever they change
+  useEffect(() => {
+    const saveViewSettings = async () => {
+      try {
+        await requests.saveViewSettings({
+          viewMode,
+          sortBy,
+          hideExpired: false, // Add this if you want to implement hide expired functionality
+          activeFilter: 'All' // Add this if you want to implement filtering
+        });
+      } catch (error) {
+        console.error('Error saving view settings:', error);
+      }
+    };
+    saveViewSettings();
+  }, [viewMode, sortBy]);
+
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
     if (success) {
@@ -317,6 +351,7 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
         getViewIcon={getViewIcon}
         selectedProduct={selectedProduct}
         onProductSelect={setSelectedProduct}
+        sortBy={sortBy}
       />
 
       <ExpiringProductsModal

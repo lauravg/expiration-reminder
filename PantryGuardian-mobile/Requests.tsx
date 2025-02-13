@@ -5,7 +5,7 @@ import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 
 // const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
-// const BASE_URL = "http://127.0.0.1:8081";
+// const BASE_URL = "http://127.0.0.1:5050";
 const BASE_URL = "http://192.168.1.43:5050";
 
 class Requests {
@@ -375,10 +375,10 @@ class Requests {
   }
 
   async saveViewSettings(settings: {
-    viewMode: string,
-    sortBy: string,
-    hideExpired: boolean,
-    activeFilter: string
+    viewMode: 'grid' | 'list' | 'simple';
+    sortBy: string;
+    hideExpired: boolean;
+    activeFilter: string;
   }): Promise<boolean> {
     try {
       const response = await this._make_request(this.sessionData.idToken, 'save_view_settings', settings);
@@ -390,10 +390,10 @@ class Requests {
   }
 
   async getViewSettings(): Promise<{
-    viewMode: string,
-    sortBy: string,
-    hideExpired: boolean,
-    activeFilter: string
+    viewMode: 'grid' | 'list' | 'simple';
+    sortBy: string;
+    hideExpired: boolean;
+    activeFilter: string;
   } | null> {
     try {
       const response = await this._make_request(this.sessionData.idToken, 'get_view_settings', {});
@@ -402,7 +402,7 @@ class Requests {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching view settings:', error);
+      console.error('Error getting view settings:', error);
       return null;
     }
   }

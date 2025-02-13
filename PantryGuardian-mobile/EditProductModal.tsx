@@ -14,7 +14,7 @@ interface EditProductModalProps {
   onClose: () => void;
   product: Product | null;
   onUpdateProduct: (product: Product) => Promise<void>;
-  locations: string[];
+  locations?: string[];  // Make locations optional since we're fetching them directly
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, product, onUpdateProduct, locations }) => {
@@ -26,24 +26,29 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [locationModalVisible, setLocationModalVisible] = useState<boolean>(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [note, setNote] = useState<string>('');
   const requests = new Requests();
 
+  // Fetch latest locations and categories when modal becomes visible
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const response = await requests.getLocationsAndCategories();
-        setCategories(response.categories || []);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    loadCategories();
-  }, []);
+    if (visible) {
+      const fetchLocationsAndCategories = async () => {
+        try {
+          const response = await requests.getLocationsAndCategories();
+          setCategories(response.categories || []);
+          setAvailableLocations(response.locations || []);
+        } catch (error) {
+          console.error("Error fetching locations and categories:", error);
+        }
+      };
+      fetchLocationsAndCategories();
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (product) {
-      if (product.expiration_date) {
+      if (product.expiration_date && product.expiration_date !== 'No Expiration') {
         try {
           // Try parsing both formats
           let parsedDate;
@@ -67,6 +72,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
           console.error('Error parsing date:', error);
           setExpirationDate('');
         }
+      } else {
+        setExpirationDate('');
       }
       setProductName(product.product_name);
       setLocation(product.location || '');
@@ -205,7 +212,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
           onValueChange={handleLocationChange}
         >
           <Picker.Item label="Select Location" value="" />
-          {locations.map((loc) => (
+          {availableLocations.map((loc) => (
             <Picker.Item key={loc} label={loc} value={loc} />
           ))}
         </Picker>

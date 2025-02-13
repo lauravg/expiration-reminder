@@ -465,12 +465,13 @@ def set_default_notification_settings(user_id):
             },
             "view_settings": {
                 "viewMode": "grid",
-                "sortBy": "expirationDate",
+                "sortBy": "name",
                 "hideExpired": False,
                 "activeFilter": "All"
             }
         }
         doc_ref.set(default_settings, merge=True)
+        log.info(f"Default settings initialized for user {user_id}")
 
 
 @app.route("/add_product", methods=["POST"])
@@ -901,61 +902,61 @@ def on_terminate(signal, frame):
 @app.route("/save_view_settings", methods=["POST"])
 @token_required
 def save_view_settings():
-    """
-    Save user's view settings to Firestore
-    """
     try:
-        user = flask_login.current_user
         data = request.json
-        doc_ref = firestore.collection("users").document(user.get_id())
+        user_id = current_user.get_id()
         
-        # Update the view settings
-        doc_ref.update({
-            "view_settings": {
-                "viewMode": data.get("viewMode", "grid"),
-                "sortBy": data.get("sortBy", "expirationDate"),
-                "hideExpired": data.get("hideExpired", False),
-                "activeFilter": data.get("activeFilter", "All")
+        # Get user document reference
+        user_ref = firestore.collection('users').document(user_id)
+        
+        # Save view settings in the user's document
+        user_ref.set({
+            'view_settings': {
+                'viewMode': data.get('viewMode', 'grid'),
+                'sortBy': data.get('sortBy', 'name'),
+                'hideExpired': data.get('hideExpired', False),
+                'activeFilter': data.get('activeFilter', 'All')
             }
-        })
+        }, merge=True)
         
         return jsonify({"success": True}), 200
     except Exception as e:
-        log.error(f"Error saving view settings: {e}")
+        log.error(f"Error saving view settings: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/get_view_settings", methods=["POST"])
 @token_required
 def get_view_settings():
-    """
-    Get user's view settings from Firestore
-    """
     try:
-        user = flask_login.current_user
-        doc_ref = firestore.collection("users").document(user.get_id())
-        doc = doc_ref.get()
+        user_id = current_user.get_id()
         
-        if doc.exists:
-            settings = doc.to_dict().get("view_settings", {})
-            return jsonify({
-                "viewMode": settings.get("viewMode", "grid"),
-                "sortBy": settings.get("sortBy", "expirationDate"),
-                "hideExpired": settings.get("hideExpired", False),
-                "activeFilter": settings.get("activeFilter", "All")
-            }), 200
+        # Get user document
+        user_doc = firestore.collection('users').document(user_id).get()
+        
+        if user_doc.exists:
+            view_settings = user_doc.to_dict().get('view_settings', {})
+            if not view_settings:
+                # Return default settings if none exist
+                view_settings = {
+                    'viewMode': 'grid',
+                    'sortBy': 'name',
+                    'hideExpired': False,
+                    'activeFilter': 'All'
+                }
         else:
-            # Return default settings if document doesn't exist
-            return jsonify({
-                "viewMode": "grid",
-                "sortBy": "expirationDate",
-                "hideExpired": False,
-                "activeFilter": "All"
-            }), 200
-            
+            # Return default settings if user doc doesn't exist
+            view_settings = {
+                'viewMode': 'grid',
+                'sortBy': 'name',
+                'hideExpired': False,
+                'activeFilter': 'All'
+            }
+        
+        return jsonify(view_settings), 200
     except Exception as e:
-        log.error(f"Error getting view settings: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        log.error(f"Error getting view settings: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 # Initialize and start a schedule thread for sending emails

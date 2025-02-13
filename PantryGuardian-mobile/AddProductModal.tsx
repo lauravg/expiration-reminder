@@ -33,22 +33,24 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   const [note, setNote] = useState('');
   const requests = new Requests();
 
-  // Load locations and categories on component mount
+  // Load locations and categories when modal becomes visible
   useEffect(() => {
     const loadLocationsAndCategories = async () => {
-      try {
-        const response = await requests.getLocationsAndCategories();
-        console.log("Locations fetched:", response.locations);
-        console.log("Categories fetched:", response.categories);
-        setLocations(response.locations || []);
-        setCategories(response.categories || []);
-      } catch (error) {
-        console.error("Error fetching locations and categories:", error);
+      if (visible) {
+        try {
+          const response = await requests.getLocationsAndCategories();
+          console.log("Locations fetched:", response.locations);
+          console.log("Categories fetched:", response.categories);
+          setLocations(response.locations || []);
+          setCategories(response.categories || []);
+        } catch (error) {
+          console.error("Error fetching locations and categories:", error);
+        }
       }
     };
 
     loadLocationsAndCategories();
-  }, []);
+  }, [visible]); // Trigger effect when modal visibility changes
 
   // Watch for barcode changes and fetch product name if barcode exists
   useEffect(() => {
@@ -304,7 +306,7 @@ const styles = StyleSheet.create({
     height: '90%',
   },
   clearButton: {
-    backgroundColor: colors.productBackground,
+    backgroundColor: colors.background,
     borderColor: colors.border,
     color: colors.input,
     borderWidth: 1,

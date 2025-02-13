@@ -32,6 +32,7 @@ interface ProductListProps {
     getViewIcon: () => 'view-grid-outline' | 'view-list-outline' | 'format-list-text';
     selectedProduct?: Product | null;
     onProductSelect?: (product: Product | null) => void;
+    sortBy: string;
 }
 
 interface LocationItem {
@@ -65,6 +66,7 @@ const ProductList: React.FC<ProductListProps> = ({
     getViewIcon,
     selectedProduct: externalSelectedProduct,
     onProductSelect,
+    sortBy,
 }) => {
     const [internalSelectedProduct, setInternalSelectedProduct] = React.useState<Product | null>(null);
     
@@ -81,44 +83,28 @@ const ProductList: React.FC<ProductListProps> = ({
     const [activeFilter, setActiveFilter] = React.useState<string>('All');
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-    const [sortBy, setSortBy] = useState('expirationDate');
     const [hideExpired, setHideExpired] = useState(false);
     const requests = new Requests();
 
-    // Load saved view settings
-    useEffect(() => {
-        const loadViewSettings = async () => {
-            try {
-                const settings = await requests.getViewSettings();
-                if (settings) {
-                    onViewModeChange(settings.viewMode as ViewMode);
-                    setSortBy(settings.sortBy);
-                    setHideExpired(settings.hideExpired);
-                    setActiveFilter(settings.activeFilter);
-                }
-            } catch (error) {
-                console.error('Failed to load view settings:', error);
+    const parseDateString = (dateStr: string): Date | null => {
+        if (!dateStr || dateStr === 'No Expiration') {
+            return null;
+        }
+        try {
+            let expDate: Date;
+            if (dateStr.includes('-')) {
+                // yyyy-MM-dd format
+                expDate = parse(dateStr, 'yyyy-MM-dd', new Date());
+            } else {
+                // MMM dd yyyy format
+                expDate = parse(dateStr, 'MMM dd yyyy', new Date());
             }
-        };
-        loadViewSettings();
-    }, []);
-
-    // Save view settings whenever they change
-    useEffect(() => {
-        const saveViewSettings = async () => {
-            try {
-                await requests.saveViewSettings({
-                    viewMode,
-                    sortBy,
-                    hideExpired,
-                    activeFilter
-                });
-            } catch (error) {
-                console.error('Failed to save view settings:', error);
-            }
-        };
-        saveViewSettings();
-    }, [viewMode, sortBy, hideExpired, activeFilter]);
+            return isValid(expDate) ? expDate : null;
+        } catch (error) {
+            console.error('Error parsing date:', error);
+            return null;
+        }
+    };
 
     const handleSort = (products: Product[]) => {
         switch (sortBy) {
@@ -132,27 +118,14 @@ const ProductList: React.FC<ProductListProps> = ({
                     if (a.expiration_date === 'No Expiration') return 1;
                     if (b.expiration_date === 'No Expiration') return -1;
 
-                    try {
-                        const dateA = parse(a.expiration_date, 'MMM dd yyyy', new Date());
-                        const dateB = parse(b.expiration_date, 'MMM dd yyyy', new Date());
-                        
-                        if (!isValid(dateA) && !isValid(dateB)) return 0;
-                        if (!isValid(dateA)) return 1;
-                        if (!isValid(dateB)) return -1;
+                    const dateA = parseDateString(a.expiration_date);
+                    const dateB = parseDateString(b.expiration_date);
+                    
+                    if (!dateA && !dateB) return 0;
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
 
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        dateA.setHours(0, 0, 0, 0);
-                        dateB.setHours(0, 0, 0, 0);
-                        
-                        const diffA = Math.ceil((dateA.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                        const diffB = Math.ceil((dateB.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                        
-                        return diffA - diffB;
-                    } catch (error) {
-                        console.error('Error parsing dates:', error);
-                        return 0;
-                    }
+                    return (dateA as Date).getTime() - (dateB as Date).getTime();
                 });
             case 'name':
                 return [...products].sort((a, b) => a.product_name.localeCompare(b.product_name));
@@ -182,8 +155,8 @@ const ProductList: React.FC<ProductListProps> = ({
             filtered = filtered.filter(product => {
                 if (!product.expiration_date || product.expiration_date === 'No Expiration') return true;
                 try {
-                    const expDate = parse(product.expiration_date, 'MMM dd yyyy', new Date());
-                    if (!isValid(expDate)) return true;
+                    const expDate = parseDateString(product.expiration_date);
+                    if (!expDate || !isValid(expDate)) return true;
                     
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
@@ -210,74 +183,26 @@ const ProductList: React.FC<ProductListProps> = ({
             });
         }
 
-        // Then sort the filtered results
-        switch (sortBy) {
-            case 'expirationDate':
-                return filtered.sort((a, b) => {
-                    // Handle special cases first
-                    if (!a.expiration_date && !b.expiration_date) return 0;
-                    if (!a.expiration_date) return 1;
-                    if (!b.expiration_date) return -1;
-                    if (a.expiration_date === 'No Expiration' && b.expiration_date === 'No Expiration') return 0;
-                    if (a.expiration_date === 'No Expiration') return 1;
-                    if (b.expiration_date === 'No Expiration') return -1;
-
-                    try {
-                        const dateA = parse(a.expiration_date, 'MMM dd yyyy', new Date());
-                        const dateB = parse(b.expiration_date, 'MMM dd yyyy', new Date());
-                        
-                        if (!isValid(dateA) && !isValid(dateB)) return 0;
-                        if (!isValid(dateA)) return 1;
-                        if (!isValid(dateB)) return -1;
-
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        dateA.setHours(0, 0, 0, 0);
-                        dateB.setHours(0, 0, 0, 0);
-                        
-                        const diffA = Math.ceil((dateA.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                        const diffB = Math.ceil((dateB.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                        
-                        return diffA - diffB;
-                    } catch (error) {
-                        console.error('Error parsing dates:', error);
-                        return 0;
-                    }
-                });
-            case 'name':
-                return filtered.sort((a, b) => a.product_name.localeCompare(b.product_name));
-            case 'location':
-                return filtered.sort((a, b) => {
-                    const locA = a.location || '';
-                    const locB = b.location || '';
-                    return locA.localeCompare(locB);
-                });
-            default:
-                return filtered;
-        }
-    }, [products, activeFilter, sortBy, searchQuery, hideExpired]);
+        return handleSort(filtered);
+    }, [products, activeFilter, hideExpired, searchQuery]);
 
     const getDaysUntilExpiration = (expirationDate: string | undefined | null) => {
         if (!expirationDate || expirationDate === 'No Expiration') return null;
         
-        try {
-            const expDate = parse(expirationDate, 'MMM dd yyyy', new Date());
-            if (!isValid(expDate)) {
-                console.log('Invalid date format:', expirationDate);
-                return null;
-            }
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            expDate.setHours(0, 0, 0, 0);
-            
-            const diffTime = expDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays;
-        } catch (error) {
-            console.error('Error parsing date:', error);
+        const expDate = parseDateString(expirationDate);
+        if (!expDate || !isValid(expDate)) {
+            console.log('Invalid date format:', expirationDate);
             return null;
         }
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        expDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = expDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        console.log('Product expiration date:', expirationDate, 'Parsed date:', expDate.toISOString(), 'Days until expiration:', diffDays);
+        return diffDays;
     };
 
     const getExpirationText = (daysUntilExpiration: number | null) => {
@@ -370,33 +295,16 @@ const ProductList: React.FC<ProductListProps> = ({
         
         let daysUntilExpiration = null;
         if (product.expiration_date && product.expiration_date !== 'No Expiration') {
-            try {
-                // Parse date in format "MMM DD YYYY"
-                const monthMap: { [key: string]: number } = {
-                    'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-                    'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-                };
+            const expDate = parseDateString(product.expiration_date);
+            if (expDate && isValid(expDate)) {
+                const today = new Date();
+                // Reset time portions
+                expDate.setHours(0, 0, 0, 0);
+                today.setHours(0, 0, 0, 0);
                 
-                const parts = product.expiration_date.split(' ');
-                const month = monthMap[parts[0]];
-                const day = parseInt(parts[1]);
-                const year = parseInt(parts[2]);
-                
-                if (month !== undefined && !isNaN(day) && !isNaN(year)) {
-                    const expDate = new Date(year, month, day);
-                    const today = new Date();
-                    
-                    // Reset time portions
-                    expDate.setHours(0, 0, 0, 0);
-                    today.setHours(0, 0, 0, 0);
-                    
-                    const diffTime = expDate.getTime() - today.getTime();
-                    daysUntilExpiration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    console.log('Parsed date:', expDate.toISOString(), 'Days until expiration:', daysUntilExpiration);
-                }
-            } catch (error) {
-                console.error('Error parsing date:', error, product.expiration_date);
+                const diffTime = expDate.getTime() - today.getTime();
+                daysUntilExpiration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                console.log('Parsed date:', expDate.toISOString(), 'Days until expiration:', daysUntilExpiration);
             }
         }
 
@@ -589,7 +497,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             <Menu.Item 
                                 leadingIcon="calendar-clock"
                                 onPress={() => {
-                                    setSortBy('expirationDate');
+                                    onSort('expirationDate');
                                     setSortMenuVisible(false);
                                 }} 
                                 title="Expiration Date (Soonest)" 
@@ -597,7 +505,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             <Menu.Item 
                                 leadingIcon="sort-alphabetical-ascending"
                                 onPress={() => {
-                                    setSortBy('name');
+                                    onSort('name');
                                     setSortMenuVisible(false);
                                 }} 
                                 title="Name (A to Z)" 
@@ -605,7 +513,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             <Menu.Item 
                                 leadingIcon="map-marker"
                                 onPress={() => {
-                                    setSortBy('location');
+                                    onSort('location');
                                     setSortMenuVisible(false);
                                 }} 
                                 title="Location" 
@@ -794,7 +702,6 @@ const ProductList: React.FC<ProductListProps> = ({
                 onClose={() => setEditProductModalVisible(false)}
                 product={effectiveSelectedProduct}
                 onUpdateProduct={handleUpdateProduct}
-                locations={locationStrings}
             />
         </View>
     );
