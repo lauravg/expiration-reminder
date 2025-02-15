@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { Button, TextInput as PaperTextInput, TextInput } from 'react-native-paper';
+import { Button, TextInput as PaperTextInput, TextInput, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
@@ -18,17 +18,28 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const requests = new Requests();
 
   useEffect(() => {
-    const sessionData = new SessionData();
-    if (sessionData.idToken) {
-      navigation.navigate({ name: 'Main', params: { } });
-    }
-  });
+    const checkSession = async () => {
+      try {
+        setIsLoading(true);
+        const sessionData = new SessionData();
+        if (sessionData.idToken) {
+          await navigation.navigate({ name: 'Main', params: { } });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSession();
+  }, []);
 
   const handleLogin = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
       const response = await requests.handleLogin(email, password);
       if (response) {
         console.info('Login successful');
@@ -40,8 +51,18 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
     } catch (error) {
       console.error('Login failed', error);
       setError('Login failed. Please check your credentials');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -72,6 +93,8 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
             onChangeText={text => setEmail(text)}
             left={<TextInput.Icon icon="email" color={colors.primary} />}
             theme={{ colors: { primary: colors.primary } }}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
 
           <PaperTextInput
@@ -184,6 +207,11 @@ const styles = StyleSheet.create({
   registerLink: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
