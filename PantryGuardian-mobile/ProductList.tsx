@@ -33,6 +33,10 @@ interface ProductListProps {
     selectedProduct?: Product | null;
     onProductSelect?: (product: Product | null) => void;
     sortBy: string;
+    activeFilter: string;
+    setActiveFilter: (filter: string) => void;
+    hideExpired: boolean;
+    setHideExpired: (hide: boolean) => void;
 }
 
 interface LocationItem {
@@ -67,6 +71,10 @@ const ProductList: React.FC<ProductListProps> = ({
     selectedProduct: externalSelectedProduct,
     onProductSelect,
     sortBy,
+    activeFilter,
+    setActiveFilter,
+    hideExpired,
+    setHideExpired,
 }) => {
     const [internalSelectedProduct, setInternalSelectedProduct] = React.useState<Product | null>(null);
     
@@ -80,10 +88,8 @@ const ProductList: React.FC<ProductListProps> = ({
         }
     };
 
-    const [activeFilter, setActiveFilter] = React.useState<string>('All');
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-    const [hideExpired, setHideExpired] = useState(false);
     const requests = new Requests();
 
     const parseDateString = (dateStr: string): Date | null => {

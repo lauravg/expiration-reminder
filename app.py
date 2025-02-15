@@ -464,10 +464,13 @@ def set_default_notification_settings(user_id):
                 "minute": 0,
             },
             "view_settings": {
-                'sortBy': 'name',
-                'hideExpired': False,
-                'activeFilter': 'All',
+                'sortByProductList': 'name',
+                'hideExpiredProductList': False,
+                'activeFilterProductList': 'All',
                 'viewModeProductList': 'simple',
+                'sortByWastedList': 'name',
+                'hideExpiredWastedList': False,
+                'activeFilterWastedList': 'All',
                 'viewModeWastedList': 'simple'
             }
         }
@@ -913,10 +916,13 @@ def save_view_settings():
         # Save view settings in the user's document
         user_ref.set({
             'view_settings': {
-                'sortBy': data.get('sortBy', 'name'),
-                'hideExpired': data.get('hideExpired', False),
-                'activeFilter': data.get('activeFilter', 'All'),
+                'sortByProductList': data.get('sortByProductList', 'name'),
+                'hideExpiredProductList': data.get('hideExpiredProductList', False),
+                'activeFilterProductList': data.get('activeFilterProductList', 'All'),
                 'viewModeProductList': data.get('viewModeProductList', 'simple'),
+                'sortByWastedList': data.get('sortByWastedList', 'name'),
+                'hideExpiredWastedList': data.get('hideExpiredWastedList', False),
+                'activeFilterWastedList': data.get('activeFilterWastedList', 'All'),
                 'viewModeWastedList': data.get('viewModeWastedList', 'simple')
             }
         }, merge=True)
@@ -941,19 +947,25 @@ def get_view_settings():
             if not view_settings:
                 # Return default settings if none exist
                 view_settings = {
-                    'sortBy': 'name',
-                    'hideExpired': False,
-                    'activeFilter': 'All',
+                    'sortByProductList': 'name',
+                    'hideExpiredProductList': False,
+                    'activeFilterProductList': 'All',
                     'viewModeProductList': 'simple',
+                    'sortByWastedList': 'name',
+                    'hideExpiredWastedList': False,
+                    'activeFilterWastedList': 'All',
                     'viewModeWastedList': 'simple'
                 }
         else:
             # Return default settings if user doc doesn't exist
             view_settings = {
-                'sortBy': 'name',
-                'hideExpired': False,
-                'activeFilter': 'All',
+                'sortByProductList': 'name',
+                'hideExpiredProductList': False,
+                'activeFilterProductList': 'All',
                 'viewModeProductList': 'simple',
+                'sortByWastedList': 'name',
+                'hideExpiredWastedList': False,
+                'activeFilterWastedList': 'All',
                 'viewModeWastedList': 'simple'
             }
         

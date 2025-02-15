@@ -375,10 +375,13 @@ class Requests {
   }
 
   async saveViewSettings(settings: {
-    sortBy: string;
-    hideExpired: boolean;
-    activeFilter: string;
+    sortByProductList: string;
+    hideExpiredProductList: boolean;
+    activeFilterProductList: string;
     viewModeProductList: 'grid' | 'list' | 'simple';
+    sortByWastedList: string;
+    hideExpiredWastedList: boolean;
+    activeFilterWastedList: string;
     viewModeWastedList: 'grid' | 'list' | 'simple';
   }): Promise<boolean> {
     try {
@@ -391,10 +394,13 @@ class Requests {
   }
 
   async getViewSettings(): Promise<{
-    sortBy: string;
-    hideExpired: boolean;
-    activeFilter: string;
+    sortByProductList: string;
+    hideExpiredProductList: boolean;
+    activeFilterProductList: string;
     viewModeProductList: 'grid' | 'list' | 'simple';
+    sortByWastedList: string;
+    hideExpiredWastedList: boolean;
+    activeFilterWastedList: string;
     viewModeWastedList: 'grid' | 'list' | 'simple';
   } | null> {
     try {

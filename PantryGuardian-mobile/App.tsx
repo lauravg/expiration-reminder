@@ -30,7 +30,7 @@ const Tab = createBottomTabNavigator();
 
 type MainTabsProps = {
   toggleAddProductModal: () => void;
-  onAddProduct: (product: Product) => boolean;
+  onAddProduct: (product: Product) => Promise<boolean>;
 };
 
 function MainTabs({ toggleAddProductModal, onAddProduct }: MainTabsProps) {
@@ -57,30 +57,7 @@ function MainTabs({ toggleAddProductModal, onAddProduct }: MainTabsProps) {
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
         {() => null}
       </Tab.Screen>
-      <Tab.Screen
-        name="Wasted"
-        component={WastedProducts}
-        options={({ navigation }) => ({
-          headerLeft: () => (
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              iconColor={colors.textPrimary}
-              onPress={() => navigation.goBack()}
-            />
-          ),
-          headerTitle: 'Wasted Products',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            color: colors.primary
-          },
-          headerStyle: {
-            backgroundColor: colors.background,
-            elevation: 0, // Remove shadow on Android
-            shadowOpacity: 0, // Remove shadow on iOS
-          },
-        })}
-      />
+      <Tab.Screen name="Wasted" component={WastedProducts} options={{ headerShown: false }} />
       <Tab.Screen
         name="Settings"
         component={Settings}

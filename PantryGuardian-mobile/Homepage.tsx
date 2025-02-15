@@ -20,7 +20,7 @@ import ExpiringProductsModal from './ExpiringProductsModal';
 type SortOption = 'name' | 'expiration' | 'location' | 'category';
 
 interface HomepageProps {
-  onAddProduct: (product: Product) => boolean;
+  onAddProduct: (product: Product) => Promise<boolean>;
 }
 
 const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
@@ -42,6 +42,8 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
   const [isExpiringModalVisible, setIsExpiringModalVisible] = useState(false);
   const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [hideExpired, setHideExpired] = useState(false);
 
   // Load view settings on mount and when screen gains focus
   useFocusEffect(
@@ -50,9 +52,11 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
         try {
           const settings = await requests.getViewSettings();
           if (settings) {
-            console.log('Loading product list view settings:', settings.viewModeProductList);
+            console.log('Loading product list settings:', settings);
             setViewMode(settings.viewModeProductList as 'grid' | 'list' | 'simple');
-            setSortBy(settings.sortBy as SortOption);
+            setSortBy(settings.sortByProductList as SortOption);
+            setActiveFilter(settings.activeFilterProductList);
+            setHideExpired(settings.hideExpiredProductList);
           }
         } catch (error) {
           console.error('Error loading view settings:', error);
@@ -69,12 +73,21 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
         const currentSettings = await requests.getViewSettings();
         if (!currentSettings) return;
         
-        console.log('Saving product list view mode:', viewMode);
-        await requests.saveViewSettings({
+        console.log('Saving product list settings:', {
+          viewMode,
           sortBy,
-          hideExpired: currentSettings.hideExpired,
-          activeFilter: currentSettings.activeFilter,
+          activeFilter,
+          hideExpired
+        });
+        
+        await requests.saveViewSettings({
+          sortByProductList: sortBy,
+          hideExpiredProductList: hideExpired,
+          activeFilterProductList: activeFilter,
           viewModeProductList: viewMode,
+          sortByWastedList: currentSettings.sortByWastedList,
+          hideExpiredWastedList: currentSettings.hideExpiredWastedList,
+          activeFilterWastedList: currentSettings.activeFilterWastedList,
           viewModeWastedList: currentSettings.viewModeWastedList
         });
       } catch (error) {
@@ -82,7 +95,7 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
       }
     };
     saveViewSettings();
-  }, [viewMode, sortBy]);
+  }, [viewMode, sortBy, activeFilter, hideExpired]);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -359,6 +372,10 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
         selectedProduct={selectedProduct}
         onProductSelect={setSelectedProduct}
         sortBy={sortBy}
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        hideExpired={hideExpired}
+        setHideExpired={setHideExpired}
       />
 
       <ExpiringProductsModal

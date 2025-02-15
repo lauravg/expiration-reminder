@@ -13,7 +13,7 @@ import { Product } from './Product';
 interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
-  onAddProduct: (product: Product) => boolean;
+  onAddProduct: (product: Product) => Promise<boolean>;
 }
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onAddProduct }) => {
@@ -90,7 +90,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
       return; // Prevent making the request if the date format is invalid
     }
 
-
     const newProduct: Product = {
       product_name: productName,
       barcode: barcode,
@@ -133,9 +132,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
         }
       }
 
-
       // Will call the onAddProduct callback with the new product.
-      const success = onAddProduct(newProduct);
+      const success = await onAddProduct(newProduct);
       if (success) {
         onClose();
         resetForm();
@@ -153,7 +151,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     const datePattern = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD format
     return datePattern.test(date);
   }
-
 
   // Helper function to reset form fields
   const resetForm = () => {

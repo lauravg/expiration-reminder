@@ -1,6 +1,7 @@
 import { format, isValid, parse } from 'date-fns';
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform, TextInput, Text } from 'react-native';
+import { IconButton } from 'react-native-paper';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { Product } from './Product';
@@ -18,6 +19,8 @@ const WastedProductScreen = () => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [sortBy, setSortBy] = useState('name');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [hideExpired, setHideExpired] = useState(false);
 
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
@@ -29,9 +32,11 @@ const WastedProductScreen = () => {
         try {
           const settings = await requests.getViewSettings();
           if (settings) {
-            console.log('Loading wasted list view settings:', settings.viewModeWastedList);
+            console.log('Loading wasted list settings:', settings);
             setViewMode(settings.viewModeWastedList as 'list' | 'grid' | 'simple');
-            setSortBy(settings.sortBy);
+            setSortBy(settings.sortByWastedList);
+            setActiveFilter(settings.activeFilterWastedList);
+            setHideExpired(settings.hideExpiredWastedList);
           }
         } catch (error) {
           console.error('Error loading view settings:', error);
@@ -48,12 +53,21 @@ const WastedProductScreen = () => {
         const currentSettings = await requests.getViewSettings();
         if (!currentSettings) return;
 
-        console.log('Saving wasted list view mode:', viewMode);
-        await requests.saveViewSettings({
+        console.log('Saving wasted list settings:', {
+          viewMode,
           sortBy,
-          hideExpired: currentSettings.hideExpired,
-          activeFilter: currentSettings.activeFilter,
+          activeFilter,
+          hideExpired
+        });
+
+        await requests.saveViewSettings({
+          sortByProductList: currentSettings.sortByProductList,
+          hideExpiredProductList: currentSettings.hideExpiredProductList,
+          activeFilterProductList: currentSettings.activeFilterProductList,
           viewModeProductList: currentSettings.viewModeProductList,
+          sortByWastedList: sortBy,
+          hideExpiredWastedList: hideExpired,
+          activeFilterWastedList: activeFilter,
           viewModeWastedList: viewMode
         });
       } catch (error) {
@@ -61,8 +75,7 @@ const WastedProductScreen = () => {
       }
     };
     saveViewSettings();
-  }, [viewMode, sortBy]);
-
+  }, [viewMode, sortBy, activeFilter, hideExpired]);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -91,6 +104,15 @@ const WastedProductScreen = () => {
     setSortMenuVisible(false);
   };
 
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    setSearchTerm(text);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchTerm('');
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -99,10 +121,9 @@ const WastedProductScreen = () => {
           console.error('No household ID found.');
           return;
         }
-        console.log('Active Household ID (WastedProductScreen):', hid); // Debug household ID
+        console.log('Active Household ID (WastedProductScreen):', hid);
         requests.listProducts(hid).then((products) => {
           const wastedProducts = products.filter((product) => product.wasted);
-          // No need to format dates here since they're already in the correct format from backend
           setProducts(wastedProducts);
         }).catch((error) => {
           console.error('Error fetching products on WastedProductScreen:', error);
@@ -111,30 +132,39 @@ const WastedProductScreen = () => {
     }, [])
   );
 
-  useEffect(() => {
-    const updateWastedProducts = async () => {
-      try {
-        const householdId = await householdManager.getActiveHouseholdId();
-        if (!householdId) {
-          console.error('No household ID found.');
-          return;
-        }
-
-        const products = await requests.listProducts(householdId);
-        const wastedProducts = products.filter(product => product.wasted);
-        setProducts(wastedProducts);
-      } catch (error) {
-        console.error('Error updating wasted products:', error);
-      }
-    };
-
-    const interval = setInterval(updateWastedProducts, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-
   return (
-    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
+    <View style={GlobalStyles.container}>
+      <View style={[GlobalStyles.header, styles.headerContainer]}>
+        <View style={styles.headerContent}>
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <IconButton
+                icon="magnify"
+                iconColor={colors.textSecondary}
+                size={24}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                placeholder="Search wasted products..."
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                style={styles.searchInput}
+                placeholderTextColor={colors.textSecondary}
+              />
+              {searchQuery.length > 0 && (
+                <IconButton
+                  icon="close"
+                  iconColor={colors.textSecondary}
+                  size={20}
+                  onPress={handleClearSearch}
+                  style={styles.clearIcon}
+                />
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+
       <ProductList
         products={products}
         onDelete={handleDelete}
@@ -152,9 +182,80 @@ const WastedProductScreen = () => {
         onWaste={handleWaste}
         getViewIcon={getViewIcon}
         sortBy={sortBy}
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        hideExpired={hideExpired}
+        setHideExpired={setHideExpired}
       />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    paddingTop: Platform.OS === 'ios' ? 75 : 55,
+    paddingBottom: 0,
+  },
+  headerContent: {
+    width: '100%',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.primary,
+    backgroundColor: colors.surface,
+    marginBottom: 10,
+    marginLeft: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 16,
+    gap: 12,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    height: 48,
+  },
+  searchIcon: {
+    margin: 0,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  clearIcon: {
+    margin: 0,
+  },
+  actionButton: {
+    margin: 0,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
+  },
+  buttonContainer: {
+    marginTop: 24,
+    gap: 12,
+    padding: 16,
+  },
+  button: {
+    borderRadius: 8,
+  },
+  editButton: {
+    backgroundColor: colors.primary,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
+  },
+});
 
 export default WastedProductScreen;
