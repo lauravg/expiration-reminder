@@ -43,32 +43,39 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
   const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Load view settings on mount
-  useEffect(() => {
-    const loadViewSettings = async () => {
-      try {
-        const settings = await requests.getViewSettings();
-        if (settings) {
-          setViewMode(settings.viewMode as 'grid' | 'list' | 'simple');
-          setSortBy(settings.sortBy as SortOption);
-          // Add any other view settings you want to restore
+  // Load view settings on mount and when screen gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadViewSettings = async () => {
+        try {
+          const settings = await requests.getViewSettings();
+          if (settings) {
+            console.log('Loading product list view settings:', settings.viewModeProductList);
+            setViewMode(settings.viewModeProductList as 'grid' | 'list' | 'simple');
+            setSortBy(settings.sortBy as SortOption);
+          }
+        } catch (error) {
+          console.error('Error loading view settings:', error);
         }
-      } catch (error) {
-        console.error('Error loading view settings:', error);
-      }
-    };
-    loadViewSettings();
-  }, []);
+      };
+      loadViewSettings();
+    }, [])
+  );
 
   // Save view settings whenever they change
   useEffect(() => {
     const saveViewSettings = async () => {
       try {
+        const currentSettings = await requests.getViewSettings();
+        if (!currentSettings) return;
+        
+        console.log('Saving product list view mode:', viewMode);
         await requests.saveViewSettings({
-          viewMode,
           sortBy,
-          hideExpired: false, // Add this if you want to implement hide expired functionality
-          activeFilter: 'All' // Add this if you want to implement filtering
+          hideExpired: currentSettings.hideExpired,
+          activeFilter: currentSettings.activeFilter,
+          viewModeProductList: viewMode,
+          viewModeWastedList: currentSettings.viewModeWastedList
         });
       } catch (error) {
         console.error('Error saving view settings:', error);

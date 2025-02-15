@@ -375,10 +375,11 @@ class Requests {
   }
 
   async saveViewSettings(settings: {
-    viewMode: 'grid' | 'list' | 'simple';
     sortBy: string;
     hideExpired: boolean;
     activeFilter: string;
+    viewModeProductList: 'grid' | 'list' | 'simple';
+    viewModeWastedList: 'grid' | 'list' | 'simple';
   }): Promise<boolean> {
     try {
       const response = await this._make_request(this.sessionData.idToken, 'save_view_settings', settings);
@@ -390,10 +391,11 @@ class Requests {
   }
 
   async getViewSettings(): Promise<{
-    viewMode: 'grid' | 'list' | 'simple';
     sortBy: string;
     hideExpired: boolean;
     activeFilter: string;
+    viewModeProductList: 'grid' | 'list' | 'simple';
+    viewModeWastedList: 'grid' | 'list' | 'simple';
   } | null> {
     try {
       const response = await this._make_request(this.sessionData.idToken, 'get_view_settings', {});

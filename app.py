@@ -464,10 +464,11 @@ def set_default_notification_settings(user_id):
                 "minute": 0,
             },
             "view_settings": {
-                "viewMode": "grid",
-                "sortBy": "name",
-                "hideExpired": False,
-                "activeFilter": "All"
+                'sortBy': 'name',
+                'hideExpired': False,
+                'activeFilter': 'All',
+                'viewModeProductList': 'simple',
+                'viewModeWastedList': 'simple'
             }
         }
         doc_ref.set(default_settings, merge=True)
@@ -912,10 +913,11 @@ def save_view_settings():
         # Save view settings in the user's document
         user_ref.set({
             'view_settings': {
-                'viewMode': data.get('viewMode', 'grid'),
                 'sortBy': data.get('sortBy', 'name'),
                 'hideExpired': data.get('hideExpired', False),
-                'activeFilter': data.get('activeFilter', 'All')
+                'activeFilter': data.get('activeFilter', 'All'),
+                'viewModeProductList': data.get('viewModeProductList', 'simple'),
+                'viewModeWastedList': data.get('viewModeWastedList', 'simple')
             }
         }, merge=True)
         
@@ -939,18 +941,20 @@ def get_view_settings():
             if not view_settings:
                 # Return default settings if none exist
                 view_settings = {
-                    'viewMode': 'grid',
                     'sortBy': 'name',
                     'hideExpired': False,
-                    'activeFilter': 'All'
+                    'activeFilter': 'All',
+                    'viewModeProductList': 'simple',
+                    'viewModeWastedList': 'simple'
                 }
         else:
             # Return default settings if user doc doesn't exist
             view_settings = {
-                'viewMode': 'grid',
                 'sortBy': 'name',
                 'hideExpired': False,
-                'activeFilter': 'All'
+                'activeFilter': 'All',
+                'viewModeProductList': 'simple',
+                'viewModeWastedList': 'simple'
             }
         
         return jsonify(view_settings), 200
