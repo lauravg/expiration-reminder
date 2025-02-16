@@ -32,7 +32,7 @@ type MainTabsProps = {
   toggleAddProductModal: () => void;
   onAddProduct: (product: Product) => Promise<boolean>;
   onAddBarcode: (barcode: string, name: string) => Promise<boolean>;
-  onGetBarcode: (barcode: string) => Promise<Barcode>;
+  onGetBarcode: (barcode: string) => Promise<Barcode | null>;
   selectedProduct: Product | null;
   onProductSelect: (product: Product | null) => void;
 };
@@ -124,13 +124,13 @@ export default function App() {
     return success;
   };
   
-  const handleGetBarcode = async (barcode: string): Promise<Barcode> => {
+  const handleGetBarcode = async (barcode: string): Promise<Barcode | null> => {
     const hid = await householdManager.getActiveHouseholdId();
     const barcodeData = await requests.getBarcodeData(barcode, hid);
     if (barcodeData) {
       return barcodeData;
     } else {
-      return {barcode: barcode, name: '', ext: true};
+      return null;
     }
   };
 

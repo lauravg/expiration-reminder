@@ -15,7 +15,7 @@ interface AddProductModalProps {
   onClose: () => void;
   onAddProduct: (product: Product) => Promise<boolean>;
   onAddBarcode: (barcode: string, name: string) => Promise<boolean>;
-  onGetBarcode: (barcode: string) => Promise<Barcode>;
+  onGetBarcode: (barcode: string) => Promise<Barcode | null>;
 }
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onAddProduct, onAddBarcode, onGetBarcode }) => {
@@ -62,7 +62,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
           setProductName('Looking up barcode...');
           // Fetch barcode data from the backend
           const barcodeData = await onGetBarcode(barcode);
-          if (barcodeData.name) {
+          if (barcodeData && barcodeData.name) {
             // Autofill product name if the barcode data exists
             setProductName(barcodeData.name);
           } else {
@@ -122,7 +122,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
 
       // If barcode data is not found or the source is external (meaning
       // not attached to the current household), add the barcode to the database.
-      if ((!barcodeData || barcodeData.ext) && barcode && productName) {
+      if ((!barcodeData || barcodeData.ext) && barcode && productName && productName != barcodeData?.name) {
         console.log("Barcode not found. Adding to database...");
 
         const barcodeSaved = onAddBarcode(barcode, productName);
