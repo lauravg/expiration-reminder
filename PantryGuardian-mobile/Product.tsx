@@ -1,5 +1,11 @@
 import { calculateDaysLeft } from "./utils/dateUtils";
 
+export interface Barcode {
+  barcode: string;
+  name: string;
+  ext: boolean;
+}
+
 export interface Product {
   product_id: string;
   product_name: string;

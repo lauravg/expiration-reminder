@@ -16,9 +16,12 @@ class BarcodeManager:
     def __init__(self, firestore) -> None:
         self.__db = firestore
 
-    def get_product_name(self, barcode: str, household_id: str) -> str | None:
+    def get_product_name(
+        self, barcode: str, household_id: str
+    ) -> tuple[str, bool] | None:
         """
         Get a barcode from the household's collection or from the global cache.
+        Returns a tuple of (product_name, is_ext).
         """
 
         if not barcode or barcode.isspace():
@@ -44,9 +47,11 @@ class BarcodeManager:
                 # TODO: We could at some point retry in the future in case the product
                 #       was added to the database.
                 if product_name:
-                    barcode = Barcode(barcode, [(product_name, "ext:openfoodfacts")])
+                    barcode = Barcode(
+                        barcode, [{"name": product_name, "source": "ext:openfoodfacts"}]
+                    )
                     self.add_barcode(barcode)
-                    return
+                    return product_name, True
                 else:
                     log.warning(
                         "get_product_name(): failed to fetch product name for [%s]",
@@ -55,25 +60,17 @@ class BarcodeManager:
                     return None
 
             names = data.get("names", [])
-            has_openfoodfacts = False
-            for name, source in names:
-                if source == "ext:openfoodfacts":
-                    has_openfoodfacts = True
-                if source == household_id:
-                    return name
+            open_food_facts_name = ""
+            for name in names:
+                if name["source"] == "ext:openfoodfacts":
+                    open_food_facts_name = name["name"]
+                if name["source"] == household_id:
+                    # If the barcode was added for this household, immediately return it.
+                    return name["name"], False
 
-            # If we got here, we didn't have a local houehold name for the product.
-            # If we also don't have a product name from Open Food Facts, then try to add it.
-            if not has_openfoodfacts:
-                product_name = self.fetch_open_food_facts_name(barcode)
-                if product_name:
-                    names.append((product_name, "ext:openfoodfacts"))
-                    self.__db.collection("barcodes").document(barcode).set(
-                        {"names": names}
-                    )
-                    return product_name
-
-            return None
+            # If we got here, we don't have a local household name for the product. So return
+            # the name from Open Food Facts if we have it, otherwise return empty string.
+            return open_food_facts_name, True
 
         except Exception as err:
             log.error("[%s] Unable to fetch barcode data: %s", barcode, err)
@@ -83,27 +80,47 @@ class BarcodeManager:
         if not barcode or not barcode.code or barcode.code.isspace():
             log.error("add_barcode(): code must not be empty")
             return False
-        if not barcode.name or barcode.name.isspace():
-            log.error("add_barcode(): name must not be empty")
+        if len(barcode.names) == 0:
+            log.error("add_barcode(): must have at least one name")
             return False
         try:
-            # Log the attempt to add the barcode
             log.info(
-                "Attempting to add barcode: %s with name: %s",
+                "Attempting to add barcode: %s with names: %s",
                 barcode.code,
-                barcode.name,
+                barcode.names,
             )
 
-            # Attempt to store the barcode in Firestore
-            self.__db.collection("barcodes").document(barcode.code).set(
-                {"name": barcode.name, "household_id": barcode.household_id}
+            # First check if data about this barcode already exists.
+            data = (
+                self.__db.collection("barcodes").document(barcode.code).get().to_dict()
             )
+            if data:
+                # If data already exists, add the new data.
+                data["names"].append(
+                    {
+                        "name": barcode.names[0]["name"],
+                        "source": barcode.names[0]["source"],
+                    }
+                )
+            else:
+                # If data does not exist, create a new document.
+                data = {
+                    "names": [
+                        {
+                            "name": barcode.names[0]["name"],
+                            "source": barcode.names[0]["source"],
+                        }
+                    ]
+                }
+
+            # Attempt to store the barcode in Firestore
+            self.__db.collection("barcodes").document(barcode.code).set(data)
 
             # Log success
             log.info(
-                "Barcode [%s] added successfully with name: %s",
+                "Barcode [%s] added successfully with names: %s",
                 barcode.code,
-                barcode.name,
+                barcode.names,
             )
             return True
         except Exception as err:

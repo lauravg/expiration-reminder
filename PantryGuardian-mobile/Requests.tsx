@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import qs from 'qs';
-import { Product } from './Product';
+import { Product, Barcode } from './Product';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 
@@ -335,9 +335,9 @@ class Requests {
     }
   }
 
-  async getBarcodeData(barcode: string): Promise<{ name: string } | null> {
+  async getBarcodeData(barcode: string, householdId: string): Promise<Barcode | null> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'get_barcode', { barcode });
+      const response = await this._make_request(this.sessionData.idToken, 'get_barcode', { barcode, householdId });
       if (response.status === 200 && response.data) {
         return response.data;
       } else {
@@ -351,16 +351,22 @@ class Requests {
   }
 
 
-  async addBarcodeToDatabase(barcodeData: { barcode: string; name: string }): Promise<boolean> {
+  async addBarcodeToDatabase(barcode: string, name: string, householdId: string): Promise<boolean> {
     try {
-      console.log("Attempting to add barcode:", barcodeData);
-
-      if (!barcodeData.barcode || !barcodeData.name) {
-        console.error("Barcode or name is missing.");
+      if (!barcode) {
+        console.error("Barcode is missing.");
+        return false;
+      }
+      if (!name) {
+        console.error("Name is missing.");
+        return false;
+      }
+      if (!householdId) {
+        console.error("Household ID is missing.");
         return false;
       }
 
-      const response = await this._make_request(this.sessionData.idToken, "add_barcode", barcodeData);
+      const response = await this._make_request(this.sessionData.idToken, "add_barcode", {barcode, name, householdId});
       if (response.status === 200) {
         console.log("Barcode added successfully");
         return true;

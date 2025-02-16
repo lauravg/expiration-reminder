@@ -464,15 +464,15 @@ def set_default_notification_settings(user_id):
                 "minute": 0,
             },
             "view_settings": {
-                'sortByProductList': 'name',
-                'hideExpiredProductList': False,
-                'activeFilterProductList': 'All',
-                'viewModeProductList': 'simple',
-                'sortByWastedList': 'name',
-                'hideExpiredWastedList': False,
-                'activeFilterWastedList': 'All',
-                'viewModeWastedList': 'simple'
-            }
+                "sortByProductList": "name",
+                "hideExpiredProductList": False,
+                "activeFilterProductList": "All",
+                "viewModeProductList": "simple",
+                "sortByWastedList": "name",
+                "hideExpiredWastedList": False,
+                "activeFilterWastedList": "All",
+                "viewModeWastedList": "simple",
+            },
         }
         doc_ref.set(default_settings, merge=True)
         log.info(f"Default settings initialized for user {user_id}")
@@ -840,18 +840,25 @@ def get_barcode():
     try:
         data = request.json
         barcode = data.get("barcode")
-        household = household_manager.get_active_household(
-            flask_login.current_user.get_id()
-        )
+        household_id = data.get("householdId")
 
         if not barcode:
             return jsonify({"error": "Barcode is required"}), 400
-        if not household:
-            return jsonify({"error": "No active household found"}), 400
-        household_id = household.id
-        product_name = barcodes.get_product_name(barcode, household_id)
+        if not household_id:
+            return jsonify({"error": "household_id is required"}), 400
+
+        product_name, is_ext = barcodes.get_product_name(barcode, household_id)
         if product_name:
-            return jsonify({"name": product_name}), 200
+            return (
+                jsonify(
+                    {
+                        "barcode": barcode,
+                        "name": product_name,
+                        "ext": is_ext,
+                    }
+                ),
+                200,
+            )
         else:
             return jsonify({"error": "Barcode not found"}), 200
     except Exception as e:
@@ -867,13 +874,19 @@ def add_barcode():
         log.info(f"Received data for adding barcode: {data}")
         barcode = data.get("barcode")
         name = data.get("name")
+        household_id = data.get("householdId")
 
-        if not barcode or not name:
-            log.error("Barcode or name is missing in the request.")
-            return jsonify({"error": "Barcode and name are required"}), 400
+        if not barcode or not name or not household_id:
+            log.error("Barcode or name or household_id is missing in the request.")
+            return (
+                jsonify({"error": "Barcode and name and household_id are required"}),
+                400,
+            )
 
         # Attempt to add the barcode
-        success = barcodes.add_barcode(Barcode(barcode, name))
+        success = barcodes.add_barcode(
+            Barcode(barcode, [{"name": name, "source": household_id}])
+        )
         if not success:
             log.error("Failed to add barcode to the database.")
             return jsonify({"error": "Failed to add barcode"}), 500
@@ -909,24 +922,29 @@ def save_view_settings():
     try:
         data = request.json
         user_id = current_user.get_id()
-        
+
         # Get user document reference
-        user_ref = firestore.collection('users').document(user_id)
-        
+        user_ref = firestore.collection("users").document(user_id)
+
         # Save view settings in the user's document
-        user_ref.set({
-            'view_settings': {
-                'sortByProductList': data.get('sortByProductList', 'name'),
-                'hideExpiredProductList': data.get('hideExpiredProductList', False),
-                'activeFilterProductList': data.get('activeFilterProductList', 'All'),
-                'viewModeProductList': data.get('viewModeProductList', 'simple'),
-                'sortByWastedList': data.get('sortByWastedList', 'name'),
-                'hideExpiredWastedList': data.get('hideExpiredWastedList', False),
-                'activeFilterWastedList': data.get('activeFilterWastedList', 'All'),
-                'viewModeWastedList': data.get('viewModeWastedList', 'simple')
-            }
-        }, merge=True)
-        
+        user_ref.set(
+            {
+                "view_settings": {
+                    "sortByProductList": data.get("sortByProductList", "name"),
+                    "hideExpiredProductList": data.get("hideExpiredProductList", False),
+                    "activeFilterProductList": data.get(
+                        "activeFilterProductList", "All"
+                    ),
+                    "viewModeProductList": data.get("viewModeProductList", "simple"),
+                    "sortByWastedList": data.get("sortByWastedList", "name"),
+                    "hideExpiredWastedList": data.get("hideExpiredWastedList", False),
+                    "activeFilterWastedList": data.get("activeFilterWastedList", "All"),
+                    "viewModeWastedList": data.get("viewModeWastedList", "simple"),
+                }
+            },
+            merge=True,
+        )
+
         return jsonify({"success": True}), 200
     except Exception as e:
         log.error(f"Error saving view settings: {str(e)}")
@@ -938,37 +956,37 @@ def save_view_settings():
 def get_view_settings():
     try:
         user_id = current_user.get_id()
-        
+
         # Get user document
-        user_doc = firestore.collection('users').document(user_id).get()
-        
+        user_doc = firestore.collection("users").document(user_id).get()
+
         if user_doc.exists:
-            view_settings = user_doc.to_dict().get('view_settings', {})
+            view_settings = user_doc.to_dict().get("view_settings", {})
             if not view_settings:
                 # Return default settings if none exist
                 view_settings = {
-                    'sortByProductList': 'name',
-                    'hideExpiredProductList': False,
-                    'activeFilterProductList': 'All',
-                    'viewModeProductList': 'simple',
-                    'sortByWastedList': 'name',
-                    'hideExpiredWastedList': False,
-                    'activeFilterWastedList': 'All',
-                    'viewModeWastedList': 'simple'
+                    "sortByProductList": "name",
+                    "hideExpiredProductList": False,
+                    "activeFilterProductList": "All",
+                    "viewModeProductList": "simple",
+                    "sortByWastedList": "name",
+                    "hideExpiredWastedList": False,
+                    "activeFilterWastedList": "All",
+                    "viewModeWastedList": "simple",
                 }
         else:
             # Return default settings if user doc doesn't exist
             view_settings = {
-                'sortByProductList': 'name',
-                'hideExpiredProductList': False,
-                'activeFilterProductList': 'All',
-                'viewModeProductList': 'simple',
-                'sortByWastedList': 'name',
-                'hideExpiredWastedList': False,
-                'activeFilterWastedList': 'All',
-                'viewModeWastedList': 'simple'
+                "sortByProductList": "name",
+                "hideExpiredProductList": False,
+                "activeFilterProductList": "All",
+                "viewModeProductList": "simple",
+                "sortByWastedList": "name",
+                "hideExpiredWastedList": False,
+                "activeFilterWastedList": "All",
+                "viewModeWastedList": "simple",
             }
-        
+
         return jsonify(view_settings), 200
     except Exception as e:
         log.error(f"Error getting view settings: {str(e)}")

@@ -22,7 +22,7 @@ import { fetchExpiringProducts, registerForPushNotificationsAsync, scheduleDaily
 import { SessionData } from './SessionData';
 import Requests from './Requests';
 import { HouseholdManager } from './HouseholdManager';
-import { Product } from './Product';
+import { Barcode, Product } from './Product';
 import ExpiringProductsModal from './ExpiringProductsModal';
 
 const Stack = createStackNavigator();
@@ -31,6 +31,8 @@ const Tab = createBottomTabNavigator();
 type MainTabsProps = {
   toggleAddProductModal: () => void;
   onAddProduct: (product: Product) => Promise<boolean>;
+  onAddBarcode: (barcode: string, name: string) => Promise<boolean>;
+  onGetBarcode: (barcode: string) => Promise<Barcode>;
   selectedProduct: Product | null;
   onProductSelect: (product: Product | null) => void;
 };
@@ -115,6 +117,23 @@ export default function App() {
     return success;
   };
 
+  const handleAddBarcode = async (barcodeStr: string, name: string): Promise<boolean> => {
+    const hid = await householdManager.getActiveHouseholdId();
+    const success = await requests.addBarcodeToDatabase(barcodeStr, name, hid);
+    console.log("Barcode added successfully:", success);
+    return success;
+  };
+  
+  const handleGetBarcode = async (barcode: string): Promise<Barcode> => {
+    const hid = await householdManager.getActiveHouseholdId();
+    const barcodeData = await requests.getBarcodeData(barcode, hid);
+    if (barcodeData) {
+      return barcodeData;
+    } else {
+      return {barcode: barcode, name: '', ext: true};
+    }
+  };
+
   const handleProductPress = (product: Product) => {
     setSelectedProduct(product);
     setIsExpiringModalVisible(false);
@@ -196,6 +215,8 @@ export default function App() {
                 <MainTabs 
                   toggleAddProductModal={toggleAddProductModal} 
                   onAddProduct={handleAddProduct}
+                  onAddBarcode={handleAddBarcode}
+                  onGetBarcode={handleGetBarcode}
                   selectedProduct={selectedProduct}
                   onProductSelect={setSelectedProduct}
                 />
@@ -255,6 +276,8 @@ export default function App() {
             visible={addProductModalVisible}
             onClose={toggleAddProductModal}
             onAddProduct={handleAddProduct}
+            onAddBarcode={handleAddBarcode}
+            onGetBarcode={handleGetBarcode}
           />
           <ExpiringProductsModal
             visible={isExpiringModalVisible}

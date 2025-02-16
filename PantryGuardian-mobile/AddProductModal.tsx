@@ -8,15 +8,17 @@ import GlobalStyles from './GlobalStyles';
 import { colors, theme } from './theme';
 import Requests from './Requests';
 import moment from 'moment';
-import { Product } from './Product';
+import { Product, Barcode } from './Product';
 
 interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
   onAddProduct: (product: Product) => Promise<boolean>;
+  onAddBarcode: (barcode: string, name: string) => Promise<boolean>;
+  onGetBarcode: (barcode: string) => Promise<Barcode>;
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onAddProduct }) => {
+const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onAddProduct, onAddBarcode, onGetBarcode }) => {
   const [productName, setProductName] = useState('');
   const [barcode, setBarcode] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
@@ -57,10 +59,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     const fetchProductName = async () => {
       if (barcode) {
         try {
+          setProductName('Looking up barcode...');
           // Fetch barcode data from the backend
-          const barcodeData = await requests.getBarcodeData(barcode);
-          if (barcodeData) {
-            // Autofill product name if the barcode exists
+          const barcodeData = await onGetBarcode(barcode);
+          if (barcodeData.name) {
+            // Autofill product name if the barcode data exists
             setProductName(barcodeData.name);
           } else {
             // Clear product name if barcode doesn't exist
@@ -111,20 +114,18 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
       let barcodeData = null;
       if (barcode) {
         try {
-          // TODO: Why do we need to do this here?
-          barcodeData = await requests.getBarcodeData(barcode);
+          barcodeData = await onGetBarcode(barcode);
         } catch (error) {
           console.error("Error fetching barcode data:", error);
         }
       }
 
-      // If barcode data is not found, add the barcode to the database
-      if (!barcodeData && barcode) {
+      // If barcode data is not found or the source is external (meaning
+      // not attached to the current household), add the barcode to the database.
+      if ((!barcodeData || barcodeData.ext) && barcode && productName) {
         console.log("Barcode not found. Adding to database...");
-        const barcodeSaved = await requests.addBarcodeToDatabase({
-          barcode: barcode,
-          name: productName || "Unnamed Product",
-        });
+
+        const barcodeSaved = onAddBarcode(barcode, productName);
         if (!barcodeSaved) {
           console.error("Failed to add barcode to the database");
         } else {
