@@ -155,6 +155,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
                 handleExpirationDateChange(day.dateString);
                 setIsDatePickerVisible(false);
               }}
+              markedDates={{
+                [expirationDate]: { selected: true, selectedColor: colors.primary }
+              }}
             />
           )}
           <Button
