@@ -21,9 +21,15 @@ type SortOption = 'name' | 'expiration' | 'location' | 'category';
 
 interface HomepageProps {
   onAddProduct: (product: Product) => Promise<boolean>;
+  selectedProduct: Product | null;
+  onProductSelect: (product: Product | null) => void;
 }
 
-const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
+const Homepage: React.FC<HomepageProps> = ({ 
+  onAddProduct,
+  selectedProduct: externalSelectedProduct,
+  onProductSelect: externalOnProductSelect
+}) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [products, setProducts] = useState<Product[]>([]);
   const sessionData = new SessionData();
@@ -309,7 +315,7 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
   };
 
   const handleProductPress = (product: Product) => {
-    setSelectedProduct(product);
+    externalOnProductSelect(product);
     setIsExpiringModalVisible(false);
   };
 
@@ -369,8 +375,8 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
         menuVisible={menuVisible}
         setMenuVisible={setMenuVisible}
         getViewIcon={getViewIcon}
-        selectedProduct={selectedProduct}
-        onProductSelect={setSelectedProduct}
+        selectedProduct={externalSelectedProduct}
+        onProductSelect={externalOnProductSelect}
         sortBy={sortBy}
         activeFilter={activeFilter}
         setActiveFilter={setActiveFilter}
@@ -385,11 +391,7 @@ const Homepage: React.FC<HomepageProps> = ({ onAddProduct }) => {
           setIsExpiringModalVisible(false);
         }}
         products={expiringProducts}
-        onProductPress={(product) => {
-          console.log('Product pressed:', product);
-          setSelectedProduct(product);
-          setIsExpiringModalVisible(false);
-        }}
+        onProductPress={handleProductPress}
         onDelete={handleDelete}
         onWaste={handleWaste}
         onUpdateProduct={handleUpdateProduct}

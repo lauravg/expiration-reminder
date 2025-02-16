@@ -398,7 +398,10 @@ const SettingsScreen = () => {
                           onChange={handleTimeChange}
                         />
                       ) : (
-                        <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                        <TouchableOpacity onPress={() => {
+                          setTempNotificationTime(notificationTime);
+                          setShowTimePicker(true);
+                        }}>
                           <Text>
                             {notificationTime.getHours().toString().padStart(2, '0')}:
                             {notificationTime.getMinutes().toString().padStart(2, '0')}

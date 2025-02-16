@@ -22,8 +22,8 @@ import { fetchExpiringProducts, registerForPushNotificationsAsync, scheduleDaily
 import { SessionData } from './SessionData';
 import Requests from './Requests';
 import { HouseholdManager } from './HouseholdManager';
-import NotificationModal from './NotificationModal';
 import { Product } from './Product';
+import ExpiringProductsModal from './ExpiringProductsModal';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,9 +31,11 @@ const Tab = createBottomTabNavigator();
 type MainTabsProps = {
   toggleAddProductModal: () => void;
   onAddProduct: (product: Product) => Promise<boolean>;
+  selectedProduct: Product | null;
+  onProductSelect: (product: Product | null) => void;
 };
 
-function MainTabs({ toggleAddProductModal, onAddProduct }: MainTabsProps) {
+function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProductSelect }: MainTabsProps) {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} toggleAddProductModal={toggleAddProductModal} />}
@@ -51,7 +53,7 @@ function MainTabs({ toggleAddProductModal, onAddProduct }: MainTabsProps) {
       })}
     >
       <Tab.Screen name="Inventory" options={{ headerShown: false }}>
-        {() => <Homepage onAddProduct={onAddProduct} />}
+        {() => <Homepage onAddProduct={onAddProduct} selectedProduct={selectedProduct} onProductSelect={onProductSelect} />}
       </Tab.Screen>
       <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }} />
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
@@ -91,8 +93,9 @@ export default function App() {
   const [productAdded, setProductAdded] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isNotificationModalVisible, setIsNotificationModalVisible] = useState(false);
+  const [isExpiringModalVisible, setIsExpiringModalVisible] = useState(false);
   const [affectedProducts, setAffectedProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
@@ -112,6 +115,11 @@ export default function App() {
     return success;
   };
 
+  const handleProductPress = (product: Product) => {
+    setSelectedProduct(product);
+    setIsExpiringModalVisible(false);
+  };
+
   const authenticateAndRegisterForNotifications = async () => {
     try {
       const idToken = sessionData.idToken;
@@ -126,11 +134,7 @@ export default function App() {
           const products = await fetchExpiringProducts(idToken, settings.daysBefore, requests, householdManager);
 
           setAffectedProducts(products);
-
-          // Ensure the modal is only shown after the state update
-          setTimeout(() => {
-            setIsNotificationModalVisible(true);
-          }, 100); // Small delay to ensure state is updated
+          setIsExpiringModalVisible(true);
         });
 
         // Register for push notifications
@@ -188,7 +192,14 @@ export default function App() {
             </Stack.Screen>
             <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
             <Stack.Screen name="Main" options={{ headerShown: false }}>
-              {() => <MainTabs toggleAddProductModal={toggleAddProductModal} onAddProduct={handleAddProduct} />}
+              {() => (
+                <MainTabs 
+                  toggleAddProductModal={toggleAddProductModal} 
+                  onAddProduct={handleAddProduct}
+                  selectedProduct={selectedProduct}
+                  onProductSelect={setSelectedProduct}
+                />
+              )}
             </Stack.Screen>
             <Stack.Screen
               name="Profile"
@@ -245,10 +256,31 @@ export default function App() {
             onClose={toggleAddProductModal}
             onAddProduct={handleAddProduct}
           />
-          <NotificationModal
-            visible={isNotificationModalVisible}
-            onClose={() => setIsNotificationModalVisible(false)}
+          <ExpiringProductsModal
+            visible={isExpiringModalVisible}
+            onClose={() => setIsExpiringModalVisible(false)}
             products={affectedProducts}
+            onProductPress={handleProductPress}
+            onDelete={async (product) => {
+              const success = await requests.deleteProduct(product.product_id);
+              if (success) {
+                setAffectedProducts(affectedProducts.filter(p => p.product_id !== product.product_id));
+              }
+            }}
+            onWaste={async (product) => {
+              const success = await requests.wasteProduct(product.product_id);
+              if (success) {
+                setAffectedProducts(affectedProducts.filter(p => p.product_id !== product.product_id));
+              }
+            }}
+            onUpdateProduct={async (product) => {
+              const success = await requests.updateProduct(product);
+              if (success) {
+                setAffectedProducts(affectedProducts.map(p => 
+                  p.product_id === product.product_id ? product : p
+                ));
+              }
+            }}
           />
         </NavigationContainer>
       </SafeAreaProvider>
