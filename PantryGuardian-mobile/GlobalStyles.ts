@@ -299,6 +299,7 @@ const GlobalStyles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     maxHeight: screenHeight * 0.8,
+    overflow: 'hidden',
   },
 
   modalHeader: {

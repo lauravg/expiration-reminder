@@ -244,7 +244,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
           onDismiss={() => setLocationModalVisible(false)}
           contentContainerStyle={GlobalStyles.modalContent}
         >
-          <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={setLocation}>
+          <Picker selectedValue={location} style={GlobalStyles.picker} onValueChange={(value) => {
+            setLocation(value);
+            setLocationModalVisible(false);
+          }}>
             <Picker.Item label="Select Location" value="" />
             {locations.map((loc) => (
               <Picker.Item key={loc} label={loc} value={loc} />
@@ -258,7 +261,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
           onDismiss={() => setCategoryModalVisible(false)}
           contentContainerStyle={GlobalStyles.modalContent}
         >
-          <Picker selectedValue={category} style={GlobalStyles.picker} onValueChange={setCategory}>
+          <Picker selectedValue={category} style={GlobalStyles.picker} onValueChange={(value) => {
+            setCategory(value);
+            setCategoryModalVisible(false);
+          }}>
             <Picker.Item label="Select Category" value="" />
             {categories.map((cat) => (
               <Picker.Item key={cat} label={cat} value={cat} />

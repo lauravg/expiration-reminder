@@ -212,7 +212,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         <Picker
           selectedValue={location}
           style={GlobalStyles.picker}
-          onValueChange={handleLocationChange}
+          onValueChange={(value) => {
+            setLocation(value);
+            setLocationModalVisible(false);
+          }}
         >
           <Picker.Item label="Select Location" value="" />
           {availableLocations.map((loc) => (
@@ -229,7 +232,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         <Picker
           selectedValue={category}
           style={GlobalStyles.picker}
-          onValueChange={handleCategoryChange}
+          onValueChange={(value) => {
+            setCategory(value);
+            setCategoryModalVisible(false);
+          }}
         >
           <Picker.Item label="Select Category" value="" />
           {categories.map((cat) => (
