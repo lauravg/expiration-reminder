@@ -113,6 +113,7 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
               />
             }
             theme={{ colors: { primary: colors.primary } }}
+            autoCapitalize="none"
           />
 
           {error ? <Text style={styles.errorMessage}>{error}</Text> : null}

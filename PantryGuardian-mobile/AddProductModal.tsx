@@ -105,7 +105,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
       }
     };
 
-    const timeoutId = setTimeout(searchProducts, 300);
+    const timeoutId = setTimeout(searchProducts, 600);
     return () => clearTimeout(timeoutId);
   }, [productName, suggestionSelected]);
 

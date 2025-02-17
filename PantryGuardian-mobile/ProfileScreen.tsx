@@ -128,6 +128,7 @@ const ProfileScreen = () => {
                 onChangeText={setCurrentPassword}
                 style={styles.input}
                 theme={{ colors: { primary: colors.primary } }}
+                autoCapitalize="none"
                 right={
                   <TextInput.Icon
                     icon={showPassword ? 'eye-off' : 'eye'}
@@ -143,6 +144,7 @@ const ProfileScreen = () => {
                 onChangeText={setNewPassword}
                 style={styles.input}
                 theme={{ colors: { primary: colors.primary } }}
+                autoCapitalize="none"
                 right={
                   <TextInput.Icon
                     icon={showNewPassword ? 'eye-off' : 'eye'}
@@ -158,6 +160,7 @@ const ProfileScreen = () => {
                 onChangeText={setConfirmPassword}
                 style={styles.input}
                 theme={{ colors: { primary: colors.primary } }}
+                autoCapitalize="none"
                 right={
                   <TextInput.Icon
                     icon={showConfirmPassword ? 'eye-off' : 'eye'}

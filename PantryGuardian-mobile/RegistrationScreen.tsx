@@ -99,6 +99,7 @@ const RegistrationScreen = () => {
                 value={password}
                 onChangeText={text => setPassword(text)}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
                 left={<TextInput.Icon icon="lock" color={colors.primary} />}
                 right={
                   <TextInput.Icon 
@@ -117,6 +118,7 @@ const RegistrationScreen = () => {
                 value={confirmPassword}
                 onChangeText={text => setConfirmPassword(text)}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
                 left={<TextInput.Icon icon="lock-check" color={colors.primary} />}
                 right={
                   <TextInput.Icon 
