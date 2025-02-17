@@ -6,7 +6,12 @@ import { Household, HouseholdManager } from './HouseholdManager';
 
 // const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
 // const BASE_URL = "http://127.0.0.1:5050";
-const BASE_URL = "http://192.168.1.43:5050";
+const BASE_URL = "http://192.168.1.50:5050";
+
+interface ProductSuggestion {
+  name: string;
+  barcode: string;
+}
 
 class Requests {
   private sessionData = new SessionData();
@@ -418,6 +423,24 @@ class Requests {
     } catch (error) {
       console.error('Error getting view settings:', error);
       return null;
+    }
+  }
+
+  async searchProducts(query: string, householdId: string): Promise<ProductSuggestion[]> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'search_products',
+        { query, householdId }
+      );
+
+      if (response.status === 200) {
+        return response.data.suggestions;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error searching products:', error);
+      return [];
     }
   }
 

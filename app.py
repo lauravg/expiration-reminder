@@ -999,6 +999,50 @@ def get_view_settings():
 # else:
 #     log.warning("⚠️ NOT initializing schedule thread in --debug mode ⚠️")
 
+@app.route("/search_products", methods=["POST"])
+@token_required
+def search_products():
+    """
+    Search for product names in the user's household that match the query.
+    Returns a list of product suggestions with names and barcodes.
+    """
+    try:
+        data = request.json
+        query = data.get("query", "").lower()
+        household_id = data.get("householdId")
+
+        if not household_id:
+            return jsonify({"error": "Household ID is required"}), 400
+
+        # Check if user has access to this household
+        uid = flask_login.current_user.get_id()
+        if not household_manager.user_has_household(uid, household_id):
+            return jsonify({"error": "Permission denied"}), 401
+
+        # Get all products from the household
+        products = product_mgr.get_household_products(household_id)
+        
+        # Filter products based on query and create unique name-barcode pairs
+        suggestions = {}  # Use dict to ensure uniqueness by product name
+        for product in products:
+            if query in product.product_name.lower():
+                # If we already have this product name, only update if this one has a barcode and the existing one doesn't
+                if (product.product_name not in suggestions or 
+                    (product.barcode and not suggestions[product.product_name]["barcode"])):
+                    suggestions[product.product_name] = {
+                        "name": product.product_name,
+                        "barcode": product.barcode if product.barcode else ""
+                    }
+        
+        # Convert dictionary to list and sort by name
+        suggestion_list = sorted(suggestions.values(), key=lambda x: x["name"])
+        return jsonify({"suggestions": suggestion_list}), 200
+
+    except Exception as e:
+        log.error(f"Error searching products: {e}")
+        return jsonify({"error": "Failed to search products"}), 500
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

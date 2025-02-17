@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import { View, Text, TouchableWithoutFeedback, StyleSheet, ScrollView, TouchableOpacity, Keyboard } from 'react-native';
 import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
@@ -9,6 +9,7 @@ import { colors, theme } from './theme';
 import Requests from './Requests';
 import moment from 'moment';
 import { Product, Barcode } from './Product';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AddProductModalProps {
   visible: boolean;
@@ -16,6 +17,11 @@ interface AddProductModalProps {
   onAddProduct: (product: Product) => Promise<boolean>;
   onAddBarcode: (barcode: string, name: string) => Promise<boolean>;
   onGetBarcode: (barcode: string) => Promise<Barcode | null>;
+}
+
+interface ProductSuggestion {
+  name: string;
+  barcode: string;
 }
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onAddProduct, onAddBarcode, onGetBarcode }) => {
@@ -34,6 +40,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   const [categories, setCategories] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const requests = new Requests();
+  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionSelected, setSuggestionSelected] = useState(false);
+  const inputRef = React.useRef<any>(null);
 
   // Load locations and categories when modal becomes visible
   useEffect(() => {
@@ -57,7 +67,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   // Watch for barcode changes and fetch product name if barcode exists
   useEffect(() => {
     const fetchProductName = async () => {
-      if (barcode) {
+      if (barcode && scanning) {  // Only fetch if we're actively scanning
         try {
           setProductName('Looking up barcode...');
           // Fetch barcode data from the backend
@@ -78,6 +88,41 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
 
     fetchProductName();
   }, [barcode]); // Trigger effect when barcode changes
+
+  // Update the debounced search effect
+  useEffect(() => {
+    const searchProducts = async () => {
+      if (productName.length >= 2 && !suggestionSelected) {
+        const hid = await AsyncStorage.getItem('active-household');
+        if (hid) {
+          const results = await requests.searchProducts(productName, hid);
+          setSuggestions(results);
+          setShowSuggestions(true);
+        }
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchProducts, 300);
+    return () => clearTimeout(timeoutId);
+  }, [productName, suggestionSelected]);
+
+  const handleSuggestionPress = (suggestion: ProductSuggestion) => {
+    setProductName(suggestion.name);
+    if (suggestion.barcode) {
+      setBarcode(suggestion.barcode);
+    }
+    setShowSuggestions(false);
+    setSuggestionSelected(true);
+  };
+
+  // Update product name change handler
+  const handleProductNameChange = (text: string) => {
+    setProductName(text);
+    setSuggestionSelected(false); // Reset the selection flag when user types
+  };
 
   // Handle barcode scanning
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
@@ -160,6 +205,22 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     setExpirationDate('');
     setLocation('');
     setCategory('');
+    setSuggestionSelected(false);
+    setShowSuggestions(false);
+  };
+
+  // Update function to handle background press
+  const handleBackgroundPress = () => {
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
+    Keyboard.dismiss();
+    setShowSuggestions(false);
+  };
+
+  // Add handler for input blur
+  const handleInputBlur = () => {
+    Keyboard.dismiss();
   };
 
   if (!permission) {
@@ -180,15 +241,43 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   return (
     <>
       <PaperModal visible={visible} onDismiss={onClose} contentContainerStyle={GlobalStyles.modalContent}>
-        <TouchableWithoutFeedback onPress={() => setIsDatePickerVisible(false)}>
+        <TouchableWithoutFeedback onPress={handleBackgroundPress}>
           <View>
-            <PaperTextInput
-              style={GlobalStyles.input}
-              mode="outlined"
-              label="Product Name"
-              value={productName}
-              onChangeText={setProductName}
-            />
+            <View style={styles.inputContainer}>
+              <PaperTextInput
+                ref={inputRef}
+                style={GlobalStyles.input}
+                mode="outlined"
+                label="Product Name"
+                value={productName}
+                onChangeText={handleProductNameChange}
+                onFocus={() => !suggestionSelected && setShowSuggestions(true)}
+                onBlur={handleInputBlur}
+                blurOnSubmit={true}
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <ScrollView 
+                  style={styles.suggestionsContainer}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.suggestionItem}
+                      onPress={() => handleSuggestionPress(suggestion)}
+                    >
+                      <Text style={styles.suggestionText}>
+                        {suggestion.name}
+                        {suggestion.barcode && (
+                          <Text style={styles.barcodeText}> (Barcode: {suggestion.barcode})</Text>
+                        )}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
             {/* Display the barcode instead of an input field */}
             {barcode ? (
               <Text>Barcode: {barcode}</Text>
@@ -207,7 +296,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
               label="Expiration Date (YYYY-MM-DD)"
               value={expirationDate}
               onFocus={() => setIsDatePickerVisible(true)}
-              onChangeText={setExpirationDate}
+              editable={false}
+              right={<PaperTextInput.Icon icon="calendar" onPress={() => setIsDatePickerVisible(true)} />}
             />
             {isDatePickerVisible && (
               <Calendar
@@ -236,6 +326,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
             <Button mode="contained" onPress={handleAddProduct} theme={{ colors: { primary: colors.primary } }}>
               Submit
             </Button>
+            <PaperTextInput
+              style={GlobalStyles.input}
+              mode="outlined"
+              label="Note (optional)"
+              value={note}
+              onChangeText={setNote}
+            />
           </View>
         </TouchableWithoutFeedback>
 
@@ -272,13 +369,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
             ))}
           </Picker>
         </PaperModal>
-        <PaperTextInput
-          style={GlobalStyles.input}
-          mode="outlined"
-          label="Note (optional)"
-          value={note}
-          onChangeText={setNote}
-        />
       </PaperModal>
 
       {/* Camera Scanner Modal */}
@@ -309,6 +399,36 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '90%',
   },
+  inputContainer: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    maxHeight: 200,
+    backgroundColor: 'white',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    zIndex: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: '#333',
+  },
   clearButton: {
     backgroundColor: colors.background,
     borderColor: colors.border,
@@ -317,7 +437,12 @@ const styles = StyleSheet.create({
     width: '50%',
     marginBottom: 20,
     marginTop: 10,
-  }
+  },
+  barcodeText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
 });
 
 export default AddProductModal;
