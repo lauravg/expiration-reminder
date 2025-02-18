@@ -104,7 +104,7 @@ def token_required(f):
             current_user = user_manager.get_user(decoded_token["uid"])
             flask_login.login_user(current_user)
         except ExpiredIdTokenError as err:
-            log.warn(f"Token has expired: {err}")
+            log.warning(f"Token has expired: {err}")
             return jsonify({"message": "Token has expired!"}), 401
         except InvalidIdTokenError:
             log.error("Token is invalid!")

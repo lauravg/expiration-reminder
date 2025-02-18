@@ -90,7 +90,6 @@ const ProductList: React.FC<ProductListProps> = ({
 
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-    const requests = new Requests();
 
     const parseDateString = (dateStr: string): Date | null => {
         if (!dateStr || dateStr === 'No Expiration') {
@@ -147,6 +146,8 @@ const ProductList: React.FC<ProductListProps> = ({
     };
 
     const filteredProducts = useMemo(() => {
+        activeFilter = (activeFilter == undefined) ? 'All' : activeFilter;
+
         // First apply location filter
         let filtered = products;
         
@@ -416,6 +417,7 @@ const ProductList: React.FC<ProductListProps> = ({
     };
 
     const renderProducts = () => {
+        console.log('Rendering products: ', filteredProducts.length);
         if (viewMode === 'grid') {
             return renderProductGrid();
         }

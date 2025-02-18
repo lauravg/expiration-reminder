@@ -108,7 +108,7 @@ class Requests {
       const response = await this._make_request(this.sessionData.idToken, 'list_products', { householdId });
 
       if (response.status >= 200 && response.status < 300) {
-        console.log('Request successful');
+        console.log(`Listing products successful. Got ${response.data.length} products.`);
         // console.log(response.data);
         return response.data;
       } else {
