@@ -69,7 +69,6 @@ pycparser==2.22
 pycryptodome==3.21.0
 PyJWT==2.10.1
 pyparsing==3.2.1
-Pyrebase4==4.8.0
 python-firebase==1.2
 python-jwt==4.1.0
 pytz==2023.3.post1
