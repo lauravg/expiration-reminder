@@ -202,9 +202,9 @@ class Requests {
     }
   }
 
-  async generateRecipeFromDatabase(): Promise<string> {
+  async generateRecipeFromDatabase(householdId: string): Promise<string> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'generate_recipe_from_database');
+      const response = await this._make_request(this.sessionData.idToken, 'generate_recipe_from_database', { householdId }  );
       return response.status >= 200 && response.status < 300 ? response.data.recipe_suggestion : '';
     } catch (error) {
       console.error('Failed to generate recipe from database', error);

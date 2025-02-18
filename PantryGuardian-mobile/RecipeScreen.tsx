@@ -5,8 +5,13 @@ import Requests from './Requests';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { HouseholdManager } from './HouseholdManager';
 
-const RecipeScreen = () => {
+interface RecipeScreenProps { 
+  householdManager: HouseholdManager;
+}
+
+const RecipeScreen = ({ householdManager }: RecipeScreenProps) => {
   const [ingredients, setIngredients] = useState('');
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState<string | null>(null);
@@ -36,7 +41,8 @@ const RecipeScreen = () => {
     setRecipe(null);
 
     try {
-      const recipe = await requests.generateRecipeFromDatabase();
+      const householdId = await householdManager.getActiveHouseholdId();
+      const recipe = await requests.generateRecipeFromDatabase(householdId);
       setRecipe(recipe);
     } catch (error) {
       console.error('Error generating recipe from database:', error);

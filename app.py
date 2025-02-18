@@ -656,11 +656,19 @@ def generate_recipe():
 
 
 # Generate recipe based on database products
-@app.route("/generate_recipe_from_database", methods=["GET"])
+@app.route("/generate_recipe_from_database", methods=["POST"])
 @token_required
 def generate_recipe_from_database():
+    data = request.json
     user: User = current_user
-    household = household_manager.get_active_household(user.get_id())
+    household_id = data.get("householdId")
+    if not household_id:
+        return jsonify({"error": "Household ID is required"}), 400
+
+    household = household_manager.get_household(household_id)
+    if not household:
+        return jsonify({"error": "Household not found"}), 404
+
     today_millis = ProductManager.parse_import_date(
         datetime.now(pt_timezone).strftime("%d %b %Y")
     )
@@ -965,6 +973,7 @@ def get_view_settings():
 # else:
 #     log.warning("⚠️ NOT initializing schedule thread in --debug mode ⚠️")
 
+
 @app.route("/search_products", methods=["POST"])
 @token_required
 def search_products():
@@ -987,19 +996,20 @@ def search_products():
 
         # Get all products from the household
         products = product_mgr.get_household_products(household_id)
-        
+
         # Filter products based on query and create unique name-barcode pairs
         suggestions = {}  # Use dict to ensure uniqueness by product name
         for product in products:
             if query in product.product_name.lower():
                 # If we already have this product name, only update if this one has a barcode and the existing one doesn't
-                if (product.product_name not in suggestions or 
-                    (product.barcode and not suggestions[product.product_name]["barcode"])):
+                if product.product_name not in suggestions or (
+                    product.barcode and not suggestions[product.product_name]["barcode"]
+                ):
                     suggestions[product.product_name] = {
                         "name": product.product_name,
-                        "barcode": product.barcode if product.barcode else ""
+                        "barcode": product.barcode if product.barcode else "",
                     }
-        
+
         # Convert dictionary to list and sort by name
         suggestion_list = sorted(suggestions.values(), key=lambda x: x["name"])
         return jsonify({"suggestions": suggestion_list}), 200

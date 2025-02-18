@@ -35,9 +35,10 @@ type MainTabsProps = {
   onGetBarcode: (barcode: string) => Promise<Barcode | null>;
   selectedProduct: Product | null;
   onProductSelect: (product: Product | null) => void;
+  householdManager: HouseholdManager;
 };
 
-function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProductSelect }: MainTabsProps) {
+function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProductSelect, householdManager }: MainTabsProps) {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} toggleAddProductModal={toggleAddProductModal} />}
@@ -57,7 +58,9 @@ function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProd
       <Tab.Screen name="Inventory" options={{ headerShown: false }}>
         {() => <Homepage onAddProduct={onAddProduct} selectedProduct={selectedProduct} onProductSelect={onProductSelect} />}
       </Tab.Screen>
-      <Tab.Screen name="Recipe" component={Recipes} options={{ headerShown: false }} />
+      <Tab.Screen name="Recipe" options={{ headerShown: false }}>
+        {() => <Recipes householdManager={householdManager} />}
+      </Tab.Screen>
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
         {() => null}
       </Tab.Screen>
@@ -213,6 +216,7 @@ export default function App() {
             <Stack.Screen name="Main" options={{ headerShown: false }}>
               {() => (
                 <MainTabs 
+                  householdManager={householdManager}
                   toggleAddProductModal={toggleAddProductModal} 
                   onAddProduct={handleAddProduct}
                   onAddBarcode={handleAddBarcode}
