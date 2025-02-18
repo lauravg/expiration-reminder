@@ -612,40 +612,6 @@ def waste_product(id):
     return jsonify({"success": True})
 
 
-@app.route("/get_expiring_products", methods=["GET"])
-@token_required
-def get_expiring_products():
-    user = flask_login.current_user
-    household = household_manager.get_active_household(user.get_id())
-    settings_doc = firestore.collection("users").document(user.get_id()).get()
-    settings = settings_doc.to_dict().get("notification_settings", {})
-    days_before = settings.get("daysBefore", 5)
-    expiring_date = datetime.utcnow() + timedelta(days=days_before)
-    expiring_timestamp = int(expiring_date.timestamp() * 1000)
-
-    products = product_mgr.get_household_products(household.id)
-    expiring_products = [
-        product
-        for product in products
-        if product.expires > 0 and product.expires <= expiring_timestamp
-    ]
-
-    result = [
-        {
-            "product_name": product.product_name,
-            "expiration_date": product.expiration_str(),
-            "location": product.location,
-            "product_id": product.id,
-            "expired": product.expires < int(datetime.utcnow().timestamp() * 1000),
-            "creation_date": product.creation_str(),
-            "wasted": product.wasted,
-            "note": product.note,
-        }
-        for product in expiring_products
-    ]
-    return jsonify(result)
-
-
 @app.route("/generate-recipe", methods=["POST"])
 def generate_recipe():
     data = request.json
