@@ -126,26 +126,6 @@ class HouseholdManager:
                 return False
         return True
 
-    # Deprecated, active household will be stored on the client side (app).
-    def get_active_household(self, uid: str) -> Household | None:
-        households = self.get_households_for_user(uid)
-        if len(households) == 0:
-            log.error("Bug: Cannot set default houshold, user has no households")
-            return None
-        return self.get_household(households[0].id)
-
-    # Deprecated, active household will be stored on the client side (app).
-    def set_active_household(self, id: str):
-        household = self.get_household(id)
-        if household is not None:
-            if household.id is None or household.id.isspace():
-                log.error("Bug: Cannot set a default household without an ID")
-                return
-            session["active_household_id"] = household.id
-            log.info("Active household changed to '%s'", id)
-        else:
-            log.error("Cannot set household as active as it wasn't found: '%s'", id)
-
     def __collection(self):
         return self.__db.collection("households")
 
