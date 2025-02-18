@@ -6,6 +6,7 @@ import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HouseholdManager } from './HouseholdManager';
+import Markdown from 'react-native-markdown-display';
 
 interface RecipeScreenProps { 
   householdManager: HouseholdManager;
@@ -140,7 +141,16 @@ const RecipeScreen = ({ householdManager }: RecipeScreenProps) => {
                 <MaterialCommunityIcons name="book-open-variant" size={24} color={colors.primary} />
                 <Text style={styles.recipeTitle}>Your Recipe</Text>
               </View>
-              <Text style={styles.recipeText}>{recipe}</Text>
+              <Markdown style={{
+                body: styles.recipeText,
+                heading1: { fontSize: 20, fontWeight: 'bold', marginVertical: 8 },
+                heading2: { fontSize: 18, fontWeight: 'bold', marginVertical: 8 },
+                heading3: { fontSize: 16, fontWeight: 'bold', marginVertical: 6 },
+                paragraph: { marginVertical: 6 },
+                listItem: { marginVertical: 4 },
+              }}>
+                {recipe}
+              </Markdown>
             </Card.Content>
           </Card>
         )}
