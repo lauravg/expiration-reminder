@@ -7,13 +7,15 @@ import pytz
 import requests
 import secrets
 import sys
+import uuid
+import os
 
 from absl import logging as log
 import firebase_admin
 import firebase_admin.messaging as messaging
 from datetime import datetime, timedelta
 
-from firebase_admin import credentials, auth, firestore
+from firebase_admin import credentials, auth, firestore, storage
 from firebase_admin.auth import UserRecord, InvalidIdTokenError, ExpiredIdTokenError
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 import flask_login
@@ -59,7 +61,10 @@ json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
 cred = credentials.Certificate(json_data)
 openai = secrets_mgr.get_openai_api_key()
 
-firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'pantryguardian-f8381.appspot.com'
+})
+
 firestore = firestore.client()
 barcodes = BarcodeManager(firestore)
 product_mgr = ProductManager(firestore)
@@ -344,12 +349,14 @@ def list_products():
                     product.expiration_str() if product.does_expire else "No Expiration"
                 ),
                 "location": product.location,
+                "category": product.category,
                 "product_id": product.id,
                 "expired": product.does_expire
                 and product.expires < int(datetime.utcnow().timestamp() * 1000),
                 "creation_date": product.creation_str(),
                 "wasted": product.wasted,
                 "note": product.note or "",
+                "image_url": product.image_url,
             }
         )
     return jsonify(result)
@@ -540,6 +547,39 @@ def add_product():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/upload_product_image", methods=["POST"])
+@token_required
+def upload_product_image():
+    try:
+        if 'image' not in request.files:
+            return jsonify({"error": "No image file provided"}), 400
+
+        image_file = request.files['image']
+        if not image_file.filename:
+            return jsonify({"error": "No selected file"}), 400
+
+        # Create a unique filename
+        file_extension = os.path.splitext(image_file.filename)[1]
+        unique_filename = f"product_images/{str(uuid.uuid4())}{file_extension}"
+
+        # Get Firebase Storage bucket
+        bucket = storage.bucket()
+        blob = bucket.blob(unique_filename)
+
+        # Upload the file
+        blob.upload_from_file(image_file, content_type=image_file.content_type)
+
+        # Make the file publicly accessible
+        blob.make_public()
+
+        # Return the public URL
+        image_url = blob.public_url
+        return jsonify({"image_url": image_url}), 200
+
+    except Exception as e:
+        log.error(f"Error uploading image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 # Route to update a product
 @app.route("/update_product/<string:id>", methods=["POST"])
 @token_required
@@ -552,11 +592,17 @@ def update_product(id):
         if not product:
             return jsonify({"success": False, "error": "Product not found"}), 404
 
+        # Store the old image URL
+        old_image_url = product.image_url
+        # Keep existing image_url if not provided in update
+        new_image_url = data.get("image_url", old_image_url)
+
         # Update product fields
         product.product_name = data.get("product_name", product.product_name)
         product.location = data.get("location", product.location)
         product.category = data.get("category", product.category)
         product.note = data.get("note", product.note)
+        product.image_url = new_image_url
         expiration_date = data.get("expiration_date")
         if expiration_date:
             product.expires = ProductManager.parse_import_date(expiration_date)
@@ -564,6 +610,10 @@ def update_product(id):
         if not product_mgr.add_product(product):
             log.error(f"Failed to update product {id}")
             return jsonify({"success": False, "error": "Failed to update product"}), 500
+
+        # If the image URL has changed or been removed, delete the old image
+        if old_image_url and old_image_url != new_image_url:
+            delete_image_from_storage(old_image_url)
 
         log.info(f"Product {id} successfully updated")
         return jsonify({"success": True})
@@ -573,10 +623,43 @@ def update_product(id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+
+def delete_image_from_storage(image_url: str | None) -> bool:
+    if not image_url:
+        return True
+        
+    try:
+        # Extract filename from URL
+        # URL format: https://storage.googleapis.com/pantryguardian-f8381.appspot.com/product_images/filename.jpg
+        filename = image_url.split('product_images/')[-1]
+        if not filename:
+            return False
+            
+        bucket = storage.bucket()
+        blob = bucket.blob(f"product_images/{filename}")
+        blob.delete()
+        return True
+    except Exception as e:
+        log.error(f"Error deleting image from storage: {e}")
+        return False
+
+
+
+
 @app.route("/delete_product/<string:id>", methods=["POST"])
 @token_required
 def delete_product(id):
     user: User = flask_login.current_user
+    
+    # Get the product first to get its image URL
+    product = product_mgr.get_product(id)
+    if not product:
+        return jsonify({"success": False, "error": "Product not found"}), 404
+        
+    # Delete the image if it exists
+    if product.image_url:
+        delete_image_from_storage(product.image_url)
+    
     success = product_mgr.delete_product(id)
     if not success:
         return jsonify({"success": False, "error": "Unable to delete product"}), 404

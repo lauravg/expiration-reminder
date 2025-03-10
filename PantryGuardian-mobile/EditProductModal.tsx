@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import { View, TouchableWithoutFeedback, StyleSheet, Image, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { Product } from './Product';
@@ -28,6 +30,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [categories, setCategories] = useState<string[]>([]);
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [note, setNote] = useState<string>('');
+  const [productImage, setProductImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const requests = new Requests();
 
   // Fetch latest locations and categories when modal becomes visible
@@ -79,6 +83,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
       setLocation(product.location || '');
       setCategory(product.category || '');
       setNote(product.note || '');
+      setProductImage(product.image_url || null);
     }
   }, [product]);
 
@@ -97,112 +102,192 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
     setCategoryModalVisible(false);
   };
 
-  const handleUpdateProduct = () => {
-    if (product) {
-      try {
-        // Keep the date in YYYY-MM-DD format for the server
-        const updatedProduct = {
-          product_id: product.product_id,
-          product_name: productName.trim(),
-          expiration_date: expirationDate || '',  // Already in YYYY-MM-DD format
-          location: location.trim() || '',
-          category: category.trim() || '',
-          note: note.trim() || '',
-          wasted: false
-        };
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
 
-        console.log('Updating product with:', updatedProduct);
-        onUpdateProduct(updatedProduct as Product);
-        onClose();
-      } catch (error) {
-        console.error('Error updating product:', error);
+    if (!result.canceled && result.assets.length > 0) {
+      const selectedImage = result.assets[0].uri;
+      setProductImage(selectedImage);
+    }
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!product) return;
+    
+    setIsLoading(true);
+    try {
+      let imageUrl: string | undefined = productImage || undefined;
+      
+      // If productImage is a local file URI (not a URL), upload it
+      if (productImage && !productImage.startsWith('http')) {
+        try {
+          const uploadedUrl = await requests.uploadProductImage(productImage);
+          imageUrl = uploadedUrl || undefined;
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          imageUrl = undefined;
+        }
       }
+
+      // Trim values and convert empty strings to undefined
+      const trimmedLocation = location.trim();
+      const trimmedCategory = category.trim();
+      const trimmedNote = note.trim();
+
+      const updatedProduct: Product = {
+        ...product,
+        product_name: productName.trim(),
+        expiration_date: expirationDate || undefined,
+        location: trimmedLocation || undefined,
+        category: trimmedCategory || undefined,
+        note: trimmedNote || undefined,
+        image_url: imageUrl,
+        wasted: product.wasted,
+        isExpired: product.isExpired,
+        daysUntilExpiration: product.daysUntilExpiration
+      };
+
+      console.log('Updating product with:', updatedProduct);
+      await onUpdateProduct(updatedProduct);
+      onClose();
+    } catch (error) {
+      console.error("Error updating product:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const resetForm = () => {
     if (product) {
-      setProductName(product.product_name);
+      setProductName(product.product_name || '');
       setExpirationDate(product.expiration_date || '');
       setLocation(product.location || '');
       setCategory(product.category || '');
       setNote(product.note || '');
+      setProductImage(product.image_url || null);
     }
   };
 
   return (
-    <PaperModal visible={visible} onDismiss={onClose} contentContainerStyle={GlobalStyles.modalContent}>
-      <TouchableWithoutFeedback onPress={() => setIsDatePickerVisible(false)}>
-        <View>
-          <PaperTextInput
-            style={GlobalStyles.input}
-            mode="outlined"
-            label="Product Name"
-            value={productName}
-            onChangeText={setProductName}
-          />
-          <PaperTextInput
-            style={GlobalStyles.input}
-            mode="outlined"
-            label="Expiration Date (YYYY-MM-DD)"
-            value={expirationDate}
-            onFocus={() => setIsDatePickerVisible(true)}
-            onChangeText={setExpirationDate}
-          />
-          {isDatePickerVisible && (
-            <Calendar
-              onDayPress={(day: any) => {
-                handleExpirationDateChange(day.dateString);
-                setIsDatePickerVisible(false);
-              }}
-              markedDates={{
-                [expirationDate]: { selected: true, selectedColor: colors.primary }
-              }}
-            />
-          )}
-          <Button
-            mode="text"
-            onPress={() => setLocationModalVisible(true)}
-            style={styles.selectButton}
-            labelStyle={styles.selectButtonText}
-          >
-            {location ? `Location: ${location}` : 'Select Location'}
-          </Button>
-          <Button
-            mode="text"
-            onPress={() => setCategoryModalVisible(true)}
-            style={styles.selectButton}
-            labelStyle={styles.selectButtonText}
-          >
-            {category ? `Category: ${category}` : 'Select Category'}
-          </Button>
-          <PaperTextInput
-            style={GlobalStyles.input}
-            mode="outlined"
-            label="Note (optional)"
-            value={note}
-            onChangeText={setNote}
-            multiline
-            numberOfLines={2}
-          />
-          <View style={styles.buttonContainer}>
-            <Button
+    <PaperModal visible={visible} onDismiss={onClose} contentContainerStyle={[GlobalStyles.modalContent, styles.modalContainer]}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+        <TouchableWithoutFeedback onPress={() => setIsDatePickerVisible(false)}>
+          <View>
+            {/* Product Image Section */}
+            <View style={styles.imageSection}>
+              <Text style={styles.sectionTitle}>Product Image</Text>
+              <View style={styles.imageContainer}>
+                {productImage ? (
+                  <>
+                    <Image source={{ uri: productImage }} style={styles.productImage} />
+                    <View style={styles.imageOverlay}>
+                      <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+                        <Icon name="image-edit" size={24} color={colors.primary} />
+                        <Text style={styles.buttonText}>Change Image</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.imageButton, styles.removeButton]} 
+                        onPress={() => setProductImage(null)}
+                      >
+                        <Icon name="delete" size={24} color={colors.error} />
+                        <Text style={[styles.buttonText, styles.removeText]}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
+                    <Icon name="image-plus" size={40} color={colors.primary} />
+                    <Text style={styles.addImageText}>Add Product Image</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Existing form fields */}
+            <PaperTextInput
+              style={GlobalStyles.input}
               mode="outlined"
-              onPress={resetForm}
-              style={styles.clearButton}
+              label="Product Name"
+              value={productName}
+              onChangeText={setProductName}
+            />
+            <PaperTextInput
+              style={GlobalStyles.input}
+              mode="outlined"
+              label="Expiration Date (YYYY-MM-DD)"
+              value={expirationDate}
+              onFocus={() => setIsDatePickerVisible(true)}
+              onChangeText={setExpirationDate}
+            />
+            {isDatePickerVisible && (
+              <Calendar
+                onDayPress={(day: any) => {
+                  handleExpirationDateChange(day.dateString);
+                  setIsDatePickerVisible(false);
+                }}
+                markedDates={{
+                  [expirationDate]: { selected: true, selectedColor: colors.primary }
+                }}
+              />
+            )}
+            <Button
+              mode="text"
+              onPress={() => setLocationModalVisible(true)}
+              style={styles.selectButton}
+              labelStyle={styles.selectButtonText}
             >
-              Clear
+              {location ? `Location: ${location}` : 'Select Location'}
             </Button>
             <Button
-              mode="contained"
-              onPress={handleUpdateProduct}
-              style={styles.submitButton}
+              mode="text"
+              onPress={() => setCategoryModalVisible(true)}
+              style={styles.selectButton}
+              labelStyle={styles.selectButtonText}
             >
-              Update
+              {category ? `Category: ${category}` : 'Select Category'}
             </Button>
+            <PaperTextInput
+              style={GlobalStyles.input}
+              mode="outlined"
+              label="Note (optional)"
+              value={note}
+              onChangeText={setNote}
+              multiline
+              numberOfLines={2}
+            />
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="outlined"
+                onPress={resetForm}
+                style={styles.clearButton}
+                disabled={isLoading}
+              >
+                Clear
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleUpdateProduct}
+                style={styles.submitButton}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator color={colors.surface} size="small" />
+                    <Text style={styles.loadingText}>Updating...</Text>
+                  </View>
+                ) : (
+                  'Update'
+                )}
+              </Button>
+            </View>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </ScrollView>
 
       <PaperModal
         visible={locationModalVisible}
@@ -229,25 +314,101 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         onDismiss={() => setCategoryModalVisible(false)}
         contentContainerStyle={GlobalStyles.modalContent}
       >
-        <Picker
-          selectedValue={category}
-          style={GlobalStyles.picker}
-          onValueChange={(value) => {
-            setCategory(value);
-            setCategoryModalVisible(false);
-          }}
-        >
-          <Picker.Item label="Select Category" value="" />
-          {categories.map((cat) => (
-            <Picker.Item key={cat} label={cat} value={cat} />
-          ))}
-        </Picker>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={category}
+            style={GlobalStyles.picker}
+            onValueChange={handleCategoryChange}
+          >
+            <Picker.Item label="Select Category" value="" />
+            {categories.map((cat) => (
+              <Picker.Item key={cat} label={cat} value={cat} />
+            ))}
+          </Picker>
+        </View>
       </PaperModal>
     </PaperModal>
   );
 };
 
 const styles = StyleSheet.create({
+  modalContainer: {
+    maxHeight: '90%',
+    padding: 0,
+  },
+  scrollView: {
+    padding: 20,
+  },
+  imageSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  imageContainer: {
+    height: 200,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  imageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  removeButton: {
+    backgroundColor: colors.surfaceVariant,
+  },
+  buttonText: {
+    marginLeft: 8,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  removeText: {
+    color: colors.error,
+  },
+  addImageButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addImageText: {
+    marginTop: 8,
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: colors.surface,
+    marginLeft: 8,
+  },
   selectButton: {
     marginVertical: 8,
     justifyContent: 'center',
@@ -272,6 +433,11 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: colors.primary,
+  },
+  pickerContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });
 

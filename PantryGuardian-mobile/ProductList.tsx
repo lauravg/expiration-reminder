@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
 import { Modal as PaperModal, Button, TextInput, IconButton, FAB, Menu } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { parse, isValid } from 'date-fns';
@@ -328,7 +328,15 @@ const ProductList: React.FC<ProductListProps> = ({
                     onPress={() => setEffectiveSelectedProduct(product)}
                 >
                     <View style={GlobalStyles.productImagePlaceholderGrid}>
-                        <Icon name="food" size={40} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                        {product.image_url ? (
+                            <Image 
+                                source={{ uri: product.image_url }} 
+                                style={GlobalStyles.productImage} 
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <Icon name="food" size={40} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                        )}
                     </View>
                     <Text style={GlobalStyles.productNameGrid} numberOfLines={1}>
                         {product.product_name || 'Unnamed Product'}
@@ -355,7 +363,15 @@ const ProductList: React.FC<ProductListProps> = ({
                     onPress={() => setEffectiveSelectedProduct(product)}
                 >
                     <View style={GlobalStyles.productImagePlaceholderList}>
-                        <Icon name="food" size={32} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                        {product.image_url ? (
+                            <Image 
+                                source={{ uri: product.image_url }} 
+                                style={GlobalStyles.productImage} 
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <Icon name="food" size={32} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                        )}
                     </View>
                     <View style={GlobalStyles.productInfoList}>
                         <Text style={GlobalStyles.productNameList} numberOfLines={1}>

@@ -18,6 +18,7 @@ export interface Product {
   note?: string;
   isExpired: boolean;
   daysUntilExpiration: number;
+  image_url?: string;
 }
 
 interface ProductProps {

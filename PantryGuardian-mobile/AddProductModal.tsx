@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableWithoutFeedback, StyleSheet, ScrollView, TouchableOpacity, Keyboard } from 'react-native';
+import { View, Text, TouchableWithoutFeedback, StyleSheet, ScrollView, TouchableOpacity, Keyboard, Image } from 'react-native';
 import { Button, Modal as PaperModal, TextInput as PaperTextInput } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import GlobalStyles from './GlobalStyles';
 import { colors, theme } from './theme';
 import Requests from './Requests';
@@ -39,6 +41,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   const [locations, setLocations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  const [productImage, setProductImage] = useState<string | null>(null);
   const requests = new Requests();
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -130,12 +133,35 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     setBarcode(data);
   };
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const selectedImage = result.assets[0].uri;
+      setProductImage(selectedImage);
+    }
+  };
+
   // Handle product submission
   const handleAddProduct = async () => {
     // Validate the expiration date before proceeding
     if (!validateExpirationDate(expirationDate) && expirationDate !== '') {
       console.error("Invalid date format. Please use YYYY-MM-DD.");
-      return; // Prevent making the request if the date format is invalid
+      return;
+    }
+
+    let imageUrl = null;
+    if (productImage) {
+      try {
+        imageUrl = await requests.uploadProductImage(productImage);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+      }
     }
 
     const newProduct: Product = {
@@ -149,7 +175,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
       creation_date: new Date().toISOString(),
       note: note,
       isExpired: false,
-      daysUntilExpiration: 0
+      daysUntilExpiration: 0,
+      image_url: imageUrl || undefined,
     };
 
     try {
@@ -205,6 +232,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     setExpirationDate('');
     setLocation('');
     setCategory('');
+    setProductImage(null);
     setSuggestionSelected(false);
     setShowSuggestions(false);
   };
@@ -277,6 +305,18 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
                 </ScrollView>
               )}
             </View>
+
+            {/* Product Image Section */}
+            <TouchableOpacity onPress={pickImage} style={styles.imagePickerContainer}>
+              {productImage ? (
+                <Image source={{ uri: productImage }} style={styles.productImage} />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Icon name="camera" size={40} color={colors.textSecondary} />
+                  <Text style={styles.imagePlaceholderText}>Add Product Photo</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
             {/* Display the barcode instead of an input field */}
             {barcode ? (
@@ -442,6 +482,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     fontStyle: 'italic',
+  },
+  imagePickerContainer: {
+    width: '100%',
+    height: 200,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 12,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
 });
 

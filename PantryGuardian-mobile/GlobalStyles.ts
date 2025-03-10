@@ -187,6 +187,7 @@ const GlobalStyles = StyleSheet.create({
     marginBottom: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
 
   productImagePlaceholderList: {
@@ -197,6 +198,12 @@ const GlobalStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+
+  productImage: {
+    width: '100%',
+    height: '100%',
   },
 
   productInfoList: {

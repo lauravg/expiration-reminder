@@ -444,16 +444,55 @@ class Requests {
     }
   }
 
+  async uploadProductImage(imageUri: string): Promise<string | null> {
+    try {
+      // Create form data
+      const formData = new FormData();
+      
+      // Get the file extension from the URI
+      const fileExtension = imageUri.split('.').pop() || 'jpg';
+      const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
+      
+      formData.append('image', {
+        uri: imageUri,
+        type: mimeType,
+        name: `product_image.${fileExtension}`
+      } as any);
+
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'upload_product_image',
+        formData,
+        true // isFormData
+      );
+
+      if (response.status === 200 && response.data.image_url) {
+        return response.data.image_url;
+      } else {
+        console.error('Failed to upload image');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,
     data: any = {},
+    isFormData = false,
     retry_if_auth_expired = true
   ): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);
 
     const authOrRegister = path === "auth" || path === "register";
-    const contentType = authOrRegister ? 'application/x-www-form-urlencoded' : 'application/json';
+    let contentType = authOrRegister ? 'application/x-www-form-urlencoded' : 'application/json';
+    
+    if (isFormData) {
+      contentType = 'multipart/form-data';
+    }
 
     if (!idToken && !authOrRegister) {
       throw new Error('idToken is missing! Ensure you are logged in.');
@@ -465,9 +504,14 @@ class Requests {
     };
 
     try {
+      let requestData = data;
+      if (authOrRegister && !isFormData) {
+        requestData = qs.stringify(data);
+      }
+
       const response = await axios.post(
         `${BASE_URL}/${path}`,
-        authOrRegister ? qs.stringify(data) : data,
+        requestData,
         { headers, maxRedirects: 0 }
       );
       return response;
@@ -480,7 +524,7 @@ class Requests {
           const refreshed = await this.handleRefresh();
           if (refreshed) {
             const newIdToken = this.sessionData.idToken;
-            return this._make_request(newIdToken, path, data, false);
+            return this._make_request(newIdToken, path, data, isFormData, false);
           }
         }
 
