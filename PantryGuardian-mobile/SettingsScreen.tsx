@@ -164,19 +164,17 @@ const SettingsScreen = () => {
       }
 
       try {
-        const response = await requests.getLocationsAndCategories();
-        setLocations(response.locations);
-        setCategories(response.categories);
+        const activeHouseholdId = await householdManager.getActiveHouseholdId();
+        const householdsList = await householdManager.getHouseholds();
+        setHouseholds(householdsList);
+        
+        if (activeHouseholdId) {
+          const response = await requests.getLocationsAndCategories(activeHouseholdId);
+          setLocations(response.locations || []);
+          setCategories(response.categories || []);
+        }
       } catch (error) {
-        Alert.alert('Error', 'Failed to load locations and categories.');
-        console.error('Failed to load locations and categories', error);
-      }
-
-      try {
-        setHouseholds(await householdManager.getHouseholds());
-      } catch (error) {
-        Alert.alert('Error', 'Failed to load households.');
-        console.error('Failed to load households', error);
+        console.error("Error loading data:", error);
       }
     };
 
@@ -288,7 +286,13 @@ const SettingsScreen = () => {
     }
 
     try {
-      const success = await requests.addLocation(newLocation);
+      const activeHouseholdId = await householdManager.getActiveHouseholdId();
+      if (!activeHouseholdId) {
+        Alert.alert('Error', 'No active household');
+        return;
+      }
+
+      const success = await requests.addLocation(newLocation, activeHouseholdId);
       if (success) {
         setLocations([...locations, newLocation]);
         setNewLocation('');
@@ -300,7 +304,13 @@ const SettingsScreen = () => {
 
   const handleDeleteLocation = async (locationToDelete: string) => {
     try {
-      const success = await requests.deleteLocation(locationToDelete);
+      const activeHouseholdId = await householdManager.getActiveHouseholdId();
+      if (!activeHouseholdId) {
+        Alert.alert('Error', 'No active household');
+        return;
+      }
+
+      const success = await requests.deleteLocation(locationToDelete, activeHouseholdId);
       if (success) {
         setLocations(locations.filter(location => location !== locationToDelete));
       }
@@ -316,7 +326,13 @@ const SettingsScreen = () => {
     }
 
     try {
-      const success = await requests.addCategory(newCategory);
+      const activeHouseholdId = await householdManager.getActiveHouseholdId();
+      if (!activeHouseholdId) {
+        Alert.alert('Error', 'No active household');
+        return;
+      }
+
+      const success = await requests.addCategory(newCategory, activeHouseholdId);
       if (success) {
         setCategories([...categories, newCategory]);
         setNewCategory('');
@@ -328,7 +344,13 @@ const SettingsScreen = () => {
 
   const handleDeleteCategory = async (categoryToDelete: string) => {
     try {
-      const success = await requests.deleteCategory(categoryToDelete);
+      const activeHouseholdId = await householdManager.getActiveHouseholdId();
+      if (!activeHouseholdId) {
+        Alert.alert('Error', 'No active household');
+        return;
+      }
+
+      const success = await requests.deleteCategory(categoryToDelete, activeHouseholdId);
       if (success) {
         setCategories(categories.filter(category => category !== categoryToDelete));
       }

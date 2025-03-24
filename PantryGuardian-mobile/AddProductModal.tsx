@@ -12,6 +12,7 @@ import Requests from './Requests';
 import moment from 'moment';
 import { Product, Barcode } from './Product';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { HouseholdManager } from './HouseholdManager';
 
 interface AddProductModalProps {
   visible: boolean;
@@ -47,17 +48,21 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionSelected, setSuggestionSelected] = useState(false);
   const inputRef = React.useRef<any>(null);
+  const householdManager = new HouseholdManager(requests);
 
   // Load locations and categories when modal becomes visible
   useEffect(() => {
     const loadLocationsAndCategories = async () => {
       if (visible) {
         try {
-          const response = await requests.getLocationsAndCategories();
-          console.log("Locations fetched:", response.locations);
-          console.log("Categories fetched:", response.categories);
-          setLocations(response.locations || []);
-          setCategories(response.categories || []);
+          const activeHouseholdId = await householdManager.getActiveHouseholdId();
+          if (activeHouseholdId) {
+            const response = await requests.getLocationsAndCategories(activeHouseholdId);
+            console.log("Locations fetched:", response.locations);
+            console.log("Categories fetched:", response.categories);
+            setLocations(response.locations || []);
+            setCategories(response.categories || []);
+          }
         } catch (error) {
           console.error("Error fetching locations and categories:", error);
         }
@@ -65,7 +70,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     };
 
     loadLocationsAndCategories();
-  }, [visible]); // Trigger effect when modal visibility changes
+  }, [visible]);
 
   // Watch for barcode changes and fetch product name if barcode exists
   useEffect(() => {

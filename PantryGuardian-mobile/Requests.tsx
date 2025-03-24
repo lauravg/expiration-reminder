@@ -212,47 +212,47 @@ class Requests {
     }
   }
 
-  async addLocation(location: string): Promise<boolean> {
+  async addLocation(location: string, householdId: string): Promise<boolean> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'add_location', { location });
+      const response = await this._make_request(this.sessionData.idToken, 'add_location', { location, householdId });
       return response.status === 200;
     } catch (error) {
-      console.error('Error adding location:', error);
+      console.error('Failed to add location:', error);
       return false;
     }
   }
 
-  async deleteLocation(location: string): Promise<boolean> {
+  async deleteLocation(location: string, householdId: string): Promise<boolean> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'delete_location', { location });
+      const response = await this._make_request(this.sessionData.idToken, 'delete_location', { location, householdId });
       return response.status === 200;
     } catch (error) {
-      console.error('Error deleting location:', error);
+      console.error('Failed to delete location:', error);
       return false;
     }
   }
 
-  async addCategory(category: string): Promise<boolean> {
+  async addCategory(category: string, householdId: string): Promise<boolean> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'add_category', { category });
+      const response = await this._make_request(this.sessionData.idToken, 'add_category', { category, householdId });
       return response.status === 200;
     } catch (error) {
-      console.error('Error adding category:', error);
+      console.error('Failed to add category:', error);
       return false;
     }
   }
 
-  async deleteCategory(category: string): Promise<boolean> {
+  async deleteCategory(category: string, householdId: string): Promise<boolean> {
     try {
-      const response = await this._make_request(this.sessionData.idToken, 'delete_category', { category });
+      const response = await this._make_request(this.sessionData.idToken, 'delete_category', { category, householdId });
       return response.status === 200;
     } catch (error) {
-      console.error('Error deleting category:', error);
+      console.error('Failed to delete category:', error);
       return false;
     }
   }
 
-  async getLocationsAndCategories(): Promise<{ locations: string[], categories: string[] }> {
+  async getLocationsAndCategories(householdId: string): Promise<{ locations: string[], categories: string[] }> {
     const idToken = this.sessionData.idToken;
 
     if (!idToken) {
@@ -261,7 +261,7 @@ class Requests {
     }
 
     try {
-      const response = await this._make_request(idToken, 'get_locations_categories');
+      const response = await this._make_request(idToken, 'get_locations_categories', { householdId });
       if (response.status === 200) {
         return response.data;
       } else {

@@ -10,6 +10,7 @@ import { colors } from './theme';
 import { Product } from './Product';
 import { isValid, format, parse } from 'date-fns';
 import Requests from './Requests';
+import { HouseholdManager } from './HouseholdManager';
 
 interface EditProductModalProps {
   visible: boolean;
@@ -19,7 +20,7 @@ interface EditProductModalProps {
   locations?: string[];  // Make locations optional since we're fetching them directly
 }
 
-const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, product, onUpdateProduct, locations }) => {
+const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, product, onUpdateProduct }) => {
   const [productName, setProductName] = useState<string>('');
   const [expirationDate, setExpirationDate] = useState<string>('');
   const [location, setLocation] = useState<string>('');
@@ -33,15 +34,19 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [productImage, setProductImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const requests = new Requests();
+  const householdManager = new HouseholdManager(requests);
 
   // Fetch latest locations and categories when modal becomes visible
   useEffect(() => {
     if (visible) {
       const fetchLocationsAndCategories = async () => {
         try {
-          const response = await requests.getLocationsAndCategories();
-          setCategories(response.categories || []);
-          setAvailableLocations(response.locations || []);
+          const activeHouseholdId = await householdManager.getActiveHouseholdId();
+          if (activeHouseholdId) {
+            const response = await requests.getLocationsAndCategories(activeHouseholdId);
+            setCategories(response.categories || []);
+            setAvailableLocations(response.locations || []);
+          }
         } catch (error) {
           console.error("Error fetching locations and categories:", error);
         }

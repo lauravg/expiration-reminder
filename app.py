@@ -790,105 +790,160 @@ def save_push_token():
 @app.route("/get_locations_categories", methods=["POST"])
 @token_required
 def get_locations_categories():
-    user = flask_login.current_user
     try:
-        doc_ref = firestore.collection("users").document(user.get_id())
-        doc = doc_ref.get()
-        user_data = doc.to_dict() if doc.exists else {}
-        locations = user_data.get("locations", [])
-        categories = user_data.get("categories", [])
-        return jsonify({"locations": locations, "categories": categories}), 200
+        user = flask_login.current_user
+        data = request.json
+        household_id = data.get("householdId")
+        if not household_id:
+            return jsonify({"error": "household_id is required"}), 400
+
+        # Check if user has access to this household
+        if not household_manager.user_has_household(user.get_id(), household_id):
+            return jsonify({"error": "User does not have access to this household"}), 403
+
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"error": "Household not found"}), 404
+
+        return jsonify({
+            "locations": household.locations,
+            "categories": household.categories
+        }), 200
     except Exception as e:
-        log.error(f"Error fetching locations and categories: {e}")
-        return jsonify({"error": "Failed to fetch locations and categories"}), 500
+        log.error(f"Error getting locations and categories: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/add_location", methods=["POST"])
 @token_required
 def add_location():
-    user = flask_login.current_user
-    data = request.json
-    new_location = data.get("location")
-    if not new_location:
-        return jsonify({"success": False, "error": "Location is required"}), 400
+    try:
+        user = flask_login.current_user
+        data = request.json
+        new_location = data.get("location")
+        household_id = data.get("householdId")
+        
+        if not new_location:
+            return jsonify({"success": False, "error": "Location is required"}), 400
+        if not household_id:
+            return jsonify({"success": False, "error": "household_id is required"}), 400
 
-    doc_ref = firestore.collection("users").document(user.get_id())
-    doc = doc_ref.get()
-    if doc.exists:
-        user_data = doc.to_dict()
-        locations = user_data.get("locations", ["Pantry", "Fridge", "Freezer"])
-        if new_location not in locations:
-            locations.append(new_location)
-            doc_ref.update({"locations": locations})
-            return jsonify({"success": True}), 200
-    return jsonify({"success": False, "error": "Unable to add location"}), 500
+        # Check if user has access to this household
+        if not household_manager.user_has_household(user.get_id(), household_id):
+            return jsonify({"error": "User does not have access to this household"}), 403
+
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+
+        if new_location not in household.locations:
+            household.locations.append(new_location)
+            if household_manager.add_or_update_household(household):
+                return jsonify({"success": True}), 200
+            
+        return jsonify({"success": False, "error": "Unable to add location"}), 500
+    except Exception as e:
+        log.error(f"Error adding location: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/delete_location", methods=["POST"])
 @token_required
 def delete_location():
-    user = flask_login.current_user
-    data = request.json
-    location_to_delete = data.get("location")
-    if not location_to_delete:
-        return jsonify({"success": False, "error": "Location is required"}), 400
+    try:
+        user = flask_login.current_user
+        data = request.json
+        location_to_delete = data.get("location")
+        household_id = data.get("householdId")
+        
+        if not location_to_delete:
+            return jsonify({"success": False, "error": "Location is required"}), 400
+        if not household_id:
+            return jsonify({"success": False, "error": "household_id is required"}), 400
 
-    doc_ref = firestore.collection("users").document(user.get_id())
-    doc = doc_ref.get()
-    if doc.exists:
-        user_data = doc.to_dict()
-        locations = user_data.get("locations", ["Pantry", "Fridge", "Freezer"])
-        if location_to_delete in locations:
-            locations.remove(location_to_delete)
-            doc_ref.update({"locations": locations})
-            return jsonify({"success": True}), 200
-    return jsonify({"success": False, "error": "Unable to delete location"}), 500
+        # Check if user has access to this household
+        if not household_manager.user_has_household(user.get_id(), household_id):
+            return jsonify({"error": "User does not have access to this household"}), 403
+
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+
+        if location_to_delete in household.locations:
+            household.locations.remove(location_to_delete)
+            if household_manager.add_or_update_household(household):
+                return jsonify({"success": True}), 200
+            
+        return jsonify({"success": False, "error": "Unable to delete location"}), 500
+    except Exception as e:
+        log.error(f"Error deleting location: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/add_category", methods=["POST"])
 @token_required
 def add_category():
-    user = flask_login.current_user
-    data = request.json
-    new_category = data.get("category")
-    if not new_category:
-        return jsonify({"success": False, "error": "Category is required"}), 400
+    try:
+        user = flask_login.current_user
+        data = request.json
+        new_category = data.get("category")
+        household_id = data.get("householdId")
+        
+        if not new_category:
+            return jsonify({"success": False, "error": "Category is required"}), 400
+        if not household_id:
+            return jsonify({"success": False, "error": "household_id is required"}), 400
 
-    doc_ref = firestore.collection("users").document(user.get_id())
-    doc = doc_ref.get()
-    if doc.exists:
-        user_data = doc.to_dict()
-        categories = user_data.get(
-            "categories", ["Veggies", "Fruits", "Baking", "Spices", "Others"]
-        )
-        if new_category not in categories:
-            categories.append(new_category)
-            doc_ref.update({"categories": categories})
-            return jsonify({"success": True}), 200
-    return jsonify({"success": False, "error": "Unable to add category"}), 500
+        # Check if user has access to this household
+        if not household_manager.user_has_household(user.get_id(), household_id):
+            return jsonify({"error": "User does not have access to this household"}), 403
+
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+
+        if new_category not in household.categories:
+            household.categories.append(new_category)
+            if household_manager.add_or_update_household(household):
+                return jsonify({"success": True}), 200
+            
+        return jsonify({"success": False, "error": "Unable to add category"}), 500
+    except Exception as e:
+        log.error(f"Error adding category: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/delete_category", methods=["POST"])
 @token_required
 def delete_category():
-    user = flask_login.current_user
-    data = request.json
-    category_to_delete = data.get("category")
-    if not category_to_delete:
-        return jsonify({"success": False, "error": "Category is required"}), 400
+    try:
+        user = flask_login.current_user
+        data = request.json
+        category_to_delete = data.get("category")
+        household_id = data.get("householdId")
+        
+        if not category_to_delete:
+            return jsonify({"success": False, "error": "Category is required"}), 400
+        if not household_id:
+            return jsonify({"success": False, "error": "household_id is required"}), 400
 
-    doc_ref = firestore.collection("users").document(user.get_id())
-    doc = doc_ref.get()
-    if doc.exists:
-        user_data = doc.to_dict()
-        categories = user_data.get(
-            "categories", ["Veggies", "Fruits", "Baking", "Spices", "Others"]
-        )
-        if category_to_delete in categories:
-            categories.remove(category_to_delete)
-            doc_ref.update({"categories": categories})
-            return jsonify({"success": True}), 200
-    return jsonify({"success": False, "error": "Unable to delete category"}), 500
+        # Check if user has access to this household
+        if not household_manager.user_has_household(user.get_id(), household_id):
+            return jsonify({"error": "User does not have access to this household"}), 403
+
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+
+        if category_to_delete in household.categories:
+            household.categories.remove(category_to_delete)
+            if household_manager.add_or_update_household(household):
+                return jsonify({"success": True}), 200
+            
+        return jsonify({"success": False, "error": "Unable to delete category"}), 500
+    except Exception as e:
+        log.error(f"Error deleting category: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/get_barcode", methods=["POST"])

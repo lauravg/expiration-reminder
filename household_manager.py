@@ -13,17 +13,24 @@ class Household:
         owner_uid: str,
         name: str,
         participants: list[str],
+        categories: list[str] = None,
+        locations: list[str] = None,
     ) -> None:
         self.id = hid
         self.owner_uid = owner_uid
         self.name = name
         self.participants = participants
+        self.categories = categories if categories is not None else ["Veggies", "Fruits", "Baking", "Spices", "Others"]
+        self.locations = locations if locations is not None else ["Pantry", "Fridge", "Freezer"]
 
     def __iter__(self):
         # Note, we don't want to persist ID in the DB.
-        yield "owner_uid", self.owner_uid
+        # Order fields as requested: name, owner_uid, participants, categories, locations
         yield "name", self.name
+        yield "owner_uid", self.owner_uid
         yield "participants", self.participants
+        yield "categories", self.categories
+        yield "locations", self.locations
 
 
 class HouseholdManager:
@@ -131,4 +138,4 @@ class HouseholdManager:
 
     def __household_from_dict(self, doc: DocumentSnapshot) -> Household:
         dict = doc.to_dict()
-        return Household(doc.id, dict["owner_uid"], dict["name"], dict["participants"])
+        return Household(doc.id, dict["owner_uid"], dict["name"], dict["participants"], dict["categories"], dict["locations"])
