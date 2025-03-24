@@ -37,27 +37,6 @@ const SettingsScreen = () => {
     subscription: true,
   });
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action is irreversible.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            // Add logic for deleting account
-            sessionData.eraseAllData();
-            navigation.navigate({ name: 'Login', params: { } });
-            Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
-          },
-        },
-      ]
-    );
-  };
-
-
   const settingsData = [
     {
       key: 'account',
@@ -129,12 +108,6 @@ const SettingsScreen = () => {
           iconColor={colors.secondary}
         />
       ),
-    },
-    {
-      key: 'deleteAccount',
-      title: 'Delete Account',
-      icon: 'delete',
-      onPress: handleDeleteAccount,
     },
   ];
 

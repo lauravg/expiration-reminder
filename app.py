@@ -1157,6 +1157,66 @@ def search_products():
         return jsonify({"error": "Failed to search products"}), 500
 
 
+@app.route("/delete_account", methods=["POST"])
+@token_required
+def delete_account():
+    """
+    Delete the user's account after verifying their password.
+    """
+    try:
+        data = request.json
+        password = data.get("password")
+        
+        if not password:
+            return jsonify({"success": False, "error": "Password is required"}), 400
+
+        user = current_user
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Verify the password using Firebase Auth REST API
+        firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
+        request_data = {
+            "email": user.email(),
+            "password": password,
+            "returnSecureToken": True
+        }
+
+        response = requests.post(
+            f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_web_api_key}",
+            json=request_data
+        )
+
+        if not response.ok:
+            return jsonify({"success": False, "error": "Invalid password"}), 401
+
+        # Password is correct, proceed with account deletion
+        try:
+            # Delete user's data from Firestore
+            user_id = user.get_id()
+            
+            # Get user's households
+            households = household_manager.get_households_for_user(user_id)
+            
+            # Delete owned households
+            for household in households:
+                if household.owner_uid == user_id:
+                    household_manager.delete_household(household.id, user_id)
+            
+            # Delete the user from Firebase Auth
+            auth.delete_user(user_id)
+            
+            return jsonify({"success": True}), 200
+            
+        except Exception as e:
+            log.error(f"Error deleting user account: {e}")
+            return jsonify({"success": False, "error": "Failed to delete account"}), 500
+
+    except Exception as e:
+        log.error(f"Error in delete_account: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

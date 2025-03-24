@@ -478,6 +478,32 @@ class Requests {
     }
   }
 
+  async deleteAccount(password: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('Attempting to delete account');
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'delete_account',
+        { password }
+      );
+
+      if (response.status === 200) {
+        console.log('Account deleted successfully');
+        return { success: true };
+      } else {
+        const error = response.data?.error || 'Failed to delete account';
+        console.error('Delete account failed:', error);
+        return { success: false, error };
+      }
+    } catch (error) {
+      console.error('Delete account request failed:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to delete account'
+      };
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { TextInput as PaperTextInput, Button, IconButton, Avatar, TextInput } from 'react-native-paper';
 import { colors } from './theme';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +19,8 @@ const ProfileScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   type RootStackParamList = {
@@ -65,6 +67,67 @@ const ProfileScreen = () => {
     } catch (error) {
       console.error('Logout failed:', error);
       alert('Failed to log out. Please try again.');
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action is irreversible.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            // Show password verification dialog
+            Alert.alert(
+              'Verify Password',
+              'Please enter your password to confirm account deletion',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Verify',
+                  style: 'destructive',
+                  onPress: () => {
+                    // Show password input modal
+                    setShowDeletePassword(true);
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteWithPassword = async () => {
+    if (!deleteAccountPassword) {
+      Alert.alert('Error', 'Please enter your password');
+      return;
+    }
+
+    try {
+      const requests = new Requests();
+      const result = await requests.deleteAccount(deleteAccountPassword);
+      
+      if (result.success) {
+        sessionData.eraseAllData();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+        Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to delete account. Please check your password and try again.');
+      }
+    } catch (error) {
+      console.error('Delete account failed:', error);
+      Alert.alert('Error', 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteAccountPassword('');
+      setShowDeletePassword(false);
     }
   };
 
@@ -197,8 +260,51 @@ const ProfileScreen = () => {
           >
             <Text>Logout</Text>
           </Button>
+          <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteLink}>
+            <Text style={styles.deleteLinkText}>Delete account</Text>
+          </TouchableOpacity>
         </View>
       </View>
+
+      {/* Delete Account Password Modal */}
+      {showDeletePassword && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Enter Password</Text>
+            <Text style={styles.modalSubtitle}>Enter your password to confirm account deletion</Text>
+            <PaperTextInput
+              label="Password"
+              mode="outlined"
+              secureTextEntry={true}
+              value={deleteAccountPassword}
+              onChangeText={setDeleteAccountPassword}
+              style={styles.modalInput}
+              theme={{ colors: { primary: colors.primary } }}
+              autoCapitalize="none"
+            />
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  setDeleteAccountPassword('');
+                  setShowDeletePassword(false);
+                }}
+                style={styles.modalButton}
+              >
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleDeleteWithPassword}
+                style={[styles.modalButton, styles.deleteButton]}
+                theme={{ colors: { primary: colors.error } }}
+              >
+                Delete Account
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -267,6 +373,57 @@ const styles = StyleSheet.create({
   logoutButton: {
     borderColor: colors.error,
     borderWidth: 1,
+  },
+  deleteLink: {
+    alignSelf: 'center',
+    marginTop: 16,
+  },
+  deleteLinkText: {
+    color: colors.error,
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 20,
+    width: '80%',
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: colors.secondary,
+    marginBottom: 16,
+  },
+  modalInput: {
+    marginBottom: 20,
+    backgroundColor: colors.input,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalButton: {
+    marginLeft: 10,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
   },
 });
 
