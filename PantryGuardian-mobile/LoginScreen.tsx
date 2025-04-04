@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { Button, TextInput as PaperTextInput, TextInput, ActivityIndicator } from 'react-native-paper';
+import { Button, TextInput as PaperTextInput, TextInput, ActivityIndicator, Portal, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
@@ -14,11 +14,15 @@ type LoginScreenProps = {
 
 const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('lauravgreiner@gmail.com');
+  const [password, setPassword] = useState('Password123');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isForgotPasswordVisible, setIsForgotPasswordVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
   const requests = new Requests();
 
   useEffect(() => {
@@ -55,6 +59,104 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
       setIsLoading(false);
     }
   };
+
+  const handleResetPassword = async () => {
+    if (!resetEmail || !resetEmail.includes('@')) {
+      setResetError('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setResetError('');
+      const response = await requests.resetPassword(resetEmail);
+      if (response.success) {
+        setResetSuccess(true);
+        setResetError('');
+      } else {
+        setResetError(response.error || 'Failed to send reset email');
+      }
+    } catch (error) {
+      setResetError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const ForgotPasswordModal = () => (
+    <Portal>
+      <Dialog 
+        visible={isForgotPasswordVisible} 
+        onDismiss={() => {
+          setIsForgotPasswordVisible(false);
+          setResetEmail('');
+          setResetError('');
+          setResetSuccess(false);
+        }}
+        style={styles.modal}
+      >
+        <Dialog.Title>Reset Password</Dialog.Title>
+        <Dialog.Content>
+          {resetSuccess ? (
+            <Text style={styles.successText}>
+              Password reset email sent! Please check your inbox.
+            </Text>
+          ) : (
+            <>
+              <Text style={styles.modalText}>
+                Enter your email address and we'll send you a link to reset your password.
+              </Text>
+              <View style={styles.modalInputContainer}>
+                <PaperTextInput
+                  style={styles.modalInput}
+                  mode="flat"
+                  label="Email"
+                  value={resetEmail}
+                  onChangeText={text => {
+                    setResetEmail(text);
+                    setResetError('');
+                  }}
+                  left={<TextInput.Icon icon="email" color={colors.primary} />}
+                  theme={{ colors: { primary: colors.primary } }}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoFocus={true}
+                  disabled={isLoading}
+                />
+                {resetError ? (
+                  <Text style={[styles.errorMessage, { marginTop: 8 }]}>
+                    {resetError}
+                  </Text>
+                ) : null}
+              </View>
+            </>
+          )}
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button 
+            onPress={() => {
+              setIsForgotPasswordVisible(false);
+              setResetEmail('');
+              setResetError('');
+              setResetSuccess(false);
+            }}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          {!resetSuccess && (
+            <Button 
+              onPress={handleResetPassword} 
+              disabled={isLoading || !resetEmail}
+              loading={isLoading}
+            >
+              {isLoading ? 'Sending...' : 'Send Reset Link'}
+            </Button>
+          )}
+        </Dialog.Actions>
+      </Dialog>
+    </Portal>
+  );
 
   if (isLoading) {
     return (
@@ -116,6 +218,13 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
             autoCapitalize="none"
           />
 
+          <TouchableOpacity 
+            onPress={() => setIsForgotPasswordVisible(true)}
+            style={styles.forgotPasswordContainer}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
           {error ? <Text style={styles.errorMessage}>{error}</Text> : null}
 
           <Button 
@@ -138,6 +247,7 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <ForgotPasswordModal />
     </KeyboardAvoidingView>
   );
 };
@@ -213,6 +323,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modal: {
+    maxHeight: '80%',
+  },
+  modalInputContainer: {
+    width: '100%',
+    marginTop: 8,
+  },
+  modalInput: {
+    width: '100%',
+    backgroundColor: 'transparent',
+  },
+  modalText: {
+    marginBottom: 16,
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  successText: {
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 14,
   },
 });
 

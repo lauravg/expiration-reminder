@@ -5,8 +5,8 @@ import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 
 // const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
-// const BASE_URL = "http://127.0.0.1:5050";
-const BASE_URL = "http://192.168.1.50:5050";
+const BASE_URL = "http://127.0.0.1:5050";
+// const BASE_URL = "http://192.168.1.50:5050";
 
 interface ProductSuggestion {
   name: string;
@@ -504,6 +504,29 @@ class Requests {
     }
   }
 
+  async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await this._make_request("", "reset_password", { email }, false);
+      if (response.status >= 200 && response.status < 300) {
+        return { success: true };
+      } else {
+        return { success: false, error: response.data.error || 'Failed to send reset email' };
+      }
+    } catch (error) {
+      console.error('Password reset failed:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('Network Error')) {
+          return { 
+            success: false, 
+            error: 'Unable to connect to the server. Please check your internet connection and try again.' 
+          };
+        }
+        return { success: false, error: error.message };
+      }
+      return { success: false, error: 'Failed to send reset email' };
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,
@@ -514,13 +537,14 @@ class Requests {
     console.log(`make_request (${path})`);
 
     const authOrRegister = path === "auth" || path === "register";
+    const resetPassword = path === "reset_password";
     let contentType = authOrRegister ? 'application/x-www-form-urlencoded' : 'application/json';
     
     if (isFormData) {
       contentType = 'multipart/form-data';
     }
 
-    if (!idToken && !authOrRegister) {
+    if (!idToken && !authOrRegister && !resetPassword) {
       throw new Error('idToken is missing! Ensure you are logged in.');
     }
 

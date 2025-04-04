@@ -1217,6 +1217,47 @@ def delete_account():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/reset_password", methods=["POST"])
+def reset_password():
+    """
+    Send a password reset email to the user using Firebase Auth REST API.
+    """
+    try:
+        data = request.json
+        email = data.get("email")
+        
+        if not email:
+            return jsonify({"success": False, "error": "Email is required"}), 400
+
+        try:
+            # Use Firebase web API key to send reset email directly
+            firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
+            reset_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebase_web_api_key}"
+            
+            payload = {
+                "requestType": "PASSWORD_RESET",
+                "email": email
+            }
+            
+            response = requests.post(reset_url, json=payload)
+            
+            if response.status_code == 200:
+                log.info(f"Password reset email sent to {email}")
+                return jsonify({"success": True}), 200
+            else:
+                error_message = response.json().get("error", {}).get("message", "Unknown error")
+                log.error(f"Error sending password reset email: {error_message}")
+                return jsonify({"success": False, "error": "Failed to send reset email"}), 500
+            
+        except Exception as e:
+            log.error(f"Error sending password reset email: {e}")
+            return jsonify({"success": False, "error": "Failed to send reset email"}), 500
+
+    except Exception as e:
+        log.error(f"Error in reset_password: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")
