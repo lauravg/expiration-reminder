@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { Button, TextInput as PaperTextInput, TextInput, ActivityIndicator, Portal, Dialog } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Button, TextInput as PaperTextInput, TextInput, ActivityIndicator } from 'react-native-paper';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { colors } from './theme';
@@ -14,8 +14,8 @@ type LoginScreenProps = {
 
 const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const [email, setEmail] = useState('lauravgreiner@gmail.com');
-  const [password, setPassword] = useState('Password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,81 +82,6 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
       setIsLoading(false);
     }
   };
-
-  const ForgotPasswordModal = () => (
-    <Portal>
-      <Dialog 
-        visible={isForgotPasswordVisible} 
-        onDismiss={() => {
-          setIsForgotPasswordVisible(false);
-          setResetEmail('');
-          setResetError('');
-          setResetSuccess(false);
-        }}
-        style={styles.modal}
-      >
-        <Dialog.Title>Reset Password</Dialog.Title>
-        <Dialog.Content>
-          {resetSuccess ? (
-            <Text style={styles.successText}>
-              Password reset email sent! Please check your inbox.
-            </Text>
-          ) : (
-            <>
-              <Text style={styles.modalText}>
-                Enter your email address and we'll send you a link to reset your password.
-              </Text>
-              <View style={styles.modalInputContainer}>
-                <PaperTextInput
-                  style={styles.modalInput}
-                  mode="flat"
-                  label="Email"
-                  value={resetEmail}
-                  onChangeText={text => {
-                    setResetEmail(text);
-                    setResetError('');
-                  }}
-                  left={<TextInput.Icon icon="email" color={colors.primary} />}
-                  theme={{ colors: { primary: colors.primary } }}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoFocus={true}
-                  disabled={isLoading}
-                />
-                {resetError ? (
-                  <Text style={[styles.errorMessage, { marginTop: 8 }]}>
-                    {resetError}
-                  </Text>
-                ) : null}
-              </View>
-            </>
-          )}
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button 
-            onPress={() => {
-              setIsForgotPasswordVisible(false);
-              setResetEmail('');
-              setResetError('');
-              setResetSuccess(false);
-            }}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          {!resetSuccess && (
-            <Button 
-              onPress={handleResetPassword} 
-              disabled={isLoading || !resetEmail}
-              loading={isLoading}
-            >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
-            </Button>
-          )}
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
-  );
 
   if (isLoading) {
     return (
@@ -247,7 +172,80 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      <ForgotPasswordModal />
+
+      <Modal
+        visible={isForgotPasswordVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setIsForgotPasswordVisible(false);
+          setResetEmail('');
+          setResetError('');
+          setResetSuccess(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            
+            {resetSuccess ? (
+              <Text style={styles.successText}>
+                Password reset email sent! Please check your inbox.
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.modalText}>
+                  Enter your email address and we'll send you a link to reset your password.
+                </Text>
+                <View style={styles.modalInputContainer}>
+                  <PaperTextInput
+                    style={styles.modalInput}
+                    mode="flat"
+                    label="Email"
+                    value={resetEmail}
+                    onChangeText={text => {
+                      setResetEmail(text);
+                      if (resetError) setResetError('');
+                    }}
+                    left={<TextInput.Icon icon="email" color={colors.primary} />}
+                    theme={{ colors: { primary: colors.primary } }}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoFocus={true}
+                    disabled={isLoading}
+                    returnKeyType="send"
+                    onSubmitEditing={!isLoading && resetEmail ? handleResetPassword : undefined}
+                  />
+                  {resetError ? <Text style={styles.errorMessage}>{resetError}</Text> : null}
+                </View>
+              </>
+            )}
+            
+            <View style={styles.modalButtonContainer}>
+              <Button 
+                onPress={() => {
+                  setIsForgotPasswordVisible(false);
+                  setResetEmail('');
+                  setResetError('');
+                  setResetSuccess(false);
+                }}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              {!resetSuccess && (
+                <Button 
+                  onPress={handleResetPassword} 
+                  disabled={isLoading || !resetEmail}
+                  loading={isLoading}
+                >
+                  {isLoading ? 'Sending...' : 'Send Reset Link'}
+                </Button>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -333,27 +331,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  modal: {
-    maxHeight: '80%',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalInputContainer: {
-    width: '100%',
-    marginTop: 8,
+  modalContainer: {
+    backgroundColor: colors.background,
+    width: '90%',
+    maxWidth: 340,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  modalInput: {
-    width: '100%',
-    backgroundColor: 'transparent',
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 8,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 8,
+    marginBottom: 8,
+  },
+  modalButton: {
+    marginHorizontal: 4,
   },
   modalText: {
     marginBottom: 16,
+    marginHorizontal: 24,
     color: colors.textSecondary,
     fontSize: 14,
   },
   successText: {
     color: colors.primary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginVertical: 24,
+    marginHorizontal: 16,
     fontSize: 14,
+  },
+  modalInputContainer: {
+    width: '100%',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignSelf: 'center',
+    paddingHorizontal: 8,
+  },
+  modalInput: {
+    backgroundColor: 'transparent',
   },
 });
 
