@@ -37,6 +37,8 @@ const SettingsScreen = () => {
     subscription: true,
   });
 
+  const [collapsedHouseholds, setCollapsedHouseholds] = useState<Record<string, boolean>>({});
+
   const settingsData = [
     {
       key: 'account',
@@ -336,6 +338,13 @@ const SettingsScreen = () => {
     householdManager.setActiveHousehold(id);
   };
 
+  const toggleHousehold = (id: string) => {
+    setCollapsedHouseholds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>  
       {/* Settings List */}
@@ -467,14 +476,74 @@ const SettingsScreen = () => {
             {item.key === 'households' && !collapsedSections.households && (
               <View style={styles.sectionContent}>
                 {households.map((household) => (
-                  <View key={household.id} style={styles.listItem}>
-                    <Text>{household.name}</Text>
-                    <Button
-                      onPress={() => handleActivateHousehold(household.id)}
-                      theme={{ colors: { primary: colors.primary } }}
-                    >
-                      Activate
-                    </Button>
+                  <View key={household.id} style={styles.householdCard}>
+                    <View style={styles.householdHeader}>
+                      <TouchableOpacity 
+                        style={styles.householdTitleContainer}
+                        onPress={() => toggleHousehold(household.id)}
+                      >
+                        <Text style={styles.householdName}>{household.name}</Text>
+                        {household.active && (
+                          <View style={styles.activeHouseholdBadge}>
+                            <Text style={styles.activeHouseholdText}>Active</Text>
+                          </View>
+                        )}
+                        <IconButton
+                          icon={collapsedHouseholds[household.id] ? 'chevron-down' : 'chevron-up'}
+                          size={16}
+                          iconColor={colors.secondary}
+                          style={styles.collapseIcon}
+                        />
+                      </TouchableOpacity>
+                      <Button
+                        mode={household.active ? "outlined" : "contained"}
+                        onPress={() => handleActivateHousehold(household.id)}
+                        theme={{ colors: { primary: colors.primary } }}
+                        style={styles.activateButton}
+                        labelStyle={styles.activateButtonLabel}
+                        disabled={household.active}
+                      >
+                        {household.active ? "Current" : "Activate"}
+                      </Button>
+                    </View>
+                    
+                    {!collapsedHouseholds[household.id] && (
+                      <>
+                        <View style={styles.divider} />
+                        
+                        <View style={styles.participantsContainer}>
+                          <View style={styles.participantsHeaderRow}>
+                            <IconButton 
+                              icon="account-group" 
+                              size={16} 
+                              iconColor={colors.primary} 
+                              style={styles.participantsIcon} 
+                            />
+                            <Text style={styles.participantsLabel}>Household Members</Text>
+                          </View>
+                          
+                          <View style={styles.participantsList}>
+                            {household.participant_emails.map((email, index) => (
+                              <View key={index} style={styles.participantRow}>
+                                <IconButton 
+                                  icon="account" 
+                                  size={14} 
+                                  iconColor={household.owner && index === 0 ? colors.primary : colors.textSecondary} 
+                                  style={styles.participantIcon} 
+                                />
+                                <Text style={[
+                                  styles.participantEmail,
+                                  household.owner && index === 0 && styles.ownerEmail
+                                ]}>
+                                  {email}
+                                  {household.owner && index === 0 && ' (Owner)'}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      </>
+                    )}
                   </View>
                 ))}
               </View>
@@ -525,8 +594,10 @@ const styles = StyleSheet.create({
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   section: {
     marginVertical: 10,
@@ -581,8 +652,103 @@ const styles = StyleSheet.create({
   },
   subscriptionButton: {
     marginTop: 10,
-  }
-
+  },
+  householdCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    marginBottom: 16,
+    padding: 0,
+    shadowColor: colors.card.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  householdHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  householdTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  householdName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginRight: 8,
+  },
+  activeHouseholdBadge: {
+    backgroundColor: colors.success + '20', // 20% opacity
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+  activeHouseholdText: {
+    color: colors.success,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activateButton: {
+    marginLeft: 8,
+  },
+  activateButtonLabel: {
+    fontSize: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginHorizontal: 16,
+  },
+  participantsContainer: {
+    padding: 16,
+  },
+  participantsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  participantsIcon: {
+    margin: 0,
+    padding: 0,
+    marginRight: -4,
+  },
+  participantsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  participantsList: {
+    marginLeft: 8,
+  },
+  participantRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  participantIcon: {
+    margin: 0,
+    padding: 0,
+    marginRight: -6,
+  },
+  participantEmail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  ownerEmail: {
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
+  collapseIcon: {
+    margin: 0,
+    padding: 0,
+  },
 });
 
 export default SettingsScreen;

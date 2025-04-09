@@ -14,8 +14,8 @@ type LoginScreenProps = {
 
 const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('lauravgreiner@gmail.com');
+  const [password, setPassword] = useState('Password123!');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
