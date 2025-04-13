@@ -394,6 +394,12 @@ const SettingsScreen = () => {
   };
 
   const handleDeleteHousehold = async (household: Household) => {
+    // Double check ownership before proceeding
+    if (!household.owner) {
+      Alert.alert('Error', 'Only the owner can delete a household');
+      return;
+    }
+
     Alert.alert(
       'Delete Household',
       `Are you sure you want to delete "${household.name}"? This action cannot be undone.`,
