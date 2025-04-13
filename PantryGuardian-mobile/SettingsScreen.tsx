@@ -37,7 +37,13 @@ const SettingsScreen = () => {
     subscription: true,
   });
 
-  const [collapsedHouseholds, setCollapsedHouseholds] = useState<Record<string, boolean>>({});
+  const [collapsedHouseholds, setCollapsedHouseholds] = useState<Record<string, boolean>>(() => {
+    const initialCollapsed: Record<string, boolean> = {};
+    households.forEach(household => {
+      initialCollapsed[household.id] = true;
+    });
+    return initialCollapsed;
+  });
 
   const settingsData = [
     {
@@ -155,6 +161,19 @@ const SettingsScreen = () => {
 
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    // Update collapsed state when households change
+    setCollapsedHouseholds(prev => {
+      const updated: Record<string, boolean> = { ...prev };
+      households.forEach(household => {
+        if (!(household.id in updated)) {
+          updated[household.id] = true; // New households start collapsed
+        }
+      });
+      return updated;
+    });
+  }, [households]);
 
   const toggleSection = (section: string) => {
     setCollapsedSections((prev) => ({
@@ -598,29 +617,6 @@ const SettingsScreen = () => {
                           style={styles.collapseIcon}
                         />
                       </TouchableOpacity>
-                      <View style={styles.householdActions}>
-                        {household.owner && !household.active && (
-                          <Button
-                            mode="outlined"
-                            onPress={() => handleDeleteHousehold(household)}
-                            theme={{ colors: { primary: colors.error } }}
-                            style={styles.deleteButton}
-                            labelStyle={styles.deleteButtonLabel}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                        <Button
-                          mode={household.active ? "outlined" : "contained"}
-                          onPress={() => handleActivateHousehold(household.id)}
-                          theme={{ colors: { primary: colors.primary } }}
-                          style={styles.activateButton}
-                          labelStyle={styles.activateButtonLabel}
-                          disabled={household.active}
-                        >
-                          {household.active ? "Current" : "Activate"}
-                        </Button>
-                      </View>
                     </View>
                     
                     {!collapsedHouseholds[household.id] && (
@@ -656,6 +652,30 @@ const SettingsScreen = () => {
                                 </Text>
                               </View>
                             ))}
+                          </View>
+
+                          <View style={styles.householdActions}>
+                            {household.owner && !household.active && (
+                              <Button
+                                mode="outlined"
+                                onPress={() => handleDeleteHousehold(household)}
+                                theme={{ colors: { primary: colors.error } }}
+                                style={styles.deleteButton}
+                                labelStyle={styles.deleteButtonLabel}
+                              >
+                                Delete
+                              </Button>
+                            )}
+                            <Button
+                              mode={household.active ? "outlined" : "contained"}
+                              onPress={() => handleActivateHousehold(household.id)}
+                              theme={{ colors: { primary: colors.primary } }}
+                              style={styles.activateButton}
+                              labelStyle={styles.activateButtonLabel}
+                              disabled={household.active}
+                            >
+                              {household.active ? "Current" : "Activate"}
+                            </Button>
                           </View>
                         </View>
                       </>
@@ -812,7 +832,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activateButton: {
-    marginLeft: 8,
+    minWidth: 80,
   },
   activateButtonLabel: {
     fontSize: 12,
@@ -871,9 +891,12 @@ const styles = StyleSheet.create({
   householdActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+    gap: 8,
   },
   deleteButton: {
-    marginLeft: 8,
+    minWidth: 80,
   },
   deleteButtonLabel: {
     fontSize: 12,
