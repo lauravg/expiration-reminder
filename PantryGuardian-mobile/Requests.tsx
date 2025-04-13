@@ -527,6 +527,34 @@ class Requests {
     }
   }
 
+  async createHousehold(name: string): Promise<boolean> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        '/create_household',
+        { name }
+      );
+      return response.data.success;
+    } catch (error) {
+      console.error('Error creating household:', error);
+      return false;
+    }
+  }
+
+  async deleteHousehold(id: string): Promise<boolean> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'delete_household',
+        { id }
+      );
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error deleting household:', error);
+      return false;
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,

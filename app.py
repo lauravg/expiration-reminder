@@ -1258,6 +1258,59 @@ def reset_password():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/create_household", methods=["POST"])
+@token_required
+def create_household():
+    try:
+        user = flask_login.current_user
+        data = request.json
+        name = data.get("name")
+        
+        if not name:
+            return jsonify({"success": False, "error": "Household name is required"}), 400
+
+        # Create new household with current user as owner and participant
+        household = Household(None, user.get_id(), name, [user.get_id()])
+        if not household_manager.add_or_update_household(household):
+            return jsonify({"success": False, "error": "Failed to create household"}), 500
+
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        log.error(f"Error creating household: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/delete_household", methods=["POST"])
+@token_required
+def delete_household():
+    try:
+        user = flask_login.current_user
+        data = request.json
+        household_id = data.get("id")
+        
+        if not household_id:
+            return jsonify({"success": False, "error": "Household ID is required"}), 400
+
+        # Get the household
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+
+        # Check if user is the owner
+        if household.owner_uid != user.get_id():
+            return jsonify({"success": False, "error": "Only the owner can delete a household"}), 403
+
+        # Delete the household
+        if household_manager.delete_household(household_id, user.get_id()):
+            return jsonify({"success": True}), 200
+        else:
+            return jsonify({"success": False, "error": "Failed to delete household"}), 500
+            
+    except Exception as e:
+        log.error(f"Error deleting household: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

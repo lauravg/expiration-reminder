@@ -374,6 +374,49 @@ const SettingsScreen = () => {
     }));
   };
 
+  const handleDeleteHousehold = async (household: Household) => {
+    Alert.alert(
+      'Delete Household',
+      `Are you sure you want to delete "${household.name}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await requests.deleteHousehold(household.id);
+              if (success) {
+                // Remove the household from the list
+                setHouseholds(households.filter(h => h.id !== household.id));
+                
+                // If this was the active household, set another one as active
+                if (household.active) {
+                  const remainingHouseholds = households.filter(h => h.id !== household.id);
+                  if (remainingHouseholds.length > 0) {
+                    await householdManager.setActiveHousehold(remainingHouseholds[0].id);
+                    // Update the active status of remaining households
+                    setHouseholds(remainingHouseholds.map(h => ({
+                      ...h,
+                      active: h.id === remainingHouseholds[0].id
+                    })));
+                  }
+                }
+                
+                Alert.alert('Success', 'Household deleted successfully');
+              } else {
+                Alert.alert('Error', 'Failed to delete household');
+              }
+            } catch (error) {
+              console.error('Error deleting household:', error);
+              Alert.alert('Error', 'Failed to delete household');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>  
       {/* Settings List */}
@@ -504,6 +547,37 @@ const SettingsScreen = () => {
             {/* Expandable Section for Households */}
             {item.key === 'households' && !collapsedSections.households && (
               <View style={styles.sectionContent}>
+                <Button
+                  mode="contained"
+                  onPress={() => {
+                    Alert.prompt(
+                      'Create New Household',
+                      'Enter a name for your new household:',
+                      async (name) => {
+                        if (name) {
+                          try {
+                            const success = await requests.createHousehold(name);
+                            if (success) {
+                              // Refresh households list
+                              const householdsList = await householdManager.getHouseholds();
+                              setHouseholds(householdsList);
+                              Alert.alert('Success', 'Household created successfully!');
+                            } else {
+                              Alert.alert('Error', 'Failed to create household');
+                            }
+                          } catch (error) {
+                            console.error('Error creating household:', error);
+                            Alert.alert('Error', 'Failed to create household');
+                          }
+                        }
+                      }
+                    );
+                  }}
+                  style={styles.createHouseholdButton}
+                  theme={{ colors: { primary: colors.primary } }}
+                >
+                  Create New Household
+                </Button>
                 {households.map((household) => (
                   <View key={household.id} style={styles.householdCard}>
                     <View style={styles.householdHeader}>
@@ -524,16 +598,29 @@ const SettingsScreen = () => {
                           style={styles.collapseIcon}
                         />
                       </TouchableOpacity>
-                      <Button
-                        mode={household.active ? "outlined" : "contained"}
-                        onPress={() => handleActivateHousehold(household.id)}
-                        theme={{ colors: { primary: colors.primary } }}
-                        style={styles.activateButton}
-                        labelStyle={styles.activateButtonLabel}
-                        disabled={household.active}
-                      >
-                        {household.active ? "Current" : "Activate"}
-                      </Button>
+                      <View style={styles.householdActions}>
+                        {household.owner && !household.active && (
+                          <Button
+                            mode="outlined"
+                            onPress={() => handleDeleteHousehold(household)}
+                            theme={{ colors: { primary: colors.error } }}
+                            style={styles.deleteButton}
+                            labelStyle={styles.deleteButtonLabel}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                        <Button
+                          mode={household.active ? "outlined" : "contained"}
+                          onPress={() => handleActivateHousehold(household.id)}
+                          theme={{ colors: { primary: colors.primary } }}
+                          style={styles.activateButton}
+                          labelStyle={styles.activateButtonLabel}
+                          disabled={household.active}
+                        >
+                          {household.active ? "Current" : "Activate"}
+                        </Button>
+                      </View>
                     </View>
                     
                     {!collapsedHouseholds[household.id] && (
@@ -777,6 +864,19 @@ const styles = StyleSheet.create({
   collapseIcon: {
     margin: 0,
     padding: 0,
+  },
+  createHouseholdButton: {
+    marginBottom: 16,
+  },
+  householdActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    marginLeft: 8,
+  },
+  deleteButtonLabel: {
+    fontSize: 12,
   },
 });
 
