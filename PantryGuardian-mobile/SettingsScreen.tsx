@@ -335,7 +335,36 @@ const SettingsScreen = () => {
   };
 
   const handleActivateHousehold = async (id: string) => {
-    householdManager.setActiveHousehold(id);
+    try {
+      // Set the new active household
+      await householdManager.setActiveHousehold(id);
+      
+      // Update the households list to reflect the change
+      const updatedHouseholds = households.map(household => ({
+        ...household,
+        active: household.id === id
+      }));
+      setHouseholds(updatedHouseholds);
+      
+      // Show success message
+      Alert.alert(
+        'Success',
+        'Household activated successfully',
+        [{ text: 'OK' }]
+      );
+      
+      // Refresh locations and categories for the new active household
+      const response = await requests.getLocationsAndCategories(id);
+      setLocations(response.locations || []);
+      setCategories(response.categories || []);
+    } catch (error) {
+      console.error('Failed to activate household:', error);
+      Alert.alert(
+        'Error',
+        'Failed to activate household. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const toggleHousehold = (id: string) => {
