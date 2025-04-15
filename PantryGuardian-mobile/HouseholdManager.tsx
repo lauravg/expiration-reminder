@@ -7,7 +7,7 @@ export interface Household {
   owner: boolean;
   active: boolean;
   participant_emails: string[];
-  display_name: string[];
+  display_names: string[];
 }
 
 export class HouseholdManager {
