@@ -578,6 +578,30 @@ class Requests {
     }
   }
 
+  async updateProfile(displayName: string): Promise<boolean> {
+    try {
+      console.log('Updating profile with display name:', displayName);
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'update_profile',
+        { display_name: displayName }
+      );
+      
+      if (response.status === 200 && response.data.success) {
+        // Update the session data locally
+        this.sessionData.setUserDisplayName(displayName);
+        console.log('Profile updated successfully');
+        return true;
+      } else {
+        console.error('Failed to update profile:', response.data?.error || 'Unknown error');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return false;
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,

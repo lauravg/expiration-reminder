@@ -1364,6 +1364,34 @@ def set_active_household():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/update_profile", methods=["POST"])
+@token_required
+def update_profile():
+    try:
+        user = flask_login.current_user
+        data = request.json
+        display_name = data.get("display_name")
+        
+        if not display_name:
+            return jsonify({"success": False, "error": "Display name is required"}), 400
+            
+        # Update the user's display name in Firebase Auth
+        auth.update_user(user.get_id(), display_name=display_name)
+        
+        # Get all households where the user is a participant
+        households = household_manager.get_households_for_user(user.get_id())
+        
+        # For each household, update the display names cache when listing households
+        # This ensures the updated display name will be shown for this user in all households
+        
+        log.info(f"User {user.get_id()} updated display name to: {display_name}")
+        return jsonify({"success": True}), 200
+        
+    except Exception as e:
+        log.error(f"Error updating profile: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, FlatList } from 'react-native';
 import { Button, Avatar, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useRoute, RouteProp } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests from './Requests';
@@ -12,8 +12,14 @@ import { Household, HouseholdManager } from './HouseholdManager';
 import { scheduleDailyNotification } from './Notifications';
 import * as Notifications from 'expo-notifications';
 
+// Add a type definition for the route params
+type SettingsScreenParams = {
+  refresh?: boolean;
+};
+
 const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
+  const route = useRoute<RouteProp<Record<string, SettingsScreenParams>, string>>();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [daysBefore, setDaysBefore] = useState<string>('5'); // Default to '5'
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -161,6 +167,24 @@ const SettingsScreen = () => {
 
     loadSettings();
   }, []);
+
+  // Listen for navigation events with refresh parameter
+  useEffect(() => {
+    const refreshHouseholds = async () => {
+      try {
+        const householdsList = await householdManager.getHouseholds();
+        setHouseholds(householdsList);
+      } catch (error) {
+        console.error("Error refreshing households:", error);
+      }
+    };
+
+    if (route.params?.refresh) {
+      refreshHouseholds();
+      // Reset the parameter to avoid unnecessary refreshes
+      navigation.setParams({ refresh: undefined });
+    }
+  }, [route.params?.refresh]);
 
   useEffect(() => {
     // Update collapsed state when households change

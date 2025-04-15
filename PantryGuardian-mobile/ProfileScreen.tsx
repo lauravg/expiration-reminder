@@ -25,7 +25,8 @@ const ProfileScreen = () => {
 
   type RootStackParamList = {
     Profile: undefined;
-    Login: undefined; // Add other routes as needed
+    Login: undefined;
+    Settings: { refresh?: boolean } | undefined;
   };
 
   const pickImage = async () => {
@@ -43,10 +44,33 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleSave = () => {
-    sessionData.setUserDisplayName(displayName);
-    sessionData.setUserEmail(email);
-    alert('Profile updated successfully!');
+  const handleSave = async () => {
+    try {
+      const requests = new Requests();
+      
+      // Update display name in the database
+      const success = await requests.updateProfile(displayName);
+      
+      if (success) {
+        // Update local session data
+        sessionData.setUserDisplayName(displayName);
+        sessionData.setUserEmail(email);
+        
+        Alert.alert('Success', 'Profile updated successfully!');
+        
+        // Go back with a refresh parameter to trigger household list refresh
+        navigation.navigate({
+          name: 'Settings',
+          params: { refresh: true },
+          merge: true,
+        });
+      } else {
+        Alert.alert('Error', 'Failed to update profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'An unexpected error occurred while updating your profile.');
+    }
   };
 
   const handleChangePassword = async () => {
