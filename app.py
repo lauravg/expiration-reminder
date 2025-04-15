@@ -380,6 +380,9 @@ def list_households():
                 "participant_emails": [
                     user_manager.get_user(uid).email() for uid in household.participants
                 ],
+                "display_names": [
+                    user_manager.get_user(uid).display_name() for uid in household.participants
+                ],
             }
         )
 

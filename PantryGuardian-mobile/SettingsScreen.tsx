@@ -641,23 +641,36 @@ const SettingsScreen = () => {
                           </View>
                           
                           <View style={styles.participantsList}>
-                            {household.participant_emails.map((email, index) => (
-                              <View key={index} style={styles.participantRow}>
-                                <IconButton 
-                                  icon="account" 
-                                  size={14} 
-                                  iconColor={household.owner && index === 0 ? colors.primary : colors.textSecondary} 
-                                  style={styles.participantIcon} 
-                                />
-                                <Text style={[
-                                  styles.participantEmail,
-                                  household.owner && index === 0 && styles.ownerEmail
-                                ]}>
-                                  {email}
-                                  {household.owner && index === 0 && ' (Owner)'}
-                                </Text>
-                              </View>
-                            ))}
+                            {household.participant_emails.map((email, index) => {
+                              // Use display name if available, otherwise use email
+                              const displayName = household.display_names[index] || email;
+                              
+                              // Only show email separately if it's different from the display name
+                              const showEmail = displayName !== email;
+                              
+                              return (
+                                <View key={index} style={styles.participantRow}>
+                                  <IconButton 
+                                    icon="account" 
+                                    size={14} 
+                                    iconColor={household.owner && index === 0 ? colors.primary : colors.textSecondary} 
+                                    style={styles.participantIcon} 
+                                  />
+                                  <View style={styles.participantInfo}>
+                                    <Text style={[
+                                      styles.participantName,
+                                      household.owner && index === 0 && styles.ownerName
+                                    ]}>
+                                      {displayName}
+                                      {household.owner && index === 0 && ' (Owner)'}
+                                    </Text>
+                                    {showEmail && (
+                                      <Text style={styles.participantEmail}>{email}</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              );
+                            })}
                           </View>
 
                           <View style={styles.householdActions}>
@@ -871,21 +884,33 @@ const styles = StyleSheet.create({
   },
   participantRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
   participantIcon: {
     margin: 0,
     padding: 0,
-    marginRight: -6,
+    marginRight: 4,
+    marginTop: 2,
+  },
+  participantInfo: {
+    flexDirection: 'column',
+    flex: 1,
+  },
+  participantName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 1,
   },
   participantEmail: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textSecondary,
+    opacity: 0.8,
   },
-  ownerEmail: {
-    color: colors.textPrimary,
-    fontWeight: '500',
+  ownerName: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   collapseIcon: {
     margin: 0,
