@@ -1311,6 +1311,56 @@ def delete_household():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/get_last_active_household", methods=["POST"])
+@token_required
+def get_last_active_household():
+    try:
+        uid = flask_login.current_user.get_id()
+        # Get the last active household from the user's document
+        user_doc = firestore.collection("users").document(uid).get()
+        if user_doc.exists:
+            last_active_household = user_doc.get("last_active_household")
+            if last_active_household:
+                # Verify the household still exists and user has access
+                household = household_manager.get_household(last_active_household)
+                if household and uid in household.participants:
+                    return jsonify({"household_id": last_active_household})
+        return jsonify({"household_id": None})
+    except Exception as e:
+        log.error(f"Error getting last active household: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/set_active_household", methods=["POST"])
+@token_required
+def set_active_household():
+    try:
+        uid = flask_login.current_user.get_id()
+        data = request.json
+        household_id = data.get("household_id")
+        
+        if not household_id:
+            return jsonify({"success": False, "error": "Household ID is required"}), 400
+
+        # Verify the household exists and user has access
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+
+        if uid not in household.participants:
+            return jsonify({"success": False, "error": "User does not have access to this household"}), 403
+
+        # Update the last active household in the user's document
+        firestore.collection("users").document(uid).set({
+            "last_active_household": household_id
+        }, merge=True)
+
+        return jsonify({"success": True})
+    except Exception as e:
+        log.error(f"Error setting active household: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

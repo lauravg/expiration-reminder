@@ -555,6 +555,29 @@ class Requests {
     }
   }
 
+  async getLastActiveHousehold(): Promise<string | null> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'get_last_active_household');
+      if (response.status >= 200 && response.status < 300) {
+        return response.data.household_id || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to get last active household:', error);
+      return null;
+    }
+  }
+
+  async setActiveHousehold(householdId: string): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'set_active_household', { household_id: householdId });
+      return response.status >= 200 && response.status < 300;
+    } catch (error) {
+      console.error('Failed to set active household:', error);
+      return false;
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,
