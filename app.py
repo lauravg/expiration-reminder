@@ -1392,6 +1392,174 @@ def update_profile():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/invite_to_household", methods=["POST"])
+@token_required
+def invite_to_household():
+    try:
+        user = flask_login.current_user
+        data = request.json
+        household_id = data.get("household_id")
+        invitee_email = data.get("email")
+        
+        if not household_id:
+            return jsonify({"success": False, "error": "Household ID is required"}), 400
+            
+        if not invitee_email:
+            return jsonify({"success": False, "error": "Invitee email is required"}), 400
+            
+        # Verify the user is a member of the household
+        household = household_manager.get_household(household_id)
+        if not household:
+            return jsonify({"success": False, "error": "Household not found"}), 404
+            
+        if user.get_id() not in household.participants:
+            return jsonify({"success": False, "error": "You are not a member of this household"}), 403
+            
+        # Create an invitation
+        invitation = household_manager.create_invitation(household_id, user.get_id(), invitee_email)
+        if not invitation:
+            return jsonify({"success": False, "error": "Failed to create invitation"}), 500
+            
+        # Send invitation email
+        # Get base URL from request
+        base_url = request.headers.get("Origin", "https://pantryguardian.appspot.com")
+        
+        # Send the invitation email
+        email_sent = send_mail.send_invitation_email(
+            invitation.id, 
+            household.name, 
+            user.display_name(), 
+            invitee_email, 
+            base_url
+        )
+        
+        if not email_sent:
+            log.warning(f"Invitation created but email could not be sent to {invitee_email}")
+            
+        return jsonify({
+            "success": True, 
+            "invitation_id": invitation.id,
+            "email_sent": email_sent
+        }), 200
+        
+    except Exception as e:
+        log.error(f"Error inviting to household: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/accept_invitation/<string:invitation_id>", methods=["POST"])
+@token_required
+def accept_invitation_endpoint(invitation_id):
+    try:
+        user = flask_login.current_user
+        uid = user.get_id()
+        
+        # Get the invitation
+        invitation = household_manager.get_invitation(invitation_id)
+        if not invitation:
+            return jsonify({"success": False, "error": "Invitation not found"}), 404
+            
+        # Verify the invitation is for this user's email
+        if invitation.invitee_email != user.email():
+            return jsonify({"success": False, "error": "This invitation is not for your email address"}), 403
+            
+        # Accept the invitation
+        if not household_manager.accept_invitation(invitation_id, uid):
+            return jsonify({"success": False, "error": "Failed to accept invitation"}), 500
+            
+        return jsonify({"success": True, "household_id": invitation.household_id}), 200
+        
+    except Exception as e:
+        log.error(f"Error accepting invitation: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/reject_invitation/<string:invitation_id>", methods=["POST"])
+@token_required
+def reject_invitation_endpoint(invitation_id):
+    try:
+        user = flask_login.current_user
+        
+        # Get the invitation
+        invitation = household_manager.get_invitation(invitation_id)
+        if not invitation:
+            return jsonify({"success": False, "error": "Invitation not found"}), 404
+            
+        # Verify the invitation is for this user's email
+        if invitation.invitee_email != user.email():
+            return jsonify({"success": False, "error": "This invitation is not for your email address"}), 403
+            
+        # Reject the invitation
+        if not household_manager.reject_invitation(invitation_id):
+            return jsonify({"success": False, "error": "Failed to reject invitation"}), 500
+            
+        return jsonify({"success": True}), 200
+        
+    except Exception as e:
+        log.error(f"Error rejecting invitation: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/get_pending_invitations", methods=["POST"])
+@token_required
+def get_pending_invitations():
+    try:
+        user = flask_login.current_user
+        email = user.email()
+        
+        # Get all pending invitations for this user's email
+        invitations = household_manager.get_invitations_for_email(email)
+        
+        # Format the response
+        invitation_list = []
+        for invitation in invitations:
+            # Get inviter's name
+            inviter = user_manager.get_user(invitation.inviter_uid)
+            inviter_name = inviter.display_name() if inviter else "Unknown"
+            
+            invitation_list.append({
+                "id": invitation.id,
+                "household_id": invitation.household_id,
+                "household_name": invitation.household_name,
+                "inviter_uid": invitation.inviter_uid,
+                "inviter_name": inviter_name,
+                "created_at": invitation.created_at
+            })
+            
+        return jsonify({"success": True, "invitations": invitation_list}), 200
+        
+    except Exception as e:
+        log.error(f"Error getting pending invitations: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Handle direct links to accept invitations (public route)
+@app.route("/accept-invitation", methods=["GET"])
+def accept_invitation_page():
+    invitation_id = request.args.get("id")
+    if not invitation_id:
+        return render_template("error.html", message="Invalid invitation link"), 400
+        
+    # Get the invitation
+    invitation = household_manager.get_invitation(invitation_id)
+    if not invitation:
+        return render_template("error.html", message="Invitation not found or has expired"), 404
+        
+    # If invitation is no longer pending, show appropriate message
+    if invitation.status != "pending":
+        if invitation.status == "accepted":
+            return render_template("error.html", message="This invitation has already been accepted"), 400
+        else:
+            return render_template("error.html", message="This invitation has been rejected or has expired"), 400
+    
+    # Show the invitation details and login/signup prompt
+    return render_template(
+        "accept_invitation.html", 
+        invitation_id=invitation_id,
+        household_name=invitation.household_name
+    )
+
+
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

@@ -466,6 +466,109 @@ const SettingsScreen = () => {
     );
   };
 
+  // Function to handle inviting a user to a household
+  const handleInviteUser = (householdId: string) => {
+    Alert.prompt(
+      'Invite to Household',
+      'Enter the email address of the person you want to invite:',
+      async (email) => {
+        if (!email) return;
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          Alert.alert('Invalid Email', 'Please enter a valid email address.');
+          return;
+        }
+        
+        try {
+          // Display loading indicator
+          Alert.alert('Sending Invitation', 'Please wait...');
+          
+          const result = await requests.inviteToHousehold(householdId, email);
+          
+          if (result.success) {
+            if (result.email_sent) {
+              Alert.alert(
+                'Invitation Sent',
+                `An invitation has been sent to ${email}. They'll need to accept it to join your household.`
+              );
+            } else {
+              Alert.alert(
+                'Invitation Created',
+                `An invitation has been created for ${email}, but we couldn't send them an email. Please notify them manually.`
+              );
+            }
+          } else {
+            Alert.alert('Error', result.error || 'Failed to send invitation');
+          }
+        } catch (error) {
+          console.error('Error inviting user:', error);
+          Alert.alert('Error', 'An unexpected error occurred while sending the invitation');
+        }
+      },
+      'plain-text'
+    );
+  };
+
+  useEffect(() => {
+    // Check for pending invitations whenever the settings screen is viewed
+    const checkPendingInvitations = async () => {
+      try {
+        const pendingInvitations = await requests.getPendingInvitations();
+        if (pendingInvitations.length > 0) {
+          // Show alert for each pending invitation
+          pendingInvitations.forEach(invitation => {
+            Alert.alert(
+              'Household Invitation',
+              `You've been invited to join "${invitation.household_name}" by ${invitation.inviter_name}`,
+              [
+                { text: 'Decline', style: 'cancel', onPress: () => handleRejectInvitation(invitation.id) },
+                { text: 'Accept', onPress: () => handleAcceptInvitation(invitation.id) }
+              ]
+            );
+          });
+        }
+      } catch (error) {
+        console.error('Error checking pending invitations:', error);
+      }
+    };
+    
+    checkPendingInvitations();
+  }, []);
+  
+  const handleAcceptInvitation = async (invitationId: string) => {
+    try {
+      const result = await requests.acceptInvitation(invitationId);
+      if (result.success) {
+        Alert.alert('Success', 'You have successfully joined the household!');
+        
+        // Refresh households list
+        const householdsList = await householdManager.getHouseholds();
+        setHouseholds(householdsList);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to accept invitation');
+      }
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    }
+  };
+  
+  const handleRejectInvitation = async (invitationId: string) => {
+    try {
+      const result = await requests.rejectInvitation(invitationId);
+      if (result.success) {
+        Alert.alert('Invitation Declined', 'You have declined the household invitation.');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to reject invitation');
+      }
+    } catch (error) {
+      console.error('Error rejecting invitation:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    }
+  };
+
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>  
       {/* Settings List */}
@@ -719,6 +822,16 @@ const SettingsScreen = () => {
                             >
                               {household.active ? "Current" : "Activate"}
                             </Button>
+                            <Button
+                              mode="outlined"
+                              onPress={() => handleInviteUser(household.id)}
+                              theme={{ colors: { primary: colors.primary } }}
+                              style={styles.inviteButton}
+                              labelStyle={styles.inviteButtonLabel}
+                              icon="account-plus"
+                            >
+                              Invite
+                            </Button>
                           </View>
                         </View>
                       </>
@@ -876,6 +989,7 @@ const styles = StyleSheet.create({
   },
   activateButton: {
     minWidth: 80,
+    marginRight: 10,
   },
   activateButtonLabel: {
     fontSize: 12,
@@ -945,16 +1059,27 @@ const styles = StyleSheet.create({
   },
   householdActions: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'flex-end',
-    marginTop: 16,
-    gap: 8,
+    marginTop: 15,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   deleteButton: {
+    borderColor: colors.error,
+    marginRight: 10,
     minWidth: 80,
   },
   deleteButtonLabel: {
+    color: colors.error,
     fontSize: 12,
+  },
+  inviteButton: {
+    minWidth: 80,
+    borderColor: colors.primary,
+  },
+  inviteButtonLabel: {
+    fontSize: 12,
+    color: colors.primary,
   },
 });
 

@@ -43,40 +43,86 @@ class SendMail:
     def stop_schedule_thread(self):
         self.stop_thread_event.set()
 
-    def email_notification(self, subject, body):
+    def email_notification(self, subject, body, receiver_email=None):
         log.debug('### inside email_notification')
-        # Load email configuration from the JSON file
-        with open('config.json', 'r') as config_file:
-            email_config = json.load(config_file)
-
-        # Configure Email Parameters
-        smtp_server = email_config['smtp_server']
-        smtp_port = email_config['smtp_port']
-        sender_email = email_config['sender_email']
-        sender_password = email_config['sender_password']
-        receiver_email = email_config['receiver_email']
-
-        # Create an email message
-        message = MIMEMultipart()
-        message['From'] = sender_email
-        message['To'] = receiver_email
-        message['Subject'] = subject
-
-        message.attach(MIMEText(body, 'plain'))
-
-        # Establish an SMTP connection and send the email
+        # Load email configuration from individual secret files
         try:
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, receiver_email, message.as_string())
-            log.info('Email sent successfully.')
-        except smtplib.SMTPException as e:
-            log.error(f'SMTP Exception: {str(e)}')
+            secrets_dir = '/Users/laura/Projects/PantryGuardian/secrets'
+            
+            # Read email configuration from individual files
+            with open(f'{secrets_dir}/SMTP_SERVER', 'r') as f:
+                smtp_server = f.read().strip()
+                
+            with open(f'{secrets_dir}/SMTP_PORT', 'r') as f:
+                smtp_port = int(f.read().strip())
+                
+            with open(f'{secrets_dir}/SENDER_EMAIL', 'r') as f:
+                sender_email = f.read().strip()
+                
+            with open(f'{secrets_dir}/SMTP_PASSWORD', 'r') as f:
+                sender_password = f.read().strip()
+            
+            # If no specific receiver email is provided, use the sender email as default
+            if receiver_email is None:
+                receiver_email = sender_email
+
+            # Create an email message
+            message = MIMEMultipart()
+            message['From'] = sender_email
+            message['To'] = receiver_email
+            message['Subject'] = subject
+
+            message.attach(MIMEText(body, 'plain'))
+
+            # Establish an SMTP connection and send the email
+            try:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, receiver_email, message.as_string())
+                log.info(f'Email sent successfully to {receiver_email}.')
+                return True
+            except smtplib.SMTPException as e:
+                log.error(f'SMTP Exception: {str(e)}')
+                return False
+            except Exception as e:
+                log.error(f'Failed to send email: {str(e)}')
+                return False
+            finally:
+                if 'server' in locals():
+                    server.quit()
+        except FileNotFoundError as e:
+            log.error(f'Email configuration file not found: {str(e)}')
+            return False
+        except ValueError as e:
+            log.error(f'Invalid value in configuration: {str(e)}')
+            return False
         except Exception as e:
-            log.error(f'Failed to send email: {str(e)}')
-        finally:
-            server.quit()
+            log.error(f'Unexpected error loading email configuration: {str(e)}')
+            return False
+            
+    def send_invitation_email(self, invitation_id, household_name, inviter_name, invitee_email, base_url):
+        subject = f"Invitation to join {household_name} on PantryGuardian"
+        
+        # Create a link with the invitation ID
+        invitation_link = f"{base_url}/accept-invitation?id={invitation_id}"
+        
+        body = f"""Hello,
+
+You have been invited by {inviter_name} to join their household "{household_name}" on PantryGuardian.
+
+To accept this invitation, please click on the following link:
+{invitation_link}
+
+This invitation will expire in 7 days.
+
+If you don't have a PantryGuardian account yet, you'll need to create one to join the household.
+
+Thank you,
+The PantryGuardian Team
+"""
+        
+        return self.email_notification(subject, body, invitee_email)
 
     # Define a function to send the daily email
     def send_daily_email(self):

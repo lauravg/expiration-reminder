@@ -602,6 +602,118 @@ class Requests {
     }
   }
 
+  // Invite a user to join a household
+  async inviteToHousehold(householdId: string, email: string): Promise<{success: boolean, error?: string, email_sent?: boolean}> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'invite_to_household',
+        { household_id: householdId, email: email }
+      );
+      
+      if (response.status === 200 && response.data.success) {
+        console.log('Household invitation sent successfully');
+        return { 
+          success: true, 
+          email_sent: response.data.email_sent
+        };
+      } else {
+        console.error('Failed to send household invitation:', response.data?.error || 'Unknown error');
+        return { 
+          success: false, 
+          error: response.data?.error || 'Failed to send invitation'
+        };
+      }
+    } catch (error: any) {
+      console.error('Error sending household invitation:', error);
+      return { 
+        success: false, 
+        error: error.message || 'An unexpected error occurred'
+      };
+    }
+  }
+
+  // Get pending invitations for the current user
+  async getPendingInvitations(): Promise<any[]> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        'get_pending_invitations',
+        {}
+      );
+      
+      if (response.status === 200 && response.data.success) {
+        console.log('Retrieved pending invitations:', response.data.invitations.length);
+        return response.data.invitations || [];
+      } else {
+        console.error('Failed to get pending invitations:', response.data?.error || 'Unknown error');
+        return [];
+      }
+    } catch (error) {
+      console.error('Error getting pending invitations:', error);
+      return [];
+    }
+  }
+
+  // Accept a household invitation
+  async acceptInvitation(invitationId: string): Promise<{success: boolean, error?: string, household_id?: string}> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        `accept_invitation/${invitationId}`,
+        {}
+      );
+      
+      if (response.status === 200 && response.data.success) {
+        console.log('Invitation accepted successfully');
+        return { 
+          success: true, 
+          household_id: response.data.household_id
+        };
+      } else {
+        console.error('Failed to accept invitation:', response.data?.error || 'Unknown error');
+        return { 
+          success: false, 
+          error: response.data?.error || 'Failed to accept invitation'
+        };
+      }
+    } catch (error: any) {
+      console.error('Error accepting invitation:', error);
+      return { 
+        success: false, 
+        error: error.message || 'An unexpected error occurred'
+      };
+    }
+  }
+
+  // Reject a household invitation
+  async rejectInvitation(invitationId: string): Promise<{success: boolean, error?: string}> {
+    try {
+      const response = await this._make_request(
+        this.sessionData.idToken,
+        `reject_invitation/${invitationId}`,
+        {}
+      );
+      
+      if (response.status === 200 && response.data.success) {
+        console.log('Invitation rejected successfully');
+        return { success: true };
+      } else {
+        console.error('Failed to reject invitation:', response.data?.error || 'Unknown error');
+        return { 
+          success: false, 
+          error: response.data?.error || 'Failed to reject invitation'
+        };
+      }
+    } catch (error: any) {
+      console.error('Error rejecting invitation:', error);
+      return { 
+        success: false, 
+        error: error.message || 'An unexpected error occurred'
+      };
+    }
+  }
+
   private async _make_request(
     idToken: string | undefined,
     path: string,
