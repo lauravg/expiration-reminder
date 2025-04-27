@@ -18,21 +18,24 @@
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "bundleIdentifier": "com.lauravh.pantryguardian"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.lauravh.pantryguardian"
     },
+    "scheme": "pantryguardian",
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "expoProjectId": "92e1251a-e072-484a-8ebd-10e717e57282"
     },
-    "owner": "lauravgr",
+    "owner": "lauravh",
     "plugins": [
       "expo-secure-store"
     ]

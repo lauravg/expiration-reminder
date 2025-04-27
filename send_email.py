@@ -12,6 +12,7 @@ import firebase_admin
 from firebase_admin import credentials, db as firebase_db
 from flask import Flask, app
 from datetime import datetime
+import os
 
 
 class SendMail:
@@ -43,11 +44,12 @@ class SendMail:
     def stop_schedule_thread(self):
         self.stop_thread_event.set()
 
-    def email_notification(self, subject, body, receiver_email=None):
+    def email_notification(self, subject, body, receiver_email=None, html_body=None):
         log.debug('### inside email_notification')
         # Load email configuration from individual secret files
         try:
-            secrets_dir = '/Users/laura/Projects/PantryGuardian/secrets'
+            # Use a more flexible path to the secrets directory
+            secrets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'secrets')
             
             # Read email configuration from individual files
             with open(f'{secrets_dir}/SMTP_SERVER', 'r') as f:
@@ -67,12 +69,17 @@ class SendMail:
                 receiver_email = sender_email
 
             # Create an email message
-            message = MIMEMultipart()
+            message = MIMEMultipart('alternative')
             message['From'] = sender_email
             message['To'] = receiver_email
             message['Subject'] = subject
 
+            # Always attach plain text version first (fallback)
             message.attach(MIMEText(body, 'plain'))
+            
+            # If HTML version is provided, attach it
+            if html_body:
+                message.attach(MIMEText(html_body, 'html'))
 
             # Establish an SMTP connection and send the email
             try:
@@ -104,25 +111,84 @@ class SendMail:
     def send_invitation_email(self, invitation_id, household_name, inviter_name, invitee_email, base_url):
         subject = f"Invitation to join {household_name} on PantryGuardian"
         
-        # Create a link with the invitation ID
-        invitation_link = f"{base_url}/accept-invitation?id={invitation_id}"
-        
-        body = f"""Hello,
+        # Plain text version
+        plain_body = f"""Hello,
 
 You have been invited by {inviter_name} to join their household "{household_name}" on PantryGuardian.
 
-To accept this invitation, please click on the following link:
-{invitation_link}
+To accept this invitation, please open your PantryGuardian app. The invitation will appear automatically when you log in.
 
 This invitation will expire in 7 days.
 
-If you don't have a PantryGuardian account yet, you'll need to create one to join the household.
+If you don't have the PantryGuardian app yet, you'll need to download it from the App Store or Google Play Store.
 
 Thank you,
 The PantryGuardian Team
 """
         
-        return self.email_notification(subject, body, invitee_email)
+        # HTML version with styling
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PantryGuardian Invitation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f7f7f7; color: #333333;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+            <td style="padding: 30px 0; text-align: center; background-color: #6200EE;">
+                <!-- Text-based logo instead of image -->
+                <div style="font-size: 38px; font-weight: bold; color: white; margin-bottom: 10px;">🍎 PantryGuardian</div>
+                <div style="font-size: 16px; color: white; margin-bottom: 10px;">Keeping Your Food Fresh</div>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 30px 20px; background-color: white; border-radius: 5px; margin: 0 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                        <td>
+                            <h2 style="color: #6200EE; margin-bottom: 20px;">Household Invitation</h2>
+                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 20px;">Hello,</p>
+                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 20px;">
+                                You have been invited by <strong>{inviter_name}</strong> to join their household "<strong>{household_name}</strong>" on PantryGuardian.
+                            </p>
+                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 20px;">
+                                To accept this invitation, please open your PantryGuardian app. The invitation will appear automatically when you log in.
+                            </p>
+                            <p style="font-size: 14px; line-height: 20px; color: #777; margin-bottom: 20px;">
+                                This invitation will expire in 7 days.
+                            </p>
+                            <p style="font-size: 14px; line-height: 20px; margin-bottom: 20px;">
+                                If you don't have the PantryGuardian app yet, you'll need to download it from the App Store or Google Play Store.
+                            </p>
+                            <div style="text-align: center; margin-top: 30px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                    <tr>
+                                        <td style="border-radius: 4px; background: #6200EE; text-align: center; padding: 12px 24px;">
+                                            <a href="#" style="background: #6200EE; color: white; font-size: 16px; text-decoration: none; display: inline-block;">Open PantryGuardian App</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 20px; text-align: center; font-size: 12px; color: #777777;">
+                <p>Thank you,<br>The PantryGuardian Team</p>
+                <p>&copy; 2023 PantryGuardian. All rights reserved.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+        
+        return self.email_notification(subject, plain_body, invitee_email, html_body=html_body)
 
     # Define a function to send the daily email
     def send_daily_email(self):
@@ -138,7 +204,7 @@ The PantryGuardian Team
             body = f'{headline}' + '\n'.join(product_details)
 
             # Call the generate_recipe function from the recipe module
-            recipe_suggestion = self.recipe_generatorgenerate_recipe([product['product_name'] for product in expiring_products])
+            recipe_suggestion = self.recipe_generator.generate_recipe([product['product_name'] for product in expiring_products])
 
             # Add the recipe suggestion to the email body
             if recipe_suggestion:

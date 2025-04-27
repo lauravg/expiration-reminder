@@ -9,6 +9,7 @@ export class SessionData {
   public userPhotoUrl = ""
   public idToken = ""
   public refreshToken = ""
+  private static INVITATION_ID_KEY = "pendingInvitationId"
 
   constructor() {
     this.userEmail = this.getValue("userEmail")
@@ -24,6 +25,7 @@ export class SessionData {
     this.setUserPhotoUrl("");
     this.setIdToken("");
     this.setRefreshToken("");
+    this.clearStoredInvitationId();
 
     this.userEmail = ""
     this.userDisplayName = ""
@@ -46,6 +48,37 @@ export class SessionData {
   }
   public setRefreshToken(refreshToken: string) {
     this.refreshToken = this.setValue(refreshToken, this.refreshToken, "refreshToken");
+  }
+
+  // Store invitation ID temporarily until user logs in
+  public async storeInvitationId(invitationId: string): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(SessionData.INVITATION_ID_KEY, invitationId);
+      console.log("Stored invitation ID:", invitationId);
+    } catch (error) {
+      console.error("Error storing invitation ID:", error);
+    }
+  }
+
+  // Get the stored invitation ID if any
+  public async getStoredInvitationId(): Promise<string | null> {
+    try {
+      const invitationId = await SecureStore.getItemAsync(SessionData.INVITATION_ID_KEY);
+      return invitationId;
+    } catch (error) {
+      console.error("Error retrieving invitation ID:", error);
+      return null;
+    }
+  }
+
+  // Clear the stored invitation ID after it's been processed
+  public async clearStoredInvitationId(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(SessionData.INVITATION_ID_KEY);
+      console.log("Cleared stored invitation ID");
+    } catch (error) {
+      console.error("Error clearing invitation ID:", error);
+    }
   }
 
   private getValue(key: string): string {

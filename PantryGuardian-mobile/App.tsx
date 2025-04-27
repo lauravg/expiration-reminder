@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar, ActivityIndicator, View } from 'react-native';
+import { StatusBar, ActivityIndicator, View, Linking, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -101,13 +101,17 @@ export default function App() {
   const [isExpiringModalVisible, setIsExpiringModalVisible] = useState(false);
   const [affectedProducts, setAffectedProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [expiringModalVisible, setExpiringModalVisible] = useState(false);
+  const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
+  
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
   const sessionData = new SessionData();
+  const navigationRef = useRef<any>(null);
 
   const toggleAddProductModal = () => {
-    setAddProductModalVisible(!addProductModalVisible);
+    setAddProductModalVisible(prev => !prev);
   };
 
   const handleAddProduct = async (product: Product): Promise<boolean> => {
@@ -190,8 +194,105 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
+  // Handle deep links
+  useEffect(() => {
+    // Handle deep links when app is already open
+    const handleDeepLink = (event: { url: string }) => {
+      handleUrl(event.url);
+    };
+    
+    // Add event listener for deep links when app is already running
+    Linking.addEventListener('url', handleDeepLink);
+    
+    // Handle deep links when app is opened from a link
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        handleUrl(url);
+      }
+    });
+    
+    return () => {
+      // Clean up the event listener when component unmounts
+      // Note: Modern versions of React Native don't need the explicit removal
+    };
+  }, [isAuthenticated]);
+  
+  // Function to handle deep link URLs
+  const handleUrl = async (url: string) => {
+    if (!url) return;
+    
+    // Parse the URL to get invitation ID
+    const invitationMatch = url.match(/pantryguardian:\/\/accept-invitation\?id=([^&]+)/);
+    
+    if (invitationMatch && invitationMatch[1]) {
+      const invitationId = invitationMatch[1];
+      console.log('Deep link invitation ID:', invitationId);
+      
+      // If user is not logged in, store the invitation ID and show a message
+      if (!isAuthenticated) {
+        // Store the invitation ID temporarily 
+        await sessionData.storeInvitationId(invitationId);
+        Alert.alert(
+          'Invitation Received',
+          'Please log in to accept this household invitation.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      // If user is logged in, handle the invitation
+      try {
+        const result = await requests.acceptInvitation(invitationId);
+        if (result.success) {
+          Alert.alert(
+            'Success', 
+            'You have successfully joined the household!',
+            [{ text: 'OK' }]
+          );
+          
+          // Navigate to settings to see the new household
+          if (navigationRef.current) {
+            navigationRef.current.navigate('Main', { screen: 'Settings' });
+          }
+        } else {
+          Alert.alert('Error', result.error || 'Failed to accept invitation');
+        }
+      } catch (error) {
+        console.error('Error accepting invitation from deep link:', error);
+        Alert.alert('Error', 'An unexpected error occurred');
+      }
+    }
+  };
+
+  // Check for stored invitation after login
+  const checkStoredInvitation = async () => {
+    const invitationId = await sessionData.getStoredInvitationId();
+    if (invitationId) {
+      // Handle the stored invitation
+      try {
+        const result = await requests.acceptInvitation(invitationId);
+        if (result.success) {
+          Alert.alert(
+            'Success', 
+            'You have successfully joined the household!',
+            [{ text: 'OK' }]
+          );
+          // Clear the stored invitation ID
+          await sessionData.clearStoredInvitationId();
+        } else {
+          Alert.alert('Error', result.error || 'Failed to accept invitation');
+        }
+      } catch (error) {
+        console.error('Error accepting stored invitation:', error);
+        Alert.alert('Error', 'An unexpected error occurred');
+      }
+    }
+  };
+
+  // Update the handleLoginSuccess function to check for stored invitations
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+    checkStoredInvitation();
   };
 
   if (isLoading) {
@@ -207,7 +308,7 @@ export default function App() {
   return (
     <PaperProvider>
       <SafeAreaProvider>
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <Stack.Navigator initialRouteName="Login">
             <Stack.Screen name="Login" options={{ headerShown: false }}>
               {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
