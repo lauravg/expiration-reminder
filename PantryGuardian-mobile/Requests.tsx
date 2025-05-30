@@ -4,8 +4,8 @@ import { Product, Barcode } from './Product';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 
-// const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app/";
-const BASE_URL = "http://127.0.0.1:5050";
+const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
+// const BASE_URL = "http://127.0.0.1:5050";
 // const BASE_URL = "http://192.168.1.50:5050";
 
 interface ProductSuggestion {
