@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
 
@@ -15,6 +16,17 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
+
+
+# iOS
+ios/build/
+ios/Pods/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Android
+android/app/build/
+
 
 # Metro
 .metro-health-check*
