@@ -90,6 +90,7 @@ const ProductList: React.FC<ProductListProps> = ({
 
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+    const [productToEdit, setProductToEdit] = useState<Product | null>(null);
 
     const parseDateString = (dateStr: string): Date | null => {
         if (!dateStr || dateStr === 'No Expiration') {
@@ -262,6 +263,7 @@ const ProductList: React.FC<ProductListProps> = ({
     const handleUpdateProduct = async (updatedProduct: Product) => {
         await onUpdateProduct(updatedProduct);
         setEditProductModalVisible(false);
+        setProductToEdit(null);
         setEffectiveSelectedProduct(null);
     };
 
@@ -441,185 +443,187 @@ const ProductList: React.FC<ProductListProps> = ({
     };
 
     return (
-        <View style={GlobalStyles.containerWithHeader}>
-            <ScrollView>
-                <View style={GlobalStyles.headerContainer}>
-                    <View style={GlobalStyles.iconContainer}>
-                        <Menu
-                            visible={filterMenuVisible}
-                            onDismiss={() => setFilterMenuVisible(false)}
-                            anchor={
-                                <MaterialCommunityIcons
-                                    name="filter-variant"
-                                    size={24}
-                                    onPress={() => setFilterMenuVisible(true)}
-                                    style={GlobalStyles.icon}
-                                />
-                            }
-                        >
-                            <Menu.Item 
-                                leadingIcon={hideExpired ? "checkbox-marked" : "checkbox-blank-outline"}
-                                onPress={() => {
-                                    setHideExpired(!hideExpired);
-                                    setFilterMenuVisible(false);
-                                }} 
-                                title="Hide Expired Products"
-                            />
-                            <Menu.Item 
-                                leadingIcon="apps"
-                                onPress={() => {
-                                    setActiveFilter('All');
-                                    setFilterMenuVisible(false);
-                                }} 
-                                title="All Products"
-                            />
-                            <Menu.Item 
-                                leadingIcon="map-marker-off"
-                                onPress={() => {
-                                    setActiveFilter('No Location');
-                                    setFilterMenuVisible(false);
-                                }} 
-                                title="No Location"
-                            />
-                            <Menu.Item 
-                                leadingIcon="fridge"
-                                onPress={() => {
-                                    setActiveFilter('Fridge');
-                                    setFilterMenuVisible(false);
-                                }} 
-                                title="Fridge"
-                            />
-                            <Menu.Item 
-                                leadingIcon="fridge-variant"
-                                onPress={() => {
-                                    setActiveFilter('Freezer');
-                                    setFilterMenuVisible(false);
-                                }} 
-                                title="Freezer"
-                            />
-                            <Menu.Item 
-                                leadingIcon="cupboard"
-                                onPress={() => {
-                                    setActiveFilter('Pantry');
-                                    setFilterMenuVisible(false);
-                                }} 
-                                title="Pantry"
-                            />
-                        </Menu>
-
-                        <Menu
-                            visible={sortMenuVisible}
-                            onDismiss={() => setSortMenuVisible(false)}
-                            anchor={
-                                <MaterialCommunityIcons
-                                    name="sort-calendar-descending"
-                                    size={24}
-                                    onPress={() => setSortMenuVisible(true)}
-                                    style={GlobalStyles.icon}
-                                />
-                            }>
-                            <Menu.Item 
-                                leadingIcon="calendar-clock"
-                                onPress={() => {
-                                    onSort('expirationDate');
-                                    setSortMenuVisible(false);
-                                }} 
-                                title="Expiration Date (Soonest)" 
-                            />
-                            <Menu.Item 
-                                leadingIcon="sort-alphabetical-ascending"
-                                onPress={() => {
-                                    onSort('name');
-                                    setSortMenuVisible(false);
-                                }} 
-                                title="Name (A to Z)" 
-                            />
-                            <Menu.Item 
-                                leadingIcon="map-marker"
-                                onPress={() => {
-                                    onSort('location');
-                                    setSortMenuVisible(false);
-                                }} 
-                                title="Location" 
-                            />
-                        </Menu>
-
-                        <Menu
-                            visible={menuVisible}
-                            onDismiss={() => setMenuVisible(false)}
-                            anchor={
-                                <MaterialCommunityIcons
-                                    name={getViewIcon()}
-                                    size={24}
-                                    onPress={() => setMenuVisible(true)}
-                                    style={GlobalStyles.icon}
-                                />
-                            }
-                        >
-                            <Menu.Item
-                                leadingIcon="view-grid-outline"
-                                onPress={() => {
-                                    onViewModeChange('grid');
-                                    setMenuVisible(false);
-                                }}
-                                title="Grid View"
-                            />
-                            <Menu.Item
-                                leadingIcon="view-list-outline"
-                                onPress={() => {
-                                    onViewModeChange('list');
-                                    setMenuVisible(false);
-                                }}
-                                title="List View"
-                            />
-                            <Menu.Item
-                                leadingIcon="format-list-text"
-                                onPress={() => {
-                                    onViewModeChange('simple');
-                                    setMenuVisible(false);
-                                }}
-                                title="Simple List"
-                            />
-                        </Menu>
-                    </View>
-                    
-                    <ScrollView 
-                        horizontal 
-                        showsHorizontalScrollIndicator={false} 
-                        style={GlobalStyles.categoriesContainer}
-                    >
-                        {locationItems.map((location) => (
-                            <TouchableOpacity
-                                key={location.id}
-                                onPress={() => setActiveFilter(location.name)}
-                                style={[
-                                    GlobalStyles.categoryChip,
-                                    activeFilter === location.name && GlobalStyles.categoryChipActive
-                                ]}
+        <>
+            <View style={GlobalStyles.containerWithHeader}>
+                <ScrollView>
+                    <View style={GlobalStyles.headerContainer}>
+                        <View style={GlobalStyles.iconContainer}>
+                            <Menu
+                                visible={filterMenuVisible}
+                                onDismiss={() => setFilterMenuVisible(false)}
+                                anchor={
+                                    <MaterialCommunityIcons
+                                        name="filter-variant"
+                                        size={24}
+                                        onPress={() => setFilterMenuVisible(true)}
+                                        style={GlobalStyles.icon}
+                                    />
+                                }
                             >
-                                <Text
+                                <Menu.Item 
+                                    leadingIcon={hideExpired ? "checkbox-marked" : "checkbox-blank-outline"}
+                                    onPress={() => {
+                                        setHideExpired(!hideExpired);
+                                        setFilterMenuVisible(false);
+                                    }} 
+                                    title="Hide Expired Products"
+                                />
+                                <Menu.Item 
+                                    leadingIcon="apps"
+                                    onPress={() => {
+                                        setActiveFilter('All');
+                                        setFilterMenuVisible(false);
+                                    }} 
+                                    title="All Products"
+                                />
+                                <Menu.Item 
+                                    leadingIcon="map-marker-off"
+                                    onPress={() => {
+                                        setActiveFilter('No Location');
+                                        setFilterMenuVisible(false);
+                                    }} 
+                                    title="No Location"
+                                />
+                                <Menu.Item 
+                                    leadingIcon="fridge"
+                                    onPress={() => {
+                                        setActiveFilter('Fridge');
+                                        setFilterMenuVisible(false);
+                                    }} 
+                                    title="Fridge"
+                                />
+                                <Menu.Item 
+                                    leadingIcon="fridge-variant"
+                                    onPress={() => {
+                                        setActiveFilter('Freezer');
+                                        setFilterMenuVisible(false);
+                                    }} 
+                                    title="Freezer"
+                                />
+                                <Menu.Item 
+                                    leadingIcon="cupboard"
+                                    onPress={() => {
+                                        setActiveFilter('Pantry');
+                                        setFilterMenuVisible(false);
+                                    }} 
+                                    title="Pantry"
+                                />
+                            </Menu>
+
+                            <Menu
+                                visible={sortMenuVisible}
+                                onDismiss={() => setSortMenuVisible(false)}
+                                anchor={
+                                    <MaterialCommunityIcons
+                                        name="sort-calendar-descending"
+                                        size={24}
+                                        onPress={() => setSortMenuVisible(true)}
+                                        style={GlobalStyles.icon}
+                                    />
+                                }>
+                                <Menu.Item 
+                                    leadingIcon="calendar-clock"
+                                    onPress={() => {
+                                        onSort('expirationDate');
+                                        setSortMenuVisible(false);
+                                    }} 
+                                    title="Expiration Date (Soonest)" 
+                                />
+                                <Menu.Item 
+                                    leadingIcon="sort-alphabetical-ascending"
+                                    onPress={() => {
+                                        onSort('name');
+                                        setSortMenuVisible(false);
+                                    }} 
+                                    title="Name (A to Z)" 
+                                />
+                                <Menu.Item 
+                                    leadingIcon="map-marker"
+                                    onPress={() => {
+                                        onSort('location');
+                                        setSortMenuVisible(false);
+                                    }} 
+                                    title="Location" 
+                                />
+                            </Menu>
+
+                            <Menu
+                                visible={menuVisible}
+                                onDismiss={() => setMenuVisible(false)}
+                                anchor={
+                                    <MaterialCommunityIcons
+                                        name={getViewIcon()}
+                                        size={24}
+                                        onPress={() => setMenuVisible(true)}
+                                        style={GlobalStyles.icon}
+                                    />
+                                }
+                            >
+                                <Menu.Item
+                                    leadingIcon="view-grid-outline"
+                                    onPress={() => {
+                                        onViewModeChange('grid');
+                                        setMenuVisible(false);
+                                    }}
+                                    title="Grid View"
+                                />
+                                <Menu.Item
+                                    leadingIcon="view-list-outline"
+                                    onPress={() => {
+                                        onViewModeChange('list');
+                                        setMenuVisible(false);
+                                    }}
+                                    title="List View"
+                                />
+                                <Menu.Item
+                                    leadingIcon="format-list-text"
+                                    onPress={() => {
+                                        onViewModeChange('simple');
+                                        setMenuVisible(false);
+                                    }}
+                                    title="Simple List"
+                                />
+                            </Menu>
+                        </View>
+                        
+                        <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false} 
+                            style={GlobalStyles.categoriesContainer}
+                        >
+                            {locationItems.map((location) => (
+                                <TouchableOpacity
+                                    key={location.id}
+                                    onPress={() => setActiveFilter(location.name)}
                                     style={[
-                                        GlobalStyles.categoryText,
-                                        activeFilter === location.name && GlobalStyles.categoryTextActive
+                                        GlobalStyles.categoryChip,
+                                        activeFilter === location.name && GlobalStyles.categoryChipActive
                                     ]}
                                 >
-                                    {location.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
+                                    <Text
+                                        style={[
+                                            GlobalStyles.categoryText,
+                                            activeFilter === location.name && GlobalStyles.categoryTextActive
+                                        ]}
+                                    >
+                                        {location.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
 
-                <View style={
-                    viewMode === 'grid' 
-                        ? GlobalStyles.productGrid 
-                        : viewMode === 'list'
-                        ? GlobalStyles.productList
-                        : GlobalStyles.productListSimple
-                }>
-                    {renderProducts()}
-                </View>
-            </ScrollView>
+                    <View style={
+                        viewMode === 'grid' 
+                            ? GlobalStyles.productGrid 
+                            : viewMode === 'list'
+                            ? GlobalStyles.productList
+                            : GlobalStyles.productListSimple
+                    }>
+                        {renderProducts()}
+                    </View>
+                </ScrollView>
+            </View>
 
             {effectiveSelectedProduct && (
                 <PaperModal
@@ -694,7 +698,12 @@ const ProductList: React.FC<ProductListProps> = ({
                             style={[GlobalStyles.actionButton, GlobalStyles.actionButtonPrimary]}
                             labelStyle={[GlobalStyles.actionButtonText, GlobalStyles.actionButtonTextPrimary]}
                             onPress={() => {
+                                setProductToEdit(effectiveSelectedProduct);
                                 setEditProductModalVisible(true);
+                                // Small delay to create smoother transition
+                                setTimeout(() => {
+                                    setEffectiveSelectedProduct(null);
+                                }, 100);
                             }}
                         >
                             Edit
@@ -723,11 +732,14 @@ const ProductList: React.FC<ProductListProps> = ({
 
             <EditProductModal
                 visible={editProductModalVisible}
-                onClose={() => setEditProductModalVisible(false)}
-                product={effectiveSelectedProduct}
+                onClose={() => {
+                    setEditProductModalVisible(false);
+                    setProductToEdit(null);
+                }}
+                product={productToEdit}
                 onUpdateProduct={handleUpdateProduct}
             />
-        </View>
+        </>
     );
 };
 
