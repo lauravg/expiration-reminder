@@ -2,7 +2,7 @@
   "expo": {
     "name": "PantryGuardian",
     "slug": "pantryguardian",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "jsEngine": "jsc",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1.0.0",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan food items.",
         "NSPhotoLibraryUsageDescription": "This app accesses the photo library to let you upload images."
@@ -28,19 +28,23 @@
       "bundleIdentifier": "com.lauravh.pantryguardian"
     },
     "android": {
+      "package": "com.lauravh.pantryguardian",
       "versionCode": 1,
+      "permissions": [],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.lauravh.pantryguardian"
+      }
     },
     "scheme": "pantryguardian",
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "expoProjectId": "92e1251a-e072-484a-8ebd-10e717e57282"
+      "expoProjectId": "92e1251a-e072-484a-8ebd-10e717e57282",
+      "eas": {
+        "projectId": "2ce034a2-825e-4955-b0e9-d2924ccda867"
+      }
     },
     "owner": "lauravh",
     "plugins": [
