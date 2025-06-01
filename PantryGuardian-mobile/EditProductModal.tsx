@@ -185,7 +185,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
           <View>
             {/* Product Image Section */}
             <View style={styles.imageSection}>
-              <Text style={styles.sectionTitle}>Product Image</Text>
+              <Text style={GlobalStyles.detailLabel}>Product Image</Text>
               <View style={styles.imageContainer}>
                 {productImage ? (
                   <>
@@ -342,7 +342,8 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   scrollView: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   imageSection: {
     marginBottom: 20,
