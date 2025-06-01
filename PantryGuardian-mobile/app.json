@@ -2,7 +2,6 @@
   "expo": {
     "name": "PantryGuardian",
     "slug": "pantryguardian",
-    "version": "1.0.2",
     "jsEngine": "jsc",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,8 +22,7 @@
       },
       "config": {
         "usesNonExemptEncryption": false
-      },
-      "bundleIdentifier": "com.lauravh.pantryguardian"
+      }    
     },
     "android": {
       "package": "com.lauravh.pantryguardian",
