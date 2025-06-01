@@ -2,7 +2,7 @@
   "expo": {
     "name": "PantryGuardian",
     "slug": "pantryguardian",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "jsEngine": "jsc",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,6 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan food items.",
         "NSPhotoLibraryUsageDescription": "This app accesses the photo library to let you upload images."
