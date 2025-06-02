@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, Animated } from 'react-native';
 import { Modal as PaperModal, Button, TextInput, IconButton, FAB, Menu } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { parse, isValid } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Swipeable } from 'react-native-gesture-handler';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import { Product } from './Product';
@@ -267,6 +268,79 @@ const ProductList: React.FC<ProductListProps> = ({
         setEffectiveSelectedProduct(null);
     };
 
+    // SwipeableProductCard component for swipe-to-delete functionality
+    const SwipeableProductCard: React.FC<{ 
+        product: Product; 
+        children: React.ReactNode;
+        viewMode: ViewMode;
+    }> = ({ product, children, viewMode }) => {
+        const renderRightAction = (
+            text: string,
+            color: string,
+            x: number,
+            progress: Animated.AnimatedAddition<number>
+        ) => {
+            const trans = progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [x, 0],
+            });
+
+            const pressHandler = () => {
+                handleDelete(product);
+            };
+
+            return (
+                <Animated.View style={{ 
+                    flex: 1, 
+                    transform: [{ translateX: trans }],
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                    <TouchableOpacity
+                        style={{
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 80,
+                            height: '100%',
+                            backgroundColor: color,
+                        }}
+                        onPress={pressHandler}
+                    >
+                        <MaterialCommunityIcons 
+                            name="delete" 
+                            size={24} 
+                            color="white" 
+                        />
+                        <Text style={{ 
+                            color: 'white', 
+                            fontSize: 12, 
+                            fontWeight: '600',
+                            marginTop: 4 
+                        }}>
+                            {text}
+                        </Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            );
+        };
+
+        const renderRightActions = (progress: Animated.AnimatedAddition<number>) => (
+            <View style={{ 
+                width: 80, 
+                flexDirection: 'row',
+                height: viewMode === 'grid' ? 'auto' : undefined,
+            }}>
+                {renderRightAction('Delete', '#ff4444', 80, progress)}
+            </View>
+        );
+
+        return (
+            <Swipeable renderRightActions={renderRightActions}>
+                {children}
+            </Swipeable>
+        );
+    };
+
     const getExpirationStyles = (daysUntilExpiration: number | null) => {
         if (daysUntilExpiration === null) return {};
         if (daysUntilExpiration < 0) {
@@ -324,113 +398,116 @@ const ProductList: React.FC<ProductListProps> = ({
 
         if (viewMode === 'grid') {
             return (
-                <TouchableOpacity
-                    key={product.product_id}
-                    style={GlobalStyles.productCardGrid}
-                    onPress={() => setEffectiveSelectedProduct(product)}
-                >
-                    <View style={GlobalStyles.productImagePlaceholderGrid}>
-                        {product.image_url ? (
-                            <Image 
-                                source={{ uri: product.image_url }} 
-                                style={GlobalStyles.productImage} 
-                                resizeMode="cover"
-                            />
-                        ) : (
-                            <Icon name="food" size={40} color={colors.textSecondary} style={{ opacity: 0.5 }} />
-                        )}
-                    </View>
-                    <Text style={GlobalStyles.productNameGrid} numberOfLines={1}>
-                        {product.product_name || 'Unnamed Product'}
-                    </Text>
-                    <Text style={GlobalStyles.productLocationGrid} numberOfLines={1}>
-                        {displayLocation}
-                    </Text>
-                    <View style={GlobalStyles.expirationContainerGrid}>
-                        <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
-                            <Text style={[GlobalStyles.expirationText, expirationStyles.text]}>
-                                {expirationText}
-                            </Text>
+                <SwipeableProductCard key={product.product_id} product={product} viewMode="grid">
+                    <TouchableOpacity
+                        style={GlobalStyles.productCardGrid}
+                        onPress={() => setEffectiveSelectedProduct(product)}
+                    >
+                        <View style={GlobalStyles.productImagePlaceholderGrid}>
+                            {product.image_url ? (
+                                <Image 
+                                    source={{ uri: product.image_url }} 
+                                    style={GlobalStyles.productImage} 
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Icon name="food" size={40} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                            )}
                         </View>
-                    </View>
-                </TouchableOpacity>
-            );
-        }
-
-        if (viewMode === 'list') {
-            return (
-                <TouchableOpacity
-                    key={product.product_id}
-                    style={GlobalStyles.productCardList}
-                    onPress={() => setEffectiveSelectedProduct(product)}
-                >
-                    <View style={GlobalStyles.productImagePlaceholderList}>
-                        {product.image_url ? (
-                            <Image 
-                                source={{ uri: product.image_url }} 
-                                style={GlobalStyles.productImage} 
-                                resizeMode="cover"
-                            />
-                        ) : (
-                            <Icon name="food" size={32} color={colors.textSecondary} style={{ opacity: 0.5 }} />
-                        )}
-                    </View>
-                    <View style={GlobalStyles.productInfoList}>
-                        <Text style={GlobalStyles.productNameList} numberOfLines={1}>
+                        <Text style={GlobalStyles.productNameGrid} numberOfLines={1}>
                             {product.product_name || 'Unnamed Product'}
                         </Text>
-                        <View style={GlobalStyles.productLocationList}>
-                            <Icon 
-                                name="map-marker-outline" 
-                                size={16} 
-                                color={colors.textSecondary} 
-                                style={GlobalStyles.locationIcon} 
-                            />
-                            <Text style={GlobalStyles.productLocationList} numberOfLines={1}>
-                                {displayLocation}
-                            </Text>
-                        </View>
-                        <View style={GlobalStyles.expirationContainerList}>
+                        <Text style={GlobalStyles.productLocationGrid} numberOfLines={1}>
+                            {displayLocation}
+                        </Text>
+                        <View style={GlobalStyles.expirationContainerGrid}>
                             <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
                                 <Text style={[GlobalStyles.expirationText, expirationStyles.text]}>
                                     {expirationText}
                                 </Text>
                             </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </SwipeableProductCard>
+            );
+        }
+
+        if (viewMode === 'list') {
+            return (
+                <SwipeableProductCard key={product.product_id} product={product} viewMode="list">
+                    <TouchableOpacity
+                        style={GlobalStyles.productCardList}
+                        onPress={() => setEffectiveSelectedProduct(product)}
+                    >
+                        <View style={GlobalStyles.productImagePlaceholderList}>
+                            {product.image_url ? (
+                                <Image 
+                                    source={{ uri: product.image_url }} 
+                                    style={GlobalStyles.productImage} 
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Icon name="food" size={32} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                            )}
+                        </View>
+                        <View style={GlobalStyles.productInfoList}>
+                            <Text style={GlobalStyles.productNameList} numberOfLines={1}>
+                                {product.product_name || 'Unnamed Product'}
+                            </Text>
+                            <View style={GlobalStyles.productLocationList}>
+                                <Icon 
+                                    name="map-marker-outline" 
+                                    size={16} 
+                                    color={colors.textSecondary} 
+                                    style={GlobalStyles.locationIcon} 
+                                />
+                                <Text style={GlobalStyles.productLocationList} numberOfLines={1}>
+                                    {displayLocation}
+                                </Text>
+                            </View>
+                            <View style={GlobalStyles.expirationContainerList}>
+                                <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
+                                    <Text style={[GlobalStyles.expirationText, expirationStyles.text]}>
+                                        {expirationText}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </SwipeableProductCard>
             );
         }
 
         // Simple list view
         return (
-            <TouchableOpacity
-                key={product.product_id}
-                style={GlobalStyles.productCardSimple}
-                onPress={() => setEffectiveSelectedProduct(product)}
-            >
-                <View style={GlobalStyles.productInfoSimple}>
-                    <Text style={GlobalStyles.productNameSimple} numberOfLines={1}>
-                        {product.product_name || 'Unnamed Product'}
-                    </Text>
-                    <View style={GlobalStyles.productLocationSimple}>
-                        <Icon 
-                            name="map-marker-outline" 
-                            size={14} 
-                            color={colors.textSecondary} 
-                            style={GlobalStyles.locationIcon} 
-                        />
-                        <Text numberOfLines={1}>
-                            {displayLocation}
+            <SwipeableProductCard key={product.product_id} product={product} viewMode="simple">
+                <TouchableOpacity
+                    style={GlobalStyles.productCardSimple}
+                    onPress={() => setEffectiveSelectedProduct(product)}
+                >
+                    <View style={GlobalStyles.productInfoSimple}>
+                        <Text style={GlobalStyles.productNameSimple} numberOfLines={1}>
+                            {product.product_name || 'Unnamed Product'}
+                        </Text>
+                        <View style={GlobalStyles.productLocationSimple}>
+                            <Icon 
+                                name="map-marker-outline" 
+                                size={14} 
+                                color={colors.textSecondary} 
+                                style={GlobalStyles.locationIcon} 
+                            />
+                            <Text numberOfLines={1}>
+                                {displayLocation}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
+                        <Text style={[GlobalStyles.expirationText, expirationStyles.text]}>
+                            {expirationText}
                         </Text>
                     </View>
-                </View>
-                <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
-                    <Text style={[GlobalStyles.expirationText, expirationStyles.text]}>
-                        {expirationText}
-                    </Text>
-                </View>
-            </TouchableOpacity>
+                </TouchableOpacity>
+            </SwipeableProductCard>
         );
     };
 

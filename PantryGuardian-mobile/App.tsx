@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { IconButton, Provider as PaperProvider } from 'react-native-paper';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from './theme';
 import Homepage from './Homepage';
 import Login from './LoginScreen';
@@ -297,121 +298,125 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <PaperProvider>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </PaperProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PaperProvider>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        </PaperProvider>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <PaperProvider>
-      <SafeAreaProvider>
-        <NavigationContainer ref={navigationRef}>
-          <Stack.Navigator initialRouteName="Login">
-            <Stack.Screen name="Login" options={{ headerShown: false }}>
-              {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
-            </Stack.Screen>
-            <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
-            <Stack.Screen name="Main" options={{ headerShown: false }}>
-              {() => (
-                <MainTabs 
-                  householdManager={householdManager}
-                  toggleAddProductModal={toggleAddProductModal} 
-                  onAddProduct={handleAddProduct}
-                  onAddBarcode={handleAddBarcode}
-                  onGetBarcode={handleGetBarcode}
-                  selectedProduct={selectedProduct}
-                  onProductSelect={setSelectedProduct}
-                />
-              )}
-            </Stack.Screen>
-            <Stack.Screen
-              name="Profile"
-              component={ProfileScreen}
-              options={({ navigation }) => ({
-                headerLeft: () => (
-                  <IconButton
-                    icon="arrow-left"
-                    size={24}
-                    iconColor={colors.textPrimary}
-                    onPress={() => navigation.goBack()}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider>
+        <SafeAreaProvider>
+          <NavigationContainer ref={navigationRef}>
+            <Stack.Navigator initialRouteName="Login">
+              <Stack.Screen name="Login" options={{ headerShown: false }}>
+                {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
+              </Stack.Screen>
+              <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
+              <Stack.Screen name="Main" options={{ headerShown: false }}>
+                {() => (
+                  <MainTabs 
+                    householdManager={householdManager}
+                    toggleAddProductModal={toggleAddProductModal} 
+                    onAddProduct={handleAddProduct}
+                    onAddBarcode={handleAddBarcode}
+                    onGetBarcode={handleGetBarcode}
+                    selectedProduct={selectedProduct}
+                    onProductSelect={setSelectedProduct}
                   />
-                ),
-                headerTitle: 'Profile',
-                headerTitleStyle: {
-                  fontWeight: 'bold',
-                  color: colors.primary
-                },
-                headerStyle: {
-                  backgroundColor: colors.background,
-                  elevation: 0, // Remove shadow on Android
-                  shadowOpacity: 0, // Remove shadow on iOS
-                },
-              })}
+                )}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      size={24}
+                      iconColor={colors.textPrimary}
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                  headerTitle: 'Profile',
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                    color: colors.primary
+                  },
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                    elevation: 0, // Remove shadow on Android
+                    shadowOpacity: 0, // Remove shadow on iOS
+                  },
+                })}
+              />
+              <Stack.Screen
+                name="SubscriptionScreen"
+                component={SubscriptionScreen}
+                options={({ navigation }) => ({
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      size={24}
+                      iconColor={colors.textPrimary}
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                  headerTitle: 'Subscription',
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                    color: colors.primary,
+                  },
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                    elevation: 0, // Remove shadow on Android
+                    shadowOpacity: 0, // Remove shadow on iOS
+                  },
+                })}
+              />
+            </Stack.Navigator>
+            <StatusBar />
+            <AddProductModal
+              visible={addProductModalVisible}
+              onClose={toggleAddProductModal}
+              onAddProduct={handleAddProduct}
+              onAddBarcode={handleAddBarcode}
+              onGetBarcode={handleGetBarcode}
             />
-            <Stack.Screen
-              name="SubscriptionScreen"
-              component={SubscriptionScreen}
-              options={({ navigation }) => ({
-                headerLeft: () => (
-                  <IconButton
-                    icon="arrow-left"
-                    size={24}
-                    iconColor={colors.textPrimary}
-                    onPress={() => navigation.goBack()}
-                  />
-                ),
-                headerTitle: 'Subscription',
-                headerTitleStyle: {
-                  fontWeight: 'bold',
-                  color: colors.primary,
-                },
-                headerStyle: {
-                  backgroundColor: colors.background,
-                  elevation: 0, // Remove shadow on Android
-                  shadowOpacity: 0, // Remove shadow on iOS
-                },
-              })}
+            <ExpiringProductsModal
+              visible={isExpiringModalVisible}
+              onClose={() => setIsExpiringModalVisible(false)}
+              products={affectedProducts}
+              onProductPress={handleProductPress}
+              onDelete={async (product) => {
+                const success = await requests.deleteProduct(product.product_id);
+                if (success) {
+                  setAffectedProducts(affectedProducts.filter(p => p.product_id !== product.product_id));
+                }
+              }}
+              onWaste={async (product) => {
+                const success = await requests.wasteProduct(product.product_id);
+                if (success) {
+                  setAffectedProducts(affectedProducts.filter(p => p.product_id !== product.product_id));
+                }
+              }}
+              onUpdateProduct={async (product) => {
+                const success = await requests.updateProduct(product);
+                if (success) {
+                  setAffectedProducts(affectedProducts.map(p => 
+                    p.product_id === product.product_id ? product : p
+                  ));
+                }
+              }}
             />
-          </Stack.Navigator>
-          <StatusBar />
-          <AddProductModal
-            visible={addProductModalVisible}
-            onClose={toggleAddProductModal}
-            onAddProduct={handleAddProduct}
-            onAddBarcode={handleAddBarcode}
-            onGetBarcode={handleGetBarcode}
-          />
-          <ExpiringProductsModal
-            visible={isExpiringModalVisible}
-            onClose={() => setIsExpiringModalVisible(false)}
-            products={affectedProducts}
-            onProductPress={handleProductPress}
-            onDelete={async (product) => {
-              const success = await requests.deleteProduct(product.product_id);
-              if (success) {
-                setAffectedProducts(affectedProducts.filter(p => p.product_id !== product.product_id));
-              }
-            }}
-            onWaste={async (product) => {
-              const success = await requests.wasteProduct(product.product_id);
-              if (success) {
-                setAffectedProducts(affectedProducts.filter(p => p.product_id !== product.product_id));
-              }
-            }}
-            onUpdateProduct={async (product) => {
-              const success = await requests.updateProduct(product);
-              if (success) {
-                setAffectedProducts(affectedProducts.map(p => 
-                  p.product_id === product.product_id ? product : p
-                ));
-              }
-            }}
-          />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </PaperProvider>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }

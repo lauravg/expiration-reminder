@@ -275,110 +275,161 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     <>
       <PaperModal visible={visible} onDismiss={onClose} contentContainerStyle={GlobalStyles.modalContent}>
         <TouchableWithoutFeedback onPress={handleBackgroundPress}>
-          <View>
-            <View style={styles.inputContainer}>
-              <PaperTextInput
-                ref={inputRef}
-                style={GlobalStyles.input}
-                mode="outlined"
-                label="Product Name"
-                value={productName}
-                onChangeText={handleProductNameChange}
-                onFocus={() => !suggestionSelected && setShowSuggestions(true)}
-                onBlur={handleInputBlur}
-                blurOnSubmit={true}
-              />
-              {showSuggestions && suggestions.length > 0 && (
-                <ScrollView 
-                  style={styles.suggestionsContainer}
-                  keyboardShouldPersistTaps="handled"
+          <ScrollView 
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Product Name Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Product Information</Text>
+              <View style={styles.inputContainer}>
+                <PaperTextInput
+                  ref={inputRef}
+                  style={[GlobalStyles.input, styles.input]}
+                  mode="outlined"
+                  label="Product Name"
+                  value={productName}
+                  onChangeText={handleProductNameChange}
+                  onFocus={() => !suggestionSelected && setShowSuggestions(true)}
+                  onBlur={handleInputBlur}
+                  blurOnSubmit={true}
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <ScrollView 
+                    style={styles.suggestionsContainer}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.suggestionItem}
+                        onPress={() => handleSuggestionPress(suggestion)}
+                      >
+                        <Text style={styles.suggestionText}>
+                          {suggestion.name}
+                          {suggestion.barcode && (
+                            <Text style={styles.barcodeText}> (Barcode: {suggestion.barcode})</Text>
+                          )}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+
+              {/* Product Image Section */}
+              <TouchableOpacity onPress={pickImage} style={styles.imagePickerContainer}>
+                {productImage ? (
+                  <Image source={{ uri: productImage }} style={styles.productImage} />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Icon name="camera" size={40} color={colors.textSecondary} />
+                    <Text style={styles.imagePlaceholderText}>Add Product Photo</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Barcode Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Barcode</Text>
+              {barcode ? (
+                <View style={styles.barcodeDisplay}>
+                  <Icon name="barcode" size={20} color={colors.primary} />
+                  <Text style={styles.barcodeDisplayText}>{barcode}</Text>
+                </View>
+              ) : (
+                <Button
+                  icon="barcode-scan"
+                  mode="outlined"
+                  onPress={() => setScanning(true)}
+                  style={styles.button}
+                  theme={{ colors: { primary: colors.primary } }}
                 >
-                  {suggestions.map((suggestion, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.suggestionItem}
-                      onPress={() => handleSuggestionPress(suggestion)}
-                    >
-                      <Text style={styles.suggestionText}>
-                        {suggestion.name}
-                        {suggestion.barcode && (
-                          <Text style={styles.barcodeText}> (Barcode: {suggestion.barcode})</Text>
-                        )}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                  Scan Barcode
+                </Button>
               )}
             </View>
 
-            {/* Product Image Section */}
-            <TouchableOpacity onPress={pickImage} style={styles.imagePickerContainer}>
-              {productImage ? (
-                <Image source={{ uri: productImage }} style={styles.productImage} />
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <Icon name="camera" size={40} color={colors.textSecondary} />
-                  <Text style={styles.imagePlaceholderText}>Add Product Photo</Text>
+            {/* Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Product Details</Text>
+              
+              <PaperTextInput
+                style={[GlobalStyles.input, styles.input]}
+                mode="outlined"
+                label="Expiration Date (YYYY-MM-DD)"
+                value={expirationDate}
+                onFocus={() => setIsDatePickerVisible(true)}
+                editable={false}
+                right={<PaperTextInput.Icon icon="calendar" onPress={() => setIsDatePickerVisible(true)} />}
+              />
+              
+              {isDatePickerVisible && (
+                <View style={styles.calendarContainer}>
+                  <Calendar
+                    onDayPress={(day: any) => {
+                      setExpirationDate(day.dateString);
+                      setIsDatePickerVisible(false);
+                    }}
+                  />
                 </View>
               )}
-            </TouchableOpacity>
-
-            {/* Display the barcode instead of an input field */}
-            {barcode ? (
-              <Text>Barcode: {barcode}</Text>
-            ) : (
-              <Button
-                icon="barcode-scan"
-                onPress={() => setScanning(true)}
+              
+              <Button 
+                mode="outlined"
+                onPress={() => setLocationModalVisible(true)}
+                style={styles.button}
                 theme={{ colors: { primary: colors.primary } }}
               >
-                Scan Barcode
+                {location ? `Location: ${location}` : 'Select Location'}
               </Button>
-            )}
-            <PaperTextInput
-              style={GlobalStyles.input}
-              mode="outlined"
-              label="Expiration Date (YYYY-MM-DD)"
-              value={expirationDate}
-              onFocus={() => setIsDatePickerVisible(true)}
-              editable={false}
-              right={<PaperTextInput.Icon icon="calendar" onPress={() => setIsDatePickerVisible(true)} />}
-            />
-            {isDatePickerVisible && (
-              <Calendar
-                onDayPress={(day: any) => {
-                  setExpirationDate(day.dateString);
-                  setIsDatePickerVisible(false);
-                }}
-              />
-            )}
-            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setLocationModalVisible(true)}>
-              {location ? `Location: ${location}` : 'Select Location'}
-            </Button>
-            <Button theme={{ colors: { primary: colors.primary } }} onPress={() => setCategoryModalVisible(true)}>
-              {category ? `Category: ${category}` : 'Select Category'}
-            </Button>
-            {/* Clear Button */}
-            <View style={{ alignItems: 'center' }}>
-              <Button
-                mode="contained-tonal"
-                onPress={resetForm}
-                style={[styles.clearButton]}
+              
+              <Button 
+                mode="outlined"
+                onPress={() => setCategoryModalVisible(true)}
+                style={styles.button}
+                theme={{ colors: { primary: colors.primary } }}
               >
-                Clear
+                {category ? `Category: ${category}` : 'Select Category'}
               </Button>
+              
+              <PaperTextInput
+                style={[GlobalStyles.input, styles.input]}
+                mode="outlined"
+                label="Note (optional)"
+                value={note}
+                onChangeText={setNote}
+                multiline
+                numberOfLines={3}
+              />
             </View>
-            <Button mode="contained" onPress={handleAddProduct} theme={{ colors: { primary: colors.primary } }}>
-              Submit
-            </Button>
-            <PaperTextInput
-              style={GlobalStyles.input}
-              mode="outlined"
-              label="Note (optional)"
-              value={note}
-              onChangeText={setNote}
-            />
-          </View>
+
+            {/* Action Buttons Section */}
+            <View style={styles.actionSection}>
+              <View style={styles.buttonRow}>
+                <Button
+                  mode="outlined"
+                  onPress={resetForm}
+                  style={[styles.button, styles.clearButton]}
+                  labelStyle={styles.clearButtonText}
+                >
+                  Clear
+                </Button>
+                
+                <Button 
+                  mode="contained" 
+                  onPress={handleAddProduct} 
+                  style={[styles.button, styles.submitButton]}
+                  theme={{ colors: { primary: colors.primary } }}
+                >
+                  Add Product
+                </Button>
+              </View>
+            </View>
+          </ScrollView>
         </TouchableWithoutFeedback>
 
         {/* Location Picker Modal */}
@@ -444,6 +495,24 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '90%',
   },
+  scrollContainer: {
+    maxHeight: '100%',
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: colors.textPrimary,
+  },
+  input: {
+    marginBottom: 10,
+  },
   inputContainer: {
     position: 'relative',
     zIndex: 1,
@@ -474,15 +543,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  clearButton: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
-    color: colors.input,
-    borderWidth: 1,
-    width: '50%',
-    marginBottom: 20,
-    marginTop: 10,
-  },
   barcodeText: {
     fontSize: 12,
     color: colors.textSecondary,
@@ -493,7 +553,7 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 10,
     overflow: 'hidden',
   },
   productImage: {
@@ -511,6 +571,52 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  barcodeDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 10,
+  },
+  barcodeDisplayText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  button: {
+    marginBottom: 10,
+  },
+  calendarContainer: {
+    marginBottom: 10,
+  },
+  actionSection: {
+    marginTop: 10,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  clearButton: {
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    flex: 1,
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    flex: 1,
   },
 });
 
