@@ -75,7 +75,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   // Watch for barcode changes and fetch product name if barcode exists
   useEffect(() => {
     const fetchProductName = async () => {
-      if (barcode && scanning) {  // Only fetch if we're actively scanning
+      let wereScanning = scanning;
+      setScanning(false);
+      if (barcode && wereScanning) {  // Only fetch if we're actively scanning
         try {
           setProductName('Looking up barcode...');
           // Fetch barcode data from the backend
@@ -134,7 +136,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
 
   // Handle barcode scanning
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
-    setScanning(false);
     setBarcode(data);
   };
 
