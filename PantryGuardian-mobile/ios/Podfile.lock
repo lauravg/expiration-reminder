@@ -51,7 +51,7 @@ PODS:
     - Yoga
   - ExpoSecureStore (14.0.1):
     - ExpoModulesCore
-  - ExpoSystemUI (5.0.7):
+  - ExpoSystemUI (4.0.9):
     - ExpoModulesCore
   - fast_float (6.1.4)
   - FBLazyVector (0.76.9)
@@ -1592,7 +1592,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNScreens (4.0.0):
+  - RNScreens (4.4.0):
     - DoubleConversion
     - glog
     - RCT-Folly (= 2024.10.14.00)
@@ -1924,7 +1924,7 @@ SPEC CHECKSUMS:
   ExpoKeepAwake: 2a5f15dd4964cba8002c9a36676319a3394c85c7
   ExpoModulesCore: 1e06d5c9c9af76f4f7a464a5b3a81f40a4b7f500
   ExpoSecureStore: d006eea5e316283099d46f80a6b10055b89a6008
-  ExpoSystemUI: 5ae7571742a69d0fc29145b6512f53879a3f42e5
+  ExpoSystemUI: fb8213e39d19e0861320fa69eb60cad7a839c080
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: 7605ea4810e0e10ae4815292433c09bf4324ba45
   fmt: 01b82d4ca6470831d1cc0852a1af644be019e8f6
@@ -1989,7 +1989,7 @@ SPEC CHECKSUMS:
   RNCPicker: f963e01f78e546a93b98aa201501713dbda14e94
   RNDateTimePicker: 40ffda97d071a98a10fdca4fa97e3977102ccd14
   RNGestureHandler: f53433ed19efca7337b51802ca35a23a4baf160d
-  RNScreens: fe83e6b932d7fac2f98cc1bc1150c4121d4944c8
+  RNScreens: 15074d86809a2aac647b6eb9517cd8d60ccf10bd
   RNSVG: 8b1a777d54096b8c2a0fd38fc9d5a454332bbb4d
   RNVectorIcons: 390c7b811fcdc3334d24d06982567de03a0f955b
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
