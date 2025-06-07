@@ -3,7 +3,7 @@
   "compilerOptions": {
     "jsx": "react-native",
     "strict": true,
-    "types": ["node-forge"],
+    "types": ["node", "@types/node-forge"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
