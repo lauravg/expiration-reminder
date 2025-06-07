@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 from firebase_admin import credentials, auth, firestore, storage
 from firebase_admin.auth import UserRecord, InvalidIdTokenError, ExpiredIdTokenError
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, request
 import flask_login
 from flask_login import (
     LoginManager,
@@ -61,9 +61,9 @@ json_data = json.loads(secrets_mgr.get_firebase_service_account_json())
 cred = credentials.Certificate(json_data)
 openai = secrets_mgr.get_openai_api_key()
 
-firebase_admin.initialize_app(cred, {
-    'storageBucket': 'pantryguardian-f8381.appspot.com'
-})
+firebase_admin.initialize_app(
+    cred, {"storageBucket": "pantryguardian-f8381.appspot.com"}
+)
 
 firestore = firestore.client()
 barcodes = BarcodeManager(firestore)
@@ -149,47 +149,6 @@ def register():
             return jsonify({"message": "Registration successful"}), 200
         except Exception as e:
             return jsonify({"message": f"Registration failed: {str(e)}"}), 500
-
-
-# Updated login route for user authentication
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        next_url = request.form.get("next", "/")
-
-        response = auth_mgr.login(email, password)
-
-        if response.ok:
-            uid = response.uid
-            user = user_manager.get_user(uid)
-            login_user(user)
-            log.info("User successfully logged in: %s", user.display_name())
-            if not is_url_safe(next_url):
-                next_url = "/"
-
-            # Ensure there is at least one household for the user
-            households = household_manager.get_households_for_user(user.get_id())
-            if len(households) == 0:
-                log.warning("No households found for user. Creating one now")
-                name = (
-                    f"{user.display_name()}'s Household"
-                    if not user.display_name().isspace()
-                    else "Default Household"
-                )
-                household = Household(None, user.get_id(), name, [user.get_id()])
-                if not household_manager.add_or_update_household(household):
-                    log.error("Unable to create default household for user.")
-
-            return jsonify({"username": user.display_name(), "next_url": next_url})
-        else:
-            return "Login failed", 401
-
-    next_url = request.args.get("next", "/")
-    if not is_url_safe(next_url):
-        next_url = "/"
-    return render_template("login.html", next_url=next_url)
 
 
 @app.route("/logout", methods=["POST"])
@@ -381,7 +340,8 @@ def list_households():
                     user_manager.get_user(uid).email() for uid in household.participants
                 ],
                 "display_names": [
-                    user_manager.get_user(uid).display_name() for uid in household.participants
+                    user_manager.get_user(uid).display_name()
+                    for uid in household.participants
                 ],
             }
         )
@@ -554,10 +514,10 @@ def add_product():
 @token_required
 def upload_product_image():
     try:
-        if 'image' not in request.files:
+        if "image" not in request.files:
             return jsonify({"error": "No image file provided"}), 400
 
-        image_file = request.files['image']
+        image_file = request.files["image"]
         if not image_file.filename:
             return jsonify({"error": "No selected file"}), 400
 
@@ -582,6 +542,7 @@ def upload_product_image():
     except Exception as e:
         log.error(f"Error uploading image: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 # Route to update a product
 @app.route("/update_product/<string:id>", methods=["POST"])
@@ -626,18 +587,17 @@ def update_product(id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-
 def delete_image_from_storage(image_url: str | None) -> bool:
     if not image_url:
         return True
-        
+
     try:
         # Extract filename from URL
         # URL format: https://storage.googleapis.com/pantryguardian-f8381.appspot.com/product_images/filename.jpg
-        filename = image_url.split('product_images/')[-1]
+        filename = image_url.split("product_images/")[-1]
         if not filename:
             return False
-            
+
         bucket = storage.bucket()
         blob = bucket.blob(f"product_images/{filename}")
         blob.delete()
@@ -647,22 +607,20 @@ def delete_image_from_storage(image_url: str | None) -> bool:
         return False
 
 
-
-
 @app.route("/delete_product/<string:id>", methods=["POST"])
 @token_required
 def delete_product(id):
     user: User = flask_login.current_user
-    
+
     # Get the product first to get its image URL
     product = product_mgr.get_product(id)
     if not product:
         return jsonify({"success": False, "error": "Product not found"}), 404
-        
+
     # Delete the image if it exists
     if product.image_url:
         delete_image_from_storage(product.image_url)
-    
+
     success = product_mgr.delete_product(id)
     if not success:
         return jsonify({"success": False, "error": "Unable to delete product"}), 404
@@ -802,16 +760,21 @@ def get_locations_categories():
 
         # Check if user has access to this household
         if not household_manager.user_has_household(user.get_id(), household_id):
-            return jsonify({"error": "User does not have access to this household"}), 403
+            return (
+                jsonify({"error": "User does not have access to this household"}),
+                403,
+            )
 
         household = household_manager.get_household(household_id)
         if not household:
             return jsonify({"error": "Household not found"}), 404
 
-        return jsonify({
-            "locations": household.locations,
-            "categories": household.categories
-        }), 200
+        return (
+            jsonify(
+                {"locations": household.locations, "categories": household.categories}
+            ),
+            200,
+        )
     except Exception as e:
         log.error(f"Error getting locations and categories: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -825,7 +788,7 @@ def add_location():
         data = request.json
         new_location = data.get("location")
         household_id = data.get("householdId")
-        
+
         if not new_location:
             return jsonify({"success": False, "error": "Location is required"}), 400
         if not household_id:
@@ -833,7 +796,10 @@ def add_location():
 
         # Check if user has access to this household
         if not household_manager.user_has_household(user.get_id(), household_id):
-            return jsonify({"error": "User does not have access to this household"}), 403
+            return (
+                jsonify({"error": "User does not have access to this household"}),
+                403,
+            )
 
         household = household_manager.get_household(household_id)
         if not household:
@@ -843,7 +809,7 @@ def add_location():
             household.locations.append(new_location)
             if household_manager.add_or_update_household(household):
                 return jsonify({"success": True}), 200
-            
+
         return jsonify({"success": False, "error": "Unable to add location"}), 500
     except Exception as e:
         log.error(f"Error adding location: {str(e)}")
@@ -858,7 +824,7 @@ def delete_location():
         data = request.json
         location_to_delete = data.get("location")
         household_id = data.get("householdId")
-        
+
         if not location_to_delete:
             return jsonify({"success": False, "error": "Location is required"}), 400
         if not household_id:
@@ -866,7 +832,10 @@ def delete_location():
 
         # Check if user has access to this household
         if not household_manager.user_has_household(user.get_id(), household_id):
-            return jsonify({"error": "User does not have access to this household"}), 403
+            return (
+                jsonify({"error": "User does not have access to this household"}),
+                403,
+            )
 
         household = household_manager.get_household(household_id)
         if not household:
@@ -876,7 +845,7 @@ def delete_location():
             household.locations.remove(location_to_delete)
             if household_manager.add_or_update_household(household):
                 return jsonify({"success": True}), 200
-            
+
         return jsonify({"success": False, "error": "Unable to delete location"}), 500
     except Exception as e:
         log.error(f"Error deleting location: {str(e)}")
@@ -891,7 +860,7 @@ def add_category():
         data = request.json
         new_category = data.get("category")
         household_id = data.get("householdId")
-        
+
         if not new_category:
             return jsonify({"success": False, "error": "Category is required"}), 400
         if not household_id:
@@ -899,7 +868,10 @@ def add_category():
 
         # Check if user has access to this household
         if not household_manager.user_has_household(user.get_id(), household_id):
-            return jsonify({"error": "User does not have access to this household"}), 403
+            return (
+                jsonify({"error": "User does not have access to this household"}),
+                403,
+            )
 
         household = household_manager.get_household(household_id)
         if not household:
@@ -909,7 +881,7 @@ def add_category():
             household.categories.append(new_category)
             if household_manager.add_or_update_household(household):
                 return jsonify({"success": True}), 200
-            
+
         return jsonify({"success": False, "error": "Unable to add category"}), 500
     except Exception as e:
         log.error(f"Error adding category: {str(e)}")
@@ -924,7 +896,7 @@ def delete_category():
         data = request.json
         category_to_delete = data.get("category")
         household_id = data.get("householdId")
-        
+
         if not category_to_delete:
             return jsonify({"success": False, "error": "Category is required"}), 400
         if not household_id:
@@ -932,7 +904,10 @@ def delete_category():
 
         # Check if user has access to this household
         if not household_manager.user_has_household(user.get_id(), household_id):
-            return jsonify({"error": "User does not have access to this household"}), 403
+            return (
+                jsonify({"error": "User does not have access to this household"}),
+                403,
+            )
 
         household = household_manager.get_household(household_id)
         if not household:
@@ -942,7 +917,7 @@ def delete_category():
             household.categories.remove(category_to_delete)
             if household_manager.add_or_update_household(household):
                 return jsonify({"success": True}), 200
-            
+
         return jsonify({"success": False, "error": "Unable to delete category"}), 500
     except Exception as e:
         log.error(f"Error deleting category: {str(e)}")
@@ -1169,7 +1144,7 @@ def delete_account():
     try:
         data = request.json
         password = data.get("password")
-        
+
         if not password:
             return jsonify({"success": False, "error": "Password is required"}), 400
 
@@ -1182,12 +1157,12 @@ def delete_account():
         request_data = {
             "email": user.email(),
             "password": password,
-            "returnSecureToken": True
+            "returnSecureToken": True,
         }
 
         response = requests.post(
             f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_web_api_key}",
-            json=request_data
+            json=request_data,
         )
 
         if not response.ok:
@@ -1197,20 +1172,20 @@ def delete_account():
         try:
             # Delete user's data from Firestore
             user_id = user.get_id()
-            
+
             # Get user's households
             households = household_manager.get_households_for_user(user_id)
-            
+
             # Delete owned households
             for household in households:
                 if household.owner_uid == user_id:
                     household_manager.delete_household(household.id, user_id)
-            
+
             # Delete the user from Firebase Auth
             auth.delete_user(user_id)
-            
+
             return jsonify({"success": True}), 200
-            
+
         except Exception as e:
             log.error(f"Error deleting user account: {e}")
             return jsonify({"success": False, "error": "Failed to delete account"}), 500
@@ -1228,7 +1203,7 @@ def reset_password():
     try:
         data = request.json
         email = data.get("email")
-        
+
         if not email:
             return jsonify({"success": False, "error": "Email is required"}), 400
 
@@ -1236,25 +1211,30 @@ def reset_password():
             # Use Firebase web API key to send reset email directly
             firebase_web_api_key = secrets_mgr.get_firebase_web_api_key()
             reset_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebase_web_api_key}"
-            
-            payload = {
-                "requestType": "PASSWORD_RESET",
-                "email": email
-            }
-            
+
+            payload = {"requestType": "PASSWORD_RESET", "email": email}
+
             response = requests.post(reset_url, json=payload)
-            
+
             if response.status_code == 200:
                 log.info(f"Password reset email sent to {email}")
                 return jsonify({"success": True}), 200
             else:
-                error_message = response.json().get("error", {}).get("message", "Unknown error")
+                error_message = (
+                    response.json().get("error", {}).get("message", "Unknown error")
+                )
                 log.error(f"Error sending password reset email: {error_message}")
-                return jsonify({"success": False, "error": "Failed to send reset email"}), 500
-            
+                return (
+                    jsonify({"success": False, "error": "Failed to send reset email"}),
+                    500,
+                )
+
         except Exception as e:
             log.error(f"Error sending password reset email: {e}")
-            return jsonify({"success": False, "error": "Failed to send reset email"}), 500
+            return (
+                jsonify({"success": False, "error": "Failed to send reset email"}),
+                500,
+            )
 
     except Exception as e:
         log.error(f"Error in reset_password: {e}")
@@ -1268,14 +1248,20 @@ def create_household():
         user = flask_login.current_user
         data = request.json
         name = data.get("name")
-        
+
         if not name:
-            return jsonify({"success": False, "error": "Household name is required"}), 400
+            return (
+                jsonify({"success": False, "error": "Household name is required"}),
+                400,
+            )
 
         # Create new household with current user as owner and participant
         household = Household(None, user.get_id(), name, [user.get_id()])
         if not household_manager.add_or_update_household(household):
-            return jsonify({"success": False, "error": "Failed to create household"}), 500
+            return (
+                jsonify({"success": False, "error": "Failed to create household"}),
+                500,
+            )
 
         return jsonify({"success": True}), 200
     except Exception as e:
@@ -1290,7 +1276,7 @@ def delete_household():
         user = flask_login.current_user
         data = request.json
         household_id = data.get("id")
-        
+
         if not household_id:
             return jsonify({"success": False, "error": "Household ID is required"}), 400
 
@@ -1301,14 +1287,22 @@ def delete_household():
 
         # Check if user is the owner
         if household.owner_uid != user.get_id():
-            return jsonify({"success": False, "error": "Only the owner can delete a household"}), 403
+            return (
+                jsonify(
+                    {"success": False, "error": "Only the owner can delete a household"}
+                ),
+                403,
+            )
 
         # Delete the household
         if household_manager.delete_household(household_id, user.get_id()):
             return jsonify({"success": True}), 200
         else:
-            return jsonify({"success": False, "error": "Failed to delete household"}), 500
-            
+            return (
+                jsonify({"success": False, "error": "Failed to delete household"}),
+                500,
+            )
+
     except Exception as e:
         log.error(f"Error deleting household: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1341,7 +1335,7 @@ def set_active_household():
         uid = flask_login.current_user.get_id()
         data = request.json
         household_id = data.get("household_id")
-        
+
         if not household_id:
             return jsonify({"success": False, "error": "Household ID is required"}), 400
 
@@ -1351,12 +1345,20 @@ def set_active_household():
             return jsonify({"success": False, "error": "Household not found"}), 404
 
         if uid not in household.participants:
-            return jsonify({"success": False, "error": "User does not have access to this household"}), 403
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "User does not have access to this household",
+                    }
+                ),
+                403,
+            )
 
         # Update the last active household in the user's document
-        firestore.collection("users").document(uid).set({
-            "last_active_household": household_id
-        }, merge=True)
+        firestore.collection("users").document(uid).set(
+            {"last_active_household": household_id}, merge=True
+        )
 
         return jsonify({"success": True})
     except Exception as e:
@@ -1371,22 +1373,22 @@ def update_profile():
         user = flask_login.current_user
         data = request.json
         display_name = data.get("display_name")
-        
+
         if not display_name:
             return jsonify({"success": False, "error": "Display name is required"}), 400
-            
+
         # Update the user's display name in Firebase Auth
         auth.update_user(user.get_id(), display_name=display_name)
-        
+
         # Get all households where the user is a participant
         households = household_manager.get_households_for_user(user.get_id())
-        
+
         # For each household, update the display names cache when listing households
         # This ensures the updated display name will be shown for this user in all households
-        
+
         log.info(f"User {user.get_id()} updated display name to: {display_name}")
         return jsonify({"success": True}), 200
-        
+
     except Exception as e:
         log.error(f"Error updating profile: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1400,48 +1402,67 @@ def invite_to_household():
         data = request.json
         household_id = data.get("household_id")
         invitee_email = data.get("email")
-        
+
         if not household_id:
             return jsonify({"success": False, "error": "Household ID is required"}), 400
-            
+
         if not invitee_email:
-            return jsonify({"success": False, "error": "Invitee email is required"}), 400
-            
+            return (
+                jsonify({"success": False, "error": "Invitee email is required"}),
+                400,
+            )
+
         # Verify the user is a member of the household
         household = household_manager.get_household(household_id)
         if not household:
             return jsonify({"success": False, "error": "Household not found"}), 404
-            
+
         if user.get_id() not in household.participants:
-            return jsonify({"success": False, "error": "You are not a member of this household"}), 403
-            
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "You are not a member of this household",
+                    }
+                ),
+                403,
+            )
+
         # Create an invitation
-        invitation = household_manager.create_invitation(household_id, user.get_id(), invitee_email)
+        invitation = household_manager.create_invitation(
+            household_id, user.get_id(), invitee_email
+        )
         if not invitation:
-            return jsonify({"success": False, "error": "Failed to create invitation"}), 500
-            
+            return (
+                jsonify({"success": False, "error": "Failed to create invitation"}),
+                500,
+            )
+
         # Send invitation email
         # Get base URL from request
         base_url = request.headers.get("Origin", "https://pantryguardian.appspot.com")
-        
+
         # Send the invitation email
         email_sent = send_mail.send_invitation_email(
-            invitation.id, 
-            household.name, 
-            user.display_name(), 
-            invitee_email, 
-            base_url
+            invitation.id, household.name, user.display_name(), invitee_email, base_url
         )
-        
+
         if not email_sent:
-            log.warning(f"Invitation created but email could not be sent to {invitee_email}")
-            
-        return jsonify({
-            "success": True, 
-            "invitation_id": invitation.id,
-            "email_sent": email_sent
-        }), 200
-        
+            log.warning(
+                f"Invitation created but email could not be sent to {invitee_email}"
+            )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "invitation_id": invitation.id,
+                    "email_sent": email_sent,
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
         log.error(f"Error inviting to household: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1453,22 +1474,33 @@ def accept_invitation_endpoint(invitation_id):
     try:
         user = flask_login.current_user
         uid = user.get_id()
-        
+
         # Get the invitation
         invitation = household_manager.get_invitation(invitation_id)
         if not invitation:
             return jsonify({"success": False, "error": "Invitation not found"}), 404
-            
+
         # Verify the invitation is for this user's email
         if invitation.invitee_email != user.email():
-            return jsonify({"success": False, "error": "This invitation is not for your email address"}), 403
-            
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "This invitation is not for your email address",
+                    }
+                ),
+                403,
+            )
+
         # Accept the invitation
         if not household_manager.accept_invitation(invitation_id, uid):
-            return jsonify({"success": False, "error": "Failed to accept invitation"}), 500
-            
+            return (
+                jsonify({"success": False, "error": "Failed to accept invitation"}),
+                500,
+            )
+
         return jsonify({"success": True, "household_id": invitation.household_id}), 200
-        
+
     except Exception as e:
         log.error(f"Error accepting invitation: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1479,22 +1511,33 @@ def accept_invitation_endpoint(invitation_id):
 def reject_invitation_endpoint(invitation_id):
     try:
         user = flask_login.current_user
-        
+
         # Get the invitation
         invitation = household_manager.get_invitation(invitation_id)
         if not invitation:
             return jsonify({"success": False, "error": "Invitation not found"}), 404
-            
+
         # Verify the invitation is for this user's email
         if invitation.invitee_email != user.email():
-            return jsonify({"success": False, "error": "This invitation is not for your email address"}), 403
-            
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "This invitation is not for your email address",
+                    }
+                ),
+                403,
+            )
+
         # Reject the invitation
         if not household_manager.reject_invitation(invitation_id):
-            return jsonify({"success": False, "error": "Failed to reject invitation"}), 500
-            
+            return (
+                jsonify({"success": False, "error": "Failed to reject invitation"}),
+                500,
+            )
+
         return jsonify({"success": True}), 200
-        
+
     except Exception as e:
         log.error(f"Error rejecting invitation: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1506,58 +1549,33 @@ def get_pending_invitations():
     try:
         user = flask_login.current_user
         email = user.email()
-        
+
         # Get all pending invitations for this user's email
         invitations = household_manager.get_invitations_for_email(email)
-        
+
         # Format the response
         invitation_list = []
         for invitation in invitations:
             # Get inviter's name
             inviter = user_manager.get_user(invitation.inviter_uid)
             inviter_name = inviter.display_name() if inviter else "Unknown"
-            
-            invitation_list.append({
-                "id": invitation.id,
-                "household_id": invitation.household_id,
-                "household_name": invitation.household_name,
-                "inviter_uid": invitation.inviter_uid,
-                "inviter_name": inviter_name,
-                "created_at": invitation.created_at
-            })
-            
+
+            invitation_list.append(
+                {
+                    "id": invitation.id,
+                    "household_id": invitation.household_id,
+                    "household_name": invitation.household_name,
+                    "inviter_uid": invitation.inviter_uid,
+                    "inviter_name": inviter_name,
+                    "created_at": invitation.created_at,
+                }
+            )
+
         return jsonify({"success": True, "invitations": invitation_list}), 200
-        
+
     except Exception as e:
         log.error(f"Error getting pending invitations: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
-
-
-# Handle direct links to accept invitations (public route)
-@app.route("/accept-invitation", methods=["GET"])
-def accept_invitation_page():
-    invitation_id = request.args.get("id")
-    if not invitation_id:
-        return render_template("error.html", message="Invalid invitation link"), 400
-        
-    # Get the invitation
-    invitation = household_manager.get_invitation(invitation_id)
-    if not invitation:
-        return render_template("error.html", message="Invitation not found or has expired"), 404
-        
-    # If invitation is no longer pending, show appropriate message
-    if invitation.status != "pending":
-        if invitation.status == "accepted":
-            return render_template("error.html", message="This invitation has already been accepted"), 400
-        else:
-            return render_template("error.html", message="This invitation has been rejected or has expired"), 400
-    
-    # Show the invitation details and login/signup prompt
-    return render_template(
-        "accept_invitation.html", 
-        invitation_id=invitation_id,
-        household_name=invitation.household_name
-    )
 
 
 # Run the Flask app
