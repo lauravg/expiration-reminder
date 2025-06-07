@@ -22,5 +22,6 @@ First, build the image:
 Then, start the app through docker compose:
 ```docker compose up```
 
-## Start mobile app
-The code for the mobile app is inside the folder `PantryGuardian-mobile`.
+## Project structure
+ - The code for the mobile app is inside the folder `/mobile`.
+ - The API backend can be found in `/backend`.
