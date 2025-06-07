@@ -16,10 +16,10 @@ To run the React Native Expo app, you need to have nvm (Node Version Manager) an
      ```bash
      nvm --version
      ```
-   - Install and use the recommended Node.js version:
+   - Install and use the latest stable Node.js version (22 at the time of this writing):
      ```bash
-     nvm install 20
-     nvm use 20
+     nvm install --lts
+     nvm use <version number>
      ```
    - Verify Node.js and npm are installed:
      ```bash
