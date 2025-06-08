@@ -1,0 +1,44 @@
+name: Mobile App Build
+
+on:
+  push:
+    branches: [ main, release ]
+    paths:
+      - 'mobile/**'
+  pull_request:
+    branches: [ main, release ]
+    paths:
+      - 'mobile/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: mobile/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./mobile
+      run: npm ci
+    
+    - name: Install Expo and typescript CLI
+      run: npm install -g expo-cli typescript
+    
+    - name: Check TypeScript
+      working-directory: ./mobile
+      run: npx tsc --noEmit
+    
+    - name: Build Android
+      working-directory: ./mobile
+      run: |
+        npx expo prebuild --platform android
+        cd android
+        ./gradlew assembleDebug
+    
