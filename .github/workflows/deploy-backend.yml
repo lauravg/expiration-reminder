@@ -51,10 +51,10 @@ jobs:
     - name: Deploy to Cloud Run
       run: |
         cd backend
-        gcloud run deploy ${{ env.SERVICE_NAME }} \
+        gcloud run deploy expiration-reminder \
           --source . \
-          --service-account=pg-service-account@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
+          --service-account=pg-service-account@pantryguardian-f8381.iam.gserviceaccount.com \
           --max-instances=1 \
           --port=5000 \
-          --region=${{ env.REGION }} \
+          --region=us-central1 \
           --quiet 
