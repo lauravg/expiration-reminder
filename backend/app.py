@@ -123,8 +123,8 @@ def token_required(f):
     return decorated
 
 
-@app.route("/healthz", methods=["GET"])
-def healthz():
+@app.route("/health", methods=["GET"])
+def health():
     try:
         # Check Firebase connection by listing users
         users_ref = firestore.collection("users")
