@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # This script is used to manually deploy the backend to Google Cloud Run.
+# Note: You need to have the service account credentials and that account activated.
 
 PROJECT_ID="pantryguardian-f8381"
 SERVICE_ACCOUNT="pg-service-account@pantryguardian-f8381.iam.gserviceaccount.com"
