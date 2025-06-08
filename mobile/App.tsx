@@ -88,6 +88,8 @@ function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProd
             elevation: 0,
             shadowOpacity: 0
           },
+          statusBarStyle: 'dark-content',
+          statusBarColor: colors.background,
         })}
       />
     </Tab.Navigator>

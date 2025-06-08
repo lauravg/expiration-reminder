@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, FlatList, StatusBar } from 'react-native';
 import { Button, Avatar, IconButton, TextInput as PaperTextInput } from 'react-native-paper';
-import { useNavigation, NavigationProp, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import GlobalStyles from './GlobalStyles';
 import { colors } from './theme';
 import Requests from './Requests';
@@ -568,6 +568,16 @@ const SettingsScreen = () => {
       Alert.alert('Error', 'An unexpected error occurred');
     }
   };
+
+  // Add StatusBar effect
+  useFocusEffect(
+    React.useCallback(() => {
+      StatusBar.setBarStyle('dark-content');
+      return () => {
+        StatusBar.setBarStyle('light-content');
+      };
+    }, [])
+  );
 
   return (
     <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>  
