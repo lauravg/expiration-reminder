@@ -13,7 +13,7 @@ run_basic_flake8() {
 }
 run_complex_flake8() {
     echo "Running complex flake8 checks..."
-    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv
+    flake8 . --count --max-complexity=10 --max-line-length=127 --statistics --exclude=venv
     return $?
 }
 
