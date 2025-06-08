@@ -141,6 +141,16 @@ def health():
         return f"Health check failed: {str(e)}", 500
 
 
+@app.route("/version", methods=["GET"])
+def version():
+    """
+    Returns the git hash of the deployed version.
+    This is set as an environment variable during deployment.
+    """
+    git_hash = os.environ.get("GIT_HASH", "unknown")
+    return jsonify({"version": git_hash}), 200
+
+
 # Register route for user registration
 @app.route("/register", methods=["POST"])
 def register():

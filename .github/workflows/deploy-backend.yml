@@ -57,4 +57,5 @@ jobs:
           --max-instances=1 \
           --port=5000 \
           --region=us-central1 \
+          --set-env-vars=GIT_HASH=${{ github.sha }} \
           --quiet 
