@@ -123,6 +123,24 @@ def token_required(f):
     return decorated
 
 
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    try:
+        # Check Firebase connection by listing users
+        users_ref = firestore.collection("users")
+        users = users_ref.limit(2).get()
+        
+        # Verify we can get documents from the collection
+        if not users:
+            error_msg = "Firebase connection error: No users found"
+            log.error(error_msg)
+            return error_msg, 500
+        return "OK", 200
+    except Exception as e:
+        log.error(f"Health check failed: {str(e)}")
+        return f"Health check failed: {str(e)}", 500
+
+
 # Register route for user registration
 @app.route("/register", methods=["POST"])
 def register():
