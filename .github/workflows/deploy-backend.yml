@@ -1,9 +1,12 @@
 name: Deploy Backend to Google Cloud Run
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Backend Check"]
     branches:
       - release
+    types:
+      - completed
 
 env:
   PROJECT_ID: pantryguardian-f8381
@@ -17,6 +20,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
     - name: Checkout
