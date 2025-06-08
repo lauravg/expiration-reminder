@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This script is used to manually deploy the backend to Google Cloud Run.
+
 PROJECT_ID="pantryguardian-f8381"
 SERVICE_ACCOUNT="pg-service-account@pantryguardian-f8381.iam.gserviceaccount.com"
 
