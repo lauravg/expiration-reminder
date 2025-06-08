@@ -20,7 +20,7 @@ run_complex_flake8() {
 # Mypy is a static type checker for Python.
 run_mypy() {
     echo "Running mypy type checks..."
-    mypy . --ignore-missing-imports
+    mypy . --ignore-missing-imports --exclude=venv
     return $?
 }
 
