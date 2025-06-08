@@ -34,7 +34,7 @@ jobs:
       working-directory: ./backend
       run: |
         ./run_tests.sh --basic-flake8
-        # ./run_tests.sh --complex-flake8
+        ./run_tests.sh --complex-flake8
     
     - name: Check types with mypy
       working-directory: ./backend
