@@ -5,6 +5,7 @@ from google.cloud.firestore_v1 import Query, DocumentSnapshot
 from google.cloud.firestore_v1.base_query import FieldFilter
 import uuid
 from datetime import datetime
+from typing import Any
 
 
 class Household:
@@ -14,15 +15,21 @@ class Household:
         owner_uid: str,
         name: str,
         participants: list[str],
-        categories: list[str] = None,
-        locations: list[str] = None,
+        categories: list[str] | None = None,
+        locations: list[str] | None = None,
     ) -> None:
         self.id = hid
         self.owner_uid = owner_uid
         self.name = name
         self.participants = participants
-        self.categories = categories if categories is not None else ["Veggies", "Fruits", "Baking", "Spices", "Others"]
-        self.locations = locations if locations is not None else ["Pantry", "Fridge", "Freezer"]
+        self.categories = (
+            categories
+            if categories is not None
+            else ["Veggies", "Fruits", "Baking", "Spices", "Others"]
+        )
+        self.locations = (
+            locations if locations is not None else ["Pantry", "Fridge", "Freezer"]
+        )
 
     def __iter__(self):
         # Note, we don't want to persist ID in the DB.
@@ -43,7 +50,7 @@ class Invitation:
         inviter_uid: str,
         invitee_email: str,
         status: str = "pending",
-        created_at: int = None,
+        created_at: int | None = None,
     ) -> None:
         self.id = id
         self.household_id = household_id
@@ -89,7 +96,7 @@ class HouseholdManager:
     def get_households_for_user(self, uid: str) -> list[Household]:
         if uid is None or uid.isspace():
             log.error("get_households_for_user(): uid must not be empty")
-            return None
+            return []
         try:
             found_household_ids = []
             results = []
@@ -102,16 +109,16 @@ class HouseholdManager:
                 found_household_ids.append(household.id)
 
             # Next, add the households the user is a participant.
-            query: Query = self.__collection().where(
+            query2: Query = self.__collection().where(
                 filter=FieldFilter("participants", "array_contains", uid)
             )
-            for household in query.stream():
+            for household in query2.stream():
                 if household.id not in found_household_ids:
                     results.append(self.__household_from_dict(household))
             return results
         except Exception as err:
             log.error("[%s] Unable to fetch households for user, %s", uid, err)
-            return None
+            return []
 
     def add_or_update_household(self, household: Household) -> bool:
         hid = str(uuid.uuid4()) if not household.id else household.id
@@ -162,7 +169,9 @@ class HouseholdManager:
                 return False
         return True
 
-    def create_invitation(self, household_id: str, inviter_uid: str, invitee_email: str) -> Invitation | None:
+    def create_invitation(
+        self, household_id: str, inviter_uid: str, invitee_email: str
+    ) -> Invitation | None:
         if household_id is None or household_id.isspace():
             log.error("create_invitation(): household_id must not be empty")
             return None
@@ -172,28 +181,32 @@ class HouseholdManager:
         if invitee_email is None or invitee_email.isspace():
             log.error("create_invitation(): invitee_email must not be empty")
             return None
-            
+
         # First, check if the household exists
         household = self.get_household(household_id)
         if household is None:
             log.error("create_invitation(): Household not found")
             return None
-            
+
         # Check if the inviter is a member of the household
         if inviter_uid not in household.participants:
             log.error("create_invitation(): Inviter is not a member of the household")
             return None
-            
+
         # Check if an invitation already exists for this email and household
-        existing_invitation = self.get_invitation_by_email_and_household(invitee_email, household_id)
+        existing_invitation = self.get_invitation_by_email_and_household(
+            invitee_email, household_id
+        )
         if existing_invitation is not None:
             if existing_invitation.status == "pending":
                 # Return the existing invitation
                 return existing_invitation
             elif existing_invitation.status == "accepted":
-                log.error("create_invitation(): User already accepted an invitation to this household")
+                log.error(
+                    "create_invitation(): User already accepted an invitation to this household"
+                )
                 return None
-                
+
         # Create a new invitation
         invitation_id = str(uuid.uuid4())
         invitation = Invitation(
@@ -204,9 +217,9 @@ class HouseholdManager:
             invitee_email,
             "pending",
             # Store the created_at timestamp in seconds since epoch
-            int(datetime.now().timestamp())
+            int(datetime.now().timestamp()),
         )
-        
+
         try:
             d = dict(invitation)
             self.__invitations_collection().document(invitation_id).set(d)
@@ -214,7 +227,7 @@ class HouseholdManager:
         except Exception as err:
             log.error("[%s] Unable to store invitation: %s", invitation_id, err)
             return None
-    
+
     def get_invitation(self, invitation_id: str) -> Invitation | None:
         if invitation_id is None or invitation_id.isspace():
             log.error("get_invitation(): invitation_id must not be empty")
@@ -228,44 +241,50 @@ class HouseholdManager:
         except Exception as err:
             log.error("[%s] Unable to fetch invitation data, %s", invitation_id, err)
             return None
-    
-    def get_invitation_by_email_and_household(self, email: str, household_id: str) -> Invitation | None:
+
+    def get_invitation_by_email_and_household(
+        self, email: str, household_id: str
+    ) -> Invitation | None:
         if email is None or email.isspace():
-            log.error("get_invitation_by_email_and_household(): email must not be empty")
+            log.error(
+                "get_invitation_by_email_and_household(): email must not be empty"
+            )
             return None
         if household_id is None or household_id.isspace():
-            log.error("get_invitation_by_email_and_household(): household_id must not be empty")
-            return None
-            
-        try:
-            query = self.__invitations_collection().where(
-                filter=FieldFilter("invitee_email", "==", email)
-            ).where(
-                filter=FieldFilter("household_id", "==", household_id)
+            log.error(
+                "get_invitation_by_email_and_household(): household_id must not be empty"
             )
-            
+            return None
+
+        try:
+            query = (
+                self.__invitations_collection()
+                .where(filter=FieldFilter("invitee_email", "==", email))
+                .where(filter=FieldFilter("household_id", "==", household_id))
+            )
+
             results = list(query.stream())
             if not results:
                 return None
-                
+
             # Return the first matching invitation
             return self.__invitation_from_dict(results[0])
         except Exception as err:
             log.error("Unable to fetch invitation by email and household: %s", err)
             return None
-    
+
     def get_invitations_for_email(self, email: str) -> list[Invitation]:
         if email is None or email.isspace():
             log.error("get_invitations_for_email(): email must not be empty")
             return []
-            
+
         try:
-            query = self.__invitations_collection().where(
-                filter=FieldFilter("invitee_email", "==", email)
-            ).where(
-                filter=FieldFilter("status", "==", "pending")
+            query = (
+                self.__invitations_collection()
+                .where(filter=FieldFilter("invitee_email", "==", email))
+                .where(filter=FieldFilter("status", "==", "pending"))
             )
-            
+
             results = []
             for invitation in query.stream():
                 results.append(self.__invitation_from_dict(invitation))
@@ -273,7 +292,7 @@ class HouseholdManager:
         except Exception as err:
             log.error("Unable to fetch invitations for email: %s", err)
             return []
-    
+
     def accept_invitation(self, invitation_id: str, user_id: str) -> bool:
         if invitation_id is None or invitation_id.isspace():
             log.error("accept_invitation(): invitation_id must not be empty")
@@ -281,55 +300,57 @@ class HouseholdManager:
         if user_id is None or user_id.isspace():
             log.error("accept_invitation(): user_id must not be empty")
             return False
-            
+
         # Get the invitation
         invitation = self.get_invitation(invitation_id)
         if invitation is None:
             log.error("accept_invitation(): Invitation not found")
             return False
-            
+
         # Check if the invitation is still pending
         if invitation.status != "pending":
             log.error("accept_invitation(): Invitation is not pending")
             return False
-            
+
         # Update the invitation status to accepted
         try:
-            self.__invitations_collection().document(invitation_id).update({
-                "status": "accepted"
-            })
-            
+            self.__invitations_collection().document(invitation_id).update(
+                {"status": "accepted"}
+            )
+
             # Add the user to the household
-            if not self.add_participant(invitation.household_id, invitation.inviter_uid, user_id):
+            if not self.add_participant(
+                invitation.household_id, invitation.inviter_uid, user_id
+            ):
                 log.error("accept_invitation(): Failed to add user to household")
                 return False
-                
+
             return True
         except Exception as err:
             log.error("[%s] Unable to accept invitation: %s", invitation_id, err)
             return False
-    
+
     def reject_invitation(self, invitation_id: str) -> bool:
         if invitation_id is None or invitation_id.isspace():
             log.error("reject_invitation(): invitation_id must not be empty")
             return False
-            
+
         # Get the invitation
         invitation = self.get_invitation(invitation_id)
         if invitation is None:
             log.error("reject_invitation(): Invitation not found")
             return False
-            
+
         # Check if the invitation is still pending
         if invitation.status != "pending":
             log.error("reject_invitation(): Invitation is not pending")
             return False
-            
+
         # Update the invitation status to rejected
         try:
-            self.__invitations_collection().document(invitation_id).update({
-                "status": "rejected"
-            })
+            self.__invitations_collection().document(invitation_id).update(
+                {"status": "rejected"}
+            )
             return True
         except Exception as err:
             log.error("[%s] Unable to reject invitation: %s", invitation_id, err)
@@ -337,22 +358,33 @@ class HouseholdManager:
 
     def __collection(self):
         return self.__db.collection("households")
-        
+
     def __invitations_collection(self):
         return self.__db.collection("household_invitations")
 
     def __household_from_dict(self, doc: DocumentSnapshot) -> Household:
-        dict = doc.to_dict()
-        return Household(doc.id, dict["owner_uid"], dict["name"], dict["participants"], dict["categories"], dict["locations"])
-        
+        data = doc.to_dict()
+        if data is None:
+            raise ValueError("Document data is None")
+        return Household(
+            doc.id,
+            data["owner_uid"],
+            data["name"],
+            data["participants"],
+            data.get("categories"),
+            data.get("locations"),
+        )
+
     def __invitation_from_dict(self, doc: DocumentSnapshot) -> Invitation:
-        dict = doc.to_dict()
+        data = doc.to_dict()
+        if data is None:
+            raise ValueError("Document data is None")
         return Invitation(
             doc.id,
-            dict["household_id"],
-            dict["household_name"],
-            dict["inviter_uid"],
-            dict["invitee_email"],
-            dict["status"],
-            dict["created_at"]
+            data["household_id"],
+            data["household_name"],
+            data["inviter_uid"],
+            data["invitee_email"],
+            data["status"],
+            data.get("created_at"),
         )

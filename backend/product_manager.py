@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import uuid
+from typing import Any, Dict
 
 from absl import logging as log
 from google.cloud.firestore_v1 import Query, DocumentSnapshot
@@ -21,7 +22,7 @@ class Product:
         wasted: bool,
         wasted_timestamp: int,
         note: str,
-        image_url: str = None,
+        image_url: str | None = None,
     ) -> None:
         self.id = id
         self.barcode = barcode
@@ -53,7 +54,6 @@ class Product:
         yield "wasted_timestamp", self.wasted_timestamp
         yield "note", self.note
         yield "image_url", self.image_url
-
 
     def creation_str(self, format="%b %d %Y") -> str:
         return datetime.utcfromtimestamp(self.created / 1000).strftime(format)
@@ -90,7 +90,7 @@ class ProductManager:
     def get_household_products(self, household_id: str) -> list[Product]:
         if household_id is None or household_id.isspace():
             log.error("get_household_products(): uid must not be empty")
-            return None
+            return []
         try:
             results = []
             query: Query = self.__collection().where(
@@ -132,22 +132,26 @@ class ProductManager:
         return self.__db.collection("products")
 
     def __product_from_dict(self, doc: DocumentSnapshot) -> Product:
-        dict = doc.to_dict()
-        wasted_timestamp = dict["wasted_timestamp"] if "wasted_timestamp" in dict else 0
-        household_id = dict["household_id"] if "household_id" in dict else ""
-        image_url = dict.get("image_url", None)
+        dict_data: Dict[str, Any] | None = doc.to_dict()
+        if dict_data is None:
+            raise ValueError(f"Document {doc.id} has no data")
+
+        wasted_timestamp = dict_data.get("wasted_timestamp", 0)
+        household_id = dict_data.get("household_id", "")
+        image_url = dict_data.get("image_url")
+
         return Product(
             doc.id,
-            dict["barcode"],
-            dict["category"],
-            dict["created"],
-            dict["expires"],
-            dict["location"],
-            dict["product_name"],
+            dict_data["barcode"],
+            dict_data["category"],
+            dict_data["created"],
+            dict_data["expires"],
+            dict_data["location"],
+            dict_data["product_name"],
             household_id,
-            dict["wasted"],
+            dict_data["wasted"],
             wasted_timestamp,
-            dict["note"],
+            dict_data["note"],
             image_url,
         )
 

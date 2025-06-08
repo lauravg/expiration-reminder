@@ -93,7 +93,10 @@ def convert_to_pt(dt):
 
 @login_manager.user_loader
 def load_user(uid: str) -> User:
-    return user_manager.get_user(uid)
+    user = user_manager.get_user(uid)
+    if user is None:
+        raise ValueError(f"User with ID {uid} not found")
+    return user
 
 
 def token_required(f):
@@ -163,6 +166,7 @@ def logout():
         return jsonify({"success": True, "message": "Logged out successfully"}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route("/auth", methods=["POST"])
 def auth_route():

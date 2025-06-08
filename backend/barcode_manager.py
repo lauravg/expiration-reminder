@@ -1,10 +1,10 @@
 from absl import logging as log
 import requests
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Dict, Any
 
 
 class Barcode:
-    def __init__(self, code: str, names: List[Tuple[str, str]]) -> None:
+    def __init__(self, code: str, names: List[Dict[str, str]]) -> None:
         self.code = code
         self.names = names
 
@@ -19,7 +19,7 @@ class BarcodeManager:
 
     def get_product_name(
         self, barcode: str, household_id: str
-    ) -> Optional[Tuple[str, bool]]:
+    ) -> Tuple[str, bool] | None:
         """
         Get a barcode from the household's collection or from the global cache.
         Returns a tuple of (product_name, is_ext).
@@ -48,10 +48,10 @@ class BarcodeManager:
                 # TODO: We could at some point retry in the future in case the product
                 #       was added to the database.
                 if product_name:
-                    barcode = Barcode(
+                    barcode_obj = Barcode(
                         barcode, [{"name": product_name, "source": "ext:openfoodfacts"}]
                     )
-                    self.add_barcode(barcode)
+                    self.add_barcode(barcode_obj)
                     return product_name, True
                 else:
                     log.warning(
