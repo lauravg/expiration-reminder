@@ -312,6 +312,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider>
         <SafeAreaProvider>
+          <StatusBar
+            backgroundColor="transparent"
+            barStyle="light-content"
+            translucent={true}
+          />
           <NavigationContainer ref={navigationRef}>
             <Stack.Navigator initialRouteName="Login">
               <Stack.Screen name="Login" options={{ headerShown: false }}>
