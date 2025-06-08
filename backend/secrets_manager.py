@@ -62,8 +62,8 @@ class SecretsManager:
             if key is not None and not key.isspace():
                 log.info(f"Found secret '{id}' through DEV secrets file'")
                 return key
-        except:
-            log.info("Unable to read local secret key from '%s'.", file_name)
+        except Exception as err:
+            log.info("Unable to read local secret key from '%s': %s", file_name, err)
 
         # 3) Try to find it as the specified secrets file.
         file_name = self.__mapping[id][1]
@@ -73,8 +73,8 @@ class SecretsManager:
             if key is not None and not key.isspace():
                 log.info(f"Found secret '{id}' through local secrets file'")
                 return key
-        except:
-            log.info("Secrets file not found. Trying GCloud next...")
+        except Exception as err:
+            log.info("Unable to read local secret key from '%s': %s", file_name, err)
 
         # 4) Try to find the secret through GCloud secrets manager.
         key = self.__get_from_gcloud(env_name)

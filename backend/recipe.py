@@ -10,7 +10,13 @@ class RecipeGenerator:
         messages = [
             {
                 "role": "system",
-                "content": "You’re a kind and helpful assistant that generates a recipe using the provided ingredients. However, no need to include all the ingredients, but don't include any ingredients that are not in the list (except for basics that you can assume can be found in any home). Ignore emojis in the ingredients list. Produce your response in Markdown format.",
+                "content": (
+                    "You are a kind and helpful assistant that generates a recipe using the provided "
+                    "ingredients. However, no need to include all the ingredients, but don't include any "
+                    "ingredients that are not in the list (except for basics that you can assume can be "
+                    "found in any home). Ignore emojis in the ingredients list. Produce your response in "
+                    "Markdown format."
+                ),
             },
             {"role": "user", "content": ", ".join(product_names)},
         ]

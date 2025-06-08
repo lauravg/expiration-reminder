@@ -1,11 +1,8 @@
 from absl import logging as log
-from flask import session
-import flask_login
 from google.cloud.firestore_v1 import Query, DocumentSnapshot
 from google.cloud.firestore_v1.base_query import FieldFilter
 import uuid
 from datetime import datetime
-from typing import Any
 
 
 class Household:
@@ -172,40 +169,19 @@ class HouseholdManager:
     def create_invitation(
         self, household_id: str, inviter_uid: str, invitee_email: str
     ) -> Invitation | None:
-        if household_id is None or household_id.isspace():
-            log.error("create_invitation(): household_id must not be empty")
-            return None
-        if inviter_uid is None or inviter_uid.isspace():
-            log.error("create_invitation(): inviter_uid must not be empty")
-            return None
-        if invitee_email is None or invitee_email.isspace():
-            log.error("create_invitation(): invitee_email must not be empty")
-            return None
-
-        # First, check if the household exists
-        household = self.get_household(household_id)
+        # Validate input and household/inviter
+        household = self._validate_invitation_inputs(
+            household_id, inviter_uid, invitee_email
+        )
         if household is None:
-            log.error("create_invitation(): Household not found")
             return None
 
-        # Check if the inviter is a member of the household
-        if inviter_uid not in household.participants:
-            log.error("create_invitation(): Inviter is not a member of the household")
-            return None
-
-        # Check if an invitation already exists for this email and household
-        existing_invitation = self.get_invitation_by_email_and_household(
+        # Check for existing invitation
+        existing_invitation = self._check_existing_invitation(
             invitee_email, household_id
         )
         if existing_invitation is not None:
-            if existing_invitation.status == "pending":
-                # Return the existing invitation
-                return existing_invitation
-            elif existing_invitation.status == "accepted":
-                log.error(
-                    "create_invitation(): User already accepted an invitation to this household"
-                )
-                return None
+            return existing_invitation
 
         # Create a new invitation
         invitation_id = str(uuid.uuid4())
@@ -216,7 +192,6 @@ class HouseholdManager:
             inviter_uid,
             invitee_email,
             "pending",
-            # Store the created_at timestamp in seconds since epoch
             int(datetime.now().timestamp()),
         )
 
@@ -227,6 +202,44 @@ class HouseholdManager:
         except Exception as err:
             log.error("[%s] Unable to store invitation: %s", invitation_id, err)
             return None
+
+    def _validate_invitation_inputs(
+        self, household_id: str, inviter_uid: str, invitee_email: str
+    ):
+        if household_id is None or household_id.isspace():
+            log.error("create_invitation(): household_id must not be empty")
+            return None
+        if inviter_uid is None or inviter_uid.isspace():
+            log.error("create_invitation(): inviter_uid must not be empty")
+            return None
+        if invitee_email is None or invitee_email.isspace():
+            log.error("create_invitation(): invitee_email must not be empty")
+            return None
+
+        household = self.get_household(household_id)
+        if household is None:
+            log.error("create_invitation(): Household not found")
+            return None
+
+        if inviter_uid not in household.participants:
+            log.error("create_invitation(): Inviter is not a member of the household")
+            return None
+
+        return household
+
+    def _check_existing_invitation(self, invitee_email: str, household_id: str):
+        existing_invitation = self.get_invitation_by_email_and_household(
+            invitee_email, household_id
+        )
+        if existing_invitation is not None:
+            if existing_invitation.status == "pending":
+                return existing_invitation
+            elif existing_invitation.status == "accepted":
+                log.error(
+                    "create_invitation(): User already accepted an invitation to this household"
+                )
+                return None
+        return None
 
     def get_invitation(self, invitation_id: str) -> Invitation | None:
         if invitation_id is None or invitation_id.isspace():

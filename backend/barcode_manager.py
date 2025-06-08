@@ -1,6 +1,6 @@
 from absl import logging as log
 import requests
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict
 
 
 class Barcode:

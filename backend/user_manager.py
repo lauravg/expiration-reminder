@@ -1,5 +1,5 @@
 from absl import logging as log
-from firebase_admin import credentials, auth, firestore
+from firebase_admin import auth
 from firebase_admin.auth import UserRecord
 
 
@@ -8,13 +8,13 @@ class User:
         self.record = record
 
     def email(self) -> str:
-        return self.record.email if self.record.email != None else ""
+        return self.record.email if self.record.email is not None else ""
 
     def display_name(self) -> str:
-        return self.record.display_name if self.record.display_name != None else ""
+        return self.record.display_name if self.record.display_name is not None else ""
 
     def photo_url(self) -> str:
-        return self.record.photo_url if self.record.photo_url != None else ""
+        return self.record.photo_url if self.record.photo_url is not None else ""
 
     def is_authenticated(self) -> bool:
         return True

@@ -1,9 +1,8 @@
 from flask_cors import CORS
 from config import pt_timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 import json
-import pytz
 import requests
 import secrets
 import sys
@@ -13,16 +12,14 @@ import os
 from absl import logging as log
 import firebase_admin
 import firebase_admin.messaging as messaging
-from datetime import datetime, timedelta
 
 from firebase_admin import credentials, auth, firestore, storage
-from firebase_admin.auth import UserRecord, InvalidIdTokenError, ExpiredIdTokenError
+from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
 from flask import Flask, jsonify, redirect, request
 import flask_login
 from flask_login import (
     LoginManager,
     login_user,
-    logout_user,
     login_required,
     current_user,
 )
@@ -33,7 +30,6 @@ from household_manager import Household, HouseholdManager
 from product_manager import ProductManager, Product
 from recipe import RecipeGenerator
 from secrets_manager import SecretsManager
-from send_email import SendMail
 from user_manager import UserManager, User
 
 
@@ -72,7 +68,6 @@ household_manager = HouseholdManager(firestore)
 
 # Create an instance of SendMail with the app and pt_timezone
 recipe_generator = RecipeGenerator(secrets_mgr)
-send_mail = SendMail(app, app, pt_timezone, recipe_generator)
 
 user_manager = UserManager()
 
@@ -161,7 +156,6 @@ def logout():
     Logs out the currently logged-in user.
     """
     try:
-        user = flask_login.current_user
         flask_login.logout_user()
         return jsonify({"success": True, "message": "Logged out successfully"}), 200
     except Exception as e:
@@ -572,8 +566,6 @@ def delete_image_from_storage(image_url: str | None) -> bool:
 @app.route("/delete_product/<string:id>", methods=["POST"])
 @token_required
 def delete_product(id):
-    user: User = flask_login.current_user
-
     # Get the product first to get its image URL
     product = product_mgr.get_product(id)
     if not product:
@@ -587,7 +579,7 @@ def delete_product(id):
     if not success:
         return jsonify({"success": False, "error": "Unable to delete product"}), 404
 
-    log.info(f"User {user.get_id()} deleted product {id}")
+    log.info(f"User {flask_login.current_user.get_id()} deleted product {id}")
     return jsonify({"success": True})
 
 
@@ -595,7 +587,6 @@ def delete_product(id):
 @app.route("/waste_product/<string:id>", methods=["POST"])
 @token_required
 def waste_product(id):
-    user: User = flask_login.current_user
     product = product_mgr.get_product(id)
     if product is None:
         log.error(f"Product with ID {id} not found")
@@ -666,7 +657,6 @@ def generate_recipe():
 @token_required
 def generate_recipe_from_database():
     data = request.json
-    user: User = current_user
     household_id = data.get("householdId")
     if not household_id:
         return jsonify({"error": "Household ID is required"}), 400
@@ -700,13 +690,13 @@ def update_households():
 @app.route("/save_push_token", methods=["POST"])
 @token_required
 def save_push_token():
-    user = flask_login.current_user
     data = request.json
     token = data.get("token")
-    log.info(f"Saving push token for user: {user.get_id()}")
-    doc_ref = firestore.collection("users").document(user.get_id())
+    user_id = flask_login.current_user.get_id()
+    log.info(f"Saving push token for user: {user_id}")
+    doc_ref = firestore.collection("users").document(user_id)
     doc_ref.update({"push_token": token})
-    log.info(f"Push token saved successfully for user: {user.get_id()}")
+    log.info(f"Push token saved successfully for user: {user_id}")
     return jsonify({"success": True})
 
 
@@ -1045,13 +1035,6 @@ def get_view_settings():
         return jsonify({"error": str(e)}), 500
 
 
-# Initialize and start a schedule thread for sending emails
-# if not app.debug:
-#     send_mail.init_schedule_thread()
-# else:
-#     log.warning("⚠️ NOT initializing schedule thread in --debug mode ⚠️")
-
-
 @app.route("/search_products", methods=["POST"])
 @token_required
 def search_products():
@@ -1342,12 +1325,6 @@ def update_profile():
         # Update the user's display name in Firebase Auth
         auth.update_user(user.get_id(), display_name=display_name)
 
-        # Get all households where the user is a participant
-        households = household_manager.get_households_for_user(user.get_id())
-
-        # For each household, update the display names cache when listing households
-        # This ensures the updated display name will be shown for this user in all households
-
         log.info(f"User {user.get_id()} updated display name to: {display_name}")
         return jsonify({"success": True}), 200
 
@@ -1400,26 +1377,13 @@ def invite_to_household():
                 500,
             )
 
-        # Send invitation email
-        # Get base URL from request
-        base_url = request.headers.get("Origin", "https://pantryguardian.appspot.com")
-
-        # Send the invitation email
-        email_sent = send_mail.send_invitation_email(
-            invitation.id, household.name, user.display_name(), invitee_email, base_url
-        )
-
-        if not email_sent:
-            log.warning(
-                f"Invitation created but email could not be sent to {invitee_email}"
-            )
-
+        # TODO: Send the invitation email
         return (
             jsonify(
                 {
                     "success": True,
                     "invitation_id": invitation.id,
-                    "email_sent": email_sent,
+                    "email_sent": False,
                 }
             ),
             200,
