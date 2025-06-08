@@ -1,9 +1,10 @@
 from absl import logging as log
 import requests
+from typing import List, Tuple, Optional
 
 
 class Barcode:
-    def __init__(self, code: str, names: list[tuple[str, str]]) -> None:
+    def __init__(self, code: str, names: List[Tuple[str, str]]) -> None:
         self.code = code
         self.names = names
 
@@ -18,7 +19,7 @@ class BarcodeManager:
 
     def get_product_name(
         self, barcode: str, household_id: str
-    ) -> tuple[str, bool] | None:
+    ) -> Optional[Tuple[str, bool]]:
         """
         Get a barcode from the household's collection or from the global cache.
         Returns a tuple of (product_name, is_ext).
