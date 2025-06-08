@@ -164,48 +164,6 @@ def logout():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-
-@app.route("/change_password", methods=["POST"])
-@login_required
-def change_password():
-    """
-    Change the password of the currently logged-in user.
-    """
-    try:
-        data = request.json
-        current_password = data.get("currentPassword")
-        new_password = data.get("newPassword")
-
-        if not current_password or not new_password:
-            return jsonify({"success": False, "error": "Missing required fields"}), 400
-
-        # Check if the new password meets the minimum length requirement
-        if len(new_password) < 8:
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "New password must be at least 8 characters",
-                    }
-                ),
-                400,
-            )
-
-        # Replace this with your logic for password validation
-        if not validate_user_password(current_user.id, current_password):  # type: ignore
-            return (
-                jsonify({"success": False, "error": "Incorrect current password"}),
-                401,
-            )
-
-        # Update the user's password
-        update_user_password(current_user.id, new_password)  # type: ignore
-        return jsonify({"success": True}), 200
-
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
 @app.route("/auth", methods=["POST"])
 def auth_route():
     """
