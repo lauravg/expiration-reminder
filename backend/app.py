@@ -129,7 +129,7 @@ def healthz():
         # Check Firebase connection by listing users
         users_ref = firestore.collection("users")
         users = users_ref.limit(2).get()
-        
+
         # Verify we can get documents from the collection
         if not users:
             error_msg = "Firebase connection error: No users found"
