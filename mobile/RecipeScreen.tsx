@@ -7,12 +7,14 @@ import { colors } from './theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HouseholdManager } from './HouseholdManager';
 import Markdown from 'react-native-markdown-display';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface RecipeScreenProps { 
   householdManager: HouseholdManager;
 }
 
 const RecipeScreen = ({ householdManager }: RecipeScreenProps) => {
+  const insets = useSafeAreaInsets();
   const [ingredients, setIngredients] = useState('');
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState<string | null>(null);
@@ -78,7 +80,7 @@ const RecipeScreen = ({ householdManager }: RecipeScreenProps) => {
 
   return (
     <ScrollView style={[GlobalStyles.container, styles.container]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <MaterialCommunityIcons name="chef-hat" size={40} color={colors.textInverse} />
         <Text style={styles.headerTitle}>Recipe Generator</Text>
         <Text style={styles.headerSubtitle}>Turn your ingredients into delicious meals</Text>
