@@ -1,6 +1,6 @@
 from absl import logging as log
 from firebase_admin import auth
-from firebase_admin.auth import UserRecord
+from firebase_admin.auth import UserRecord, UserNotFoundError
 
 
 class User:
@@ -39,6 +39,9 @@ class UserManager:
             record = auth.get_user(uid)
             return User(record)
 
-        except auth.AuthError as e:
+        except UserNotFoundError as e:
+            log.error(f"User {uid} not found: {e}")
+            return None
+        except Exception as e:
             log.error(f"Error retrieving user information: {e}")
             return None
