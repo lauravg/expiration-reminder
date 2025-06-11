@@ -1,7 +1,7 @@
 from absl import logging as log
 import os
 
-from google.cloud import secretmanager
+from google.cloud import secretmanager  # type: ignore[attr-defined]
 
 
 class SecretNotFoundException(Exception):
