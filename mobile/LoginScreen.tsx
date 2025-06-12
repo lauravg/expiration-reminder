@@ -31,7 +31,10 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
         setIsLoading(true);
         const sessionData = new SessionData();
         if (sessionData.idToken) {
-          await navigation.navigate({ name: 'Main', params: { } });
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main' }],
+          });
         }
       } finally {
         setIsLoading(false);
@@ -48,7 +51,10 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
       if (response) {
         console.info('Login successful');
         onLoginSuccess();
-        navigation.navigate({ name: 'Main', params: { } });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
       } else {
         setError('Login failed.');
       }
