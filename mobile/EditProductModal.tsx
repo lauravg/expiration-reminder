@@ -340,10 +340,11 @@ const styles = StyleSheet.create({
   modalContainer: {
     maxHeight: '90%',
     padding: 0,
+    margin: 20,
   },
   scrollView: {
     paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingBottom: 20,
   },
   imageSection: {
     marginBottom: 20,
@@ -430,6 +431,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 16,
+    marginBottom: 20,
     flexDirection: 'column',
     gap: 12,
   },
