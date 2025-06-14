@@ -718,6 +718,8 @@ class Requests {
     retry_if_auth_expired = true
   ): Promise<AxiosResponse> {
     console.log(`make_request (${path})`);
+    // Current time in milliseconds
+    const startRequestTime = Date.now();
 
     const authOrRegister = path === "auth" || path === "register";
     const resetPassword = path === "reset_password";
@@ -746,6 +748,11 @@ class Requests {
         `${BASE_URL}/${path}`,
         requestData,
         { headers, maxRedirects: 0 }
+      );
+      const requestDuration = Date.now() - startRequestTime;
+      // Print requestDuration in red color using ANSI escape codes
+      console.log(
+        `Request to ${path} completed in \x1b[31m${requestDuration}ms\x1b[0m`
       );
       return response;
     } catch (err: any) {
