@@ -8,7 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { IconButton, Provider as PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { colors } from './theme';
+import { colors, theme } from './theme';
 import Homepage from './Homepage';
 import Login from './LoginScreen';
 import Registration from './RegistrationScreen';
@@ -301,7 +301,7 @@ export default function App() {
   if (isLoading) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <PaperProvider>
+        <PaperProvider theme={theme}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
@@ -312,7 +312,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider>
+      <PaperProvider theme={theme}>
         <SafeAreaProvider>
           <StatusBar
             backgroundColor="transparent"

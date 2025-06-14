@@ -1,4 +1,4 @@
-import { DefaultTheme } from 'react-native-paper';
+import { DefaultTheme, MD3Theme } from 'react-native-paper';
 
 interface Colors {
   primary: string;
@@ -81,7 +81,7 @@ export const colors: Colors = {
   disabled: '#E5E7EB',
 };
 
-export const theme = {
+export const theme: MD3Theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
@@ -100,22 +100,4 @@ export const theme = {
   animation: {
     scale: 1.0,
   },
-  fonts: {
-    regular: {
-      fontFamily: 'System',
-      fontWeight: '400',
-    },
-    medium: {
-      fontFamily: 'System',
-      fontWeight: '500',
-    },
-    light: {
-      fontFamily: 'System',
-      fontWeight: '300',
-    },
-    thin: {
-      fontFamily: 'System',
-      fontWeight: '100',
-    },
-  },
-} as const; 
+} as MD3Theme;
