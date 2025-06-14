@@ -1,5 +1,6 @@
 from absl import logging as log
 import os
+from dotenv import load_dotenv
 
 from google.cloud import secretmanager
 
@@ -46,6 +47,14 @@ class SecretsManager:
             log.error("UNKNOWN secret name: '%s'", id)
             return ""
 
+        # 0) Try to load from .env file first
+        env_name = self.__mapping[id][0]
+        key = self.__get_from_env_file(env_name)
+        if key is not None and not key.isspace():
+            log.info(f"Found secret '{id}' through .env file.")
+            return key
+        log.info("Secret not found in .env file for %s", env_name)
+
         # 1) Find it as an environment variable
         env_name = self.__mapping[id][0]
         key = os.environ.get(env_name)
@@ -83,6 +92,17 @@ class SecretsManager:
             return key
 
         raise SecretNotFoundException("Unable to read secret key for '%s'.", id)
+
+    def __get_from_env_file(self, env_name: str) -> str:
+        """Attempts to load a secret from a .env file."""
+        try:
+            load_dotenv()
+            key = os.environ.get(env_name)
+            if key is not None and not key.isspace():
+                return key
+        except Exception as err:
+            log.info("Unable to read secret from .env file: %s", err)
+        return ""
 
     def __get_from_gcloud(self, secret_id) -> str:
         # Create the Secret Manager client.
