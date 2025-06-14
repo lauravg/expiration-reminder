@@ -4,9 +4,9 @@ import { Product, Barcode } from './Product';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 
-const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
+// const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
 // const BASE_URL = "http://127.0.0.1:5050";
-// const BASE_URL = "http://192.168.1.50:5050";
+const BASE_URL = "http://192.168.1.17:5050";
 
 interface ProductSuggestion {
   name: string;
@@ -15,11 +15,7 @@ interface ProductSuggestion {
 
 class Requests {
   private sessionData = new SessionData();
-  // private householdManager: HouseholdManager;
-
-  // constructor(householdManager: HouseholdManager) {
-  //   this.householdManager = householdManager;
-  // }
+  private refreshPromise: Promise<boolean> | null = null;
 
   // Helper method to set session data consistently
   private setSessionData(data: any): void {
@@ -757,11 +753,27 @@ class Requests {
         const axiosError = err as AxiosError;
         console.error(`Error making request, response code: ${axiosError.response?.status}`);
         if (axiosError.response?.status === 401 && retry_if_auth_expired) {
-          console.log("Refreshing idToken...");
-          const refreshed = await this.handleRefresh();
-          if (refreshed) {
+          console.log("Token expired, attempting refresh...");
+          
+          // If there's already a refresh in progress, wait for it
+          if (this.refreshPromise) {
+            console.log("Waiting for existing refresh to complete...");
+            await this.refreshPromise;
             const newIdToken = this.sessionData.idToken;
             return this._make_request(newIdToken, path, data, isFormData, false);
+          }
+
+          // Start a new refresh
+          this.refreshPromise = this.handleRefresh();
+          try {
+            const refreshed = await this.refreshPromise;
+            if (refreshed) {
+              const newIdToken = this.sessionData.idToken;
+              return this._make_request(newIdToken, path, data, isFormData, false);
+            }
+          } finally {
+            // Clear the refresh promise after it completes
+            this.refreshPromise = null;
           }
         }
 
