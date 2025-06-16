@@ -31,6 +31,7 @@ from product_manager import ProductManager, Product
 from recipe import RecipeGenerator
 from secrets_manager import SecretsManager
 from user_manager import UserManager, User
+from timing import measure_time
 
 
 def set_logging_params(debug_logging_enabled: bool = False):
@@ -94,6 +95,7 @@ def load_user(uid: str) -> User:
     return user
 
 
+@measure_time
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -124,6 +126,7 @@ def token_required(f):
 
 
 @app.route("/health", methods=["GET"])
+@measure_time
 def health():
     try:
         # Check Firebase connection by listing users
@@ -142,6 +145,7 @@ def health():
 
 
 @app.route("/version", methods=["GET"])
+@measure_time
 def version():
     """
     Returns the git hash of the deployed version.
@@ -153,6 +157,7 @@ def version():
 
 # Register route for user registration
 @app.route("/register", methods=["POST"])
+@measure_time
 def register():
     if request.method == "POST":
         data = request.form
@@ -179,6 +184,7 @@ def register():
 
 @app.route("/logout", methods=["POST"])
 @token_required
+@measure_time
 def logout():
     """
     Logs out the currently logged-in user.
@@ -191,6 +197,7 @@ def logout():
 
 
 @app.route("/auth", methods=["POST"])
+@measure_time
 def auth_route():
     """
     This auth method will take a username and password from the client, perform
@@ -256,6 +263,7 @@ def auth_route():
 
 @app.route("/list_products", methods=["GET", "POST"])
 @token_required
+@measure_time
 def list_products():
     """
     Lists the products matching the given filters
@@ -307,6 +315,7 @@ def list_products():
 
 @app.route("/list_households", methods=["POST"])
 @token_required
+@measure_time
 def list_households():
     uid = flask_login.current_user.get_id()
     households = household_manager.get_households_for_user(uid)
@@ -367,6 +376,7 @@ def schedule_notification(user_id, product_name, expiration_date, days_before):
 
 @app.route("/save_notification_settings", methods=["POST"])
 @token_required
+@measure_time
 def save_notification_settings():
     user = flask_login.current_user
     data = request.json
@@ -386,6 +396,7 @@ def save_notification_settings():
 
 @app.route("/get_notification_settings", methods=["POST"])
 @token_required
+@measure_time
 def get_notification_settings():
     user = flask_login.current_user
     doc_ref = firestore.collection("users").document(user.get_id())
@@ -406,6 +417,7 @@ def get_notification_settings():
         )
 
 
+@measure_time
 def set_default_notification_settings(user_id):
     doc_ref = firestore.collection("users").document(user_id)
     doc = doc_ref.get()
@@ -434,6 +446,7 @@ def set_default_notification_settings(user_id):
 
 @app.route("/add_product", methods=["POST"])
 @token_required
+@measure_time
 def add_product():
     try:
         data = request.json
@@ -496,6 +509,7 @@ def add_product():
 
 @app.route("/upload_product_image", methods=["POST"])
 @token_required
+@measure_time
 def upload_product_image():
     try:
         if "image" not in request.files:
@@ -531,6 +545,7 @@ def upload_product_image():
 # Route to update a product
 @app.route("/update_product/<string:id>", methods=["POST"])
 @token_required
+@measure_time
 def update_product(id):
     try:
         data = request.json
@@ -593,6 +608,7 @@ def delete_image_from_storage(image_url: str | None) -> bool:
 
 @app.route("/delete_product/<string:id>", methods=["POST"])
 @token_required
+@measure_time
 def delete_product(id):
     # Get the product first to get its image URL
     product = product_mgr.get_product(id)
@@ -614,6 +630,7 @@ def delete_product(id):
 # Route to mark a product as wasted
 @app.route("/waste_product/<string:id>", methods=["POST"])
 @token_required
+@measure_time
 def waste_product(id):
     product = product_mgr.get_product(id)
     if product is None:
@@ -638,6 +655,7 @@ def waste_product(id):
 
 
 @app.route("/generate-recipe", methods=["POST"])
+@measure_time
 def generate_recipe():
     data = request.json
     ingredients = data.get("ingredients", "")
@@ -683,6 +701,7 @@ def generate_recipe():
 # Generate recipe based on database products
 @app.route("/generate_recipe_from_database", methods=["POST"])
 @token_required
+@measure_time
 def generate_recipe_from_database():
     data = request.json
     household_id = data.get("householdId")
@@ -711,6 +730,7 @@ def generate_recipe_from_database():
 # Route for generating a recipe based on user input
 @app.route("/update_households", methods=["POST"])
 @login_required
+@measure_time
 def update_households():
     return redirect("/settings")
 
@@ -730,6 +750,7 @@ def save_push_token():
 
 @app.route("/get_locations_categories", methods=["POST"])
 @token_required
+@measure_time
 def get_locations_categories():
     try:
         user = flask_login.current_user
@@ -762,6 +783,7 @@ def get_locations_categories():
 
 @app.route("/add_location", methods=["POST"])
 @token_required
+@measure_time
 def add_location():
     try:
         user = flask_login.current_user
@@ -798,6 +820,7 @@ def add_location():
 
 @app.route("/delete_location", methods=["POST"])
 @token_required
+@measure_time
 def delete_location():
     try:
         user = flask_login.current_user
@@ -834,6 +857,7 @@ def delete_location():
 
 @app.route("/add_category", methods=["POST"])
 @token_required
+@measure_time
 def add_category():
     try:
         user = flask_login.current_user
@@ -870,6 +894,7 @@ def add_category():
 
 @app.route("/delete_category", methods=["POST"])
 @token_required
+@measure_time
 def delete_category():
     try:
         user = flask_login.current_user
@@ -906,6 +931,7 @@ def delete_category():
 
 @app.route("/get_barcode", methods=["POST"])
 @token_required
+@measure_time
 def get_barcode():
     try:
         data = request.json
@@ -938,6 +964,7 @@ def get_barcode():
 
 @app.route("/add_barcode", methods=["POST"])
 @token_required
+@measure_time
 def add_barcode():
     try:
         data = request.json
@@ -988,6 +1015,7 @@ def on_terminate(signal, frame):
 
 @app.route("/save_view_settings", methods=["POST"])
 @token_required
+@measure_time
 def save_view_settings():
     try:
         data = request.json
@@ -1023,6 +1051,7 @@ def save_view_settings():
 
 @app.route("/get_view_settings", methods=["POST"])
 @token_required
+@measure_time
 def get_view_settings():
     try:
         user_id = current_user.get_id()
@@ -1065,6 +1094,7 @@ def get_view_settings():
 
 @app.route("/search_products", methods=["POST"])
 @token_required
+@measure_time
 def search_products():
     """
     Search for product names in the user's household that match the query.
@@ -1110,6 +1140,7 @@ def search_products():
 
 @app.route("/delete_account", methods=["POST"])
 @token_required
+@measure_time
 def delete_account():
     """
     Delete the user's account after verifying their password.
@@ -1169,6 +1200,7 @@ def delete_account():
 
 
 @app.route("/reset_password", methods=["POST"])
+@measure_time
 def reset_password():
     """
     Send a password reset email to the user using Firebase Auth REST API.
@@ -1216,6 +1248,7 @@ def reset_password():
 
 @app.route("/create_household", methods=["POST"])
 @token_required
+@measure_time
 def create_household():
     try:
         user = flask_login.current_user
@@ -1244,6 +1277,7 @@ def create_household():
 
 @app.route("/delete_household", methods=["POST"])
 @token_required
+@measure_time
 def delete_household():
     try:
         user = flask_login.current_user
@@ -1283,6 +1317,7 @@ def delete_household():
 
 @app.route("/get_last_active_household", methods=["POST"])
 @token_required
+@measure_time
 def get_last_active_household():
     try:
         uid = flask_login.current_user.get_id()
@@ -1303,6 +1338,7 @@ def get_last_active_household():
 
 @app.route("/set_active_household", methods=["POST"])
 @token_required
+@measure_time
 def set_active_household():
     try:
         uid = flask_login.current_user.get_id()
@@ -1341,6 +1377,7 @@ def set_active_household():
 
 @app.route("/update_profile", methods=["POST"])
 @token_required
+@measure_time
 def update_profile():
     try:
         user = flask_login.current_user
@@ -1363,6 +1400,7 @@ def update_profile():
 
 @app.route("/invite_to_household", methods=["POST"])
 @token_required
+@measure_time
 def invite_to_household():
     try:
         user = flask_login.current_user
@@ -1424,6 +1462,7 @@ def invite_to_household():
 
 @app.route("/accept_invitation/<string:invitation_id>", methods=["POST"])
 @token_required
+@measure_time
 def accept_invitation_endpoint(invitation_id):
     try:
         user = flask_login.current_user
@@ -1462,6 +1501,7 @@ def accept_invitation_endpoint(invitation_id):
 
 @app.route("/reject_invitation/<string:invitation_id>", methods=["POST"])
 @token_required
+@measure_time
 def reject_invitation_endpoint(invitation_id):
     try:
         user = flask_login.current_user
@@ -1499,6 +1539,7 @@ def reject_invitation_endpoint(invitation_id):
 
 @app.route("/get_pending_invitations", methods=["POST"])
 @token_required
+@measure_time
 def get_pending_invitations():
     try:
         user = flask_login.current_user
