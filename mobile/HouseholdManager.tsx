@@ -12,18 +12,30 @@ export interface Household {
 
 export class HouseholdManager {
   requests: Requests;
+  private static householdsCache: Household[] | null = null;
+
   constructor(requests: Requests) {
     this.requests = requests;
   }
 
   async getHouseholds(): Promise<Household[]> {
-    var activeId = await this.getActiveHouseholdId();
+    if (HouseholdManager.householdsCache !== null) {
+      return HouseholdManager.householdsCache;
+    }
+
+    const activeId = await AsyncStorage.getItem("active-household");
     const households = await this.requests.listHouseholds();
     
     for (let i = 0; i < households.length; ++i) {
       households[i].active = households[i].id == activeId;
     }
+
+    HouseholdManager.householdsCache = households;
     return households;
+  }
+
+  invalidateHouseholdsCache() {
+    HouseholdManager.householdsCache = null;
   }
 
   async getActiveHouseholdId(): Promise<string> {
@@ -31,7 +43,7 @@ export class HouseholdManager {
     const activeId = await AsyncStorage.getItem("active-household");
     if (activeId) {
       // Verify that the stored household still exists
-      const households = await this.requests.listHouseholds();
+      const households = await this.getHouseholds();
       const householdExists = households.some(h => h.id === activeId);
       if (householdExists) {
         return activeId;
@@ -46,7 +58,7 @@ export class HouseholdManager {
       const lastActiveHousehold = await this.requests.getLastActiveHousehold();
       if (lastActiveHousehold) {
         // Verify the household still exists and user has access
-        const households = await this.requests.listHouseholds();
+        const households = await this.getHouseholds();
         const householdExists = households.some(h => h.id === lastActiveHousehold);
         if (householdExists) {
           await this.setActiveHousehold(lastActiveHousehold);
@@ -60,7 +72,7 @@ export class HouseholdManager {
     console.log("No last active household found. Will determine one...");
 
     // If we get here, we need to select a new household
-    const households = await this.requests.listHouseholds();
+    const households = await this.getHouseholds();
     if (households.length === 0) {
       throw new Error("No households available");
     }
