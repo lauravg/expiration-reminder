@@ -49,7 +49,7 @@ class SecretsManager:
 
         # 0) Try to load from .env file first
         env_name = self.__mapping[id][0]
-        key = self.__get_from_env_file(env_name)
+        key: str | None = self.__get_from_env_file(env_name)
         if key is not None and not key.isspace():
             log.info(f"Found secret '{id}' through .env file.")
             return key
@@ -63,18 +63,7 @@ class SecretsManager:
             return key
         log.info("Secret not found through env %s", env_name)
 
-        # 2) Try to find the secret at the developer "secrets" location.
-        file_name = f"./secrets/{env_name}"
-        try:
-            f = open(file_name, "r")
-            key = f.read().strip("\n")
-            if key is not None and not key.isspace():
-                log.info(f"Found secret '{id}' through DEV secrets file'")
-                return key
-        except Exception as err:
-            log.info("Unable to read local secret key from '%s': %s", file_name, err)
-
-        # 3) Try to find it as the specified secrets file.
+        # 2) Try to find it as the specified secrets file.
         file_name = self.__mapping[id][1]
         try:
             f = open(file_name, "r")
@@ -85,7 +74,7 @@ class SecretsManager:
         except Exception as err:
             log.info("Unable to read local secret key from '%s': %s", file_name, err)
 
-        # 4) Try to find the secret through GCloud secrets manager.
+        # 3) Try to find the secret through GCloud secrets manager.
         key = self.__get_from_gcloud(env_name)
         if key is not None and not key.isspace():
             log.info(f"Found secret '{id}' in GCloud secrets manager.'")

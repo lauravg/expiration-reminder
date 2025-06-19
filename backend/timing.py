@@ -25,7 +25,7 @@ def measure_time(func: Callable) -> Callable:
                 end_time - start_time
             ) * 1000  # Convert to milliseconds
             logger.info(
-                f"Function {Fore.YELLOW}{func.__name__}{Style.RESET_ALL} took {Fore.RED}{execution_time_ms:.2f}ms{Style.RESET_ALL} to execute"
+                f"Function {Fore.YELLOW}{func.__name__}{Style.RESET_ALL} took {Fore.RED}{execution_time_ms:.2f}ms{Style.RESET_ALL} to execute"  # noqa: E501
             )
 
     return wrapper
