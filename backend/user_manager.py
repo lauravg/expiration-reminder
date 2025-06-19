@@ -39,6 +39,19 @@ class UserManager:
             record = auth.get_user(uid)
             return User(record)
 
-        except auth.AuthError as e:
+        except Exception as e:
             log.error(f"Error retrieving user information: {e}")
             return None
+
+    def num_users(self) -> int:
+        try:
+            page = auth.list_users()
+            count = 0
+            # Iterate through all pages to count users
+            while page:
+                count += len(page.users)
+                page = page.get_next_page()
+            return count
+        except Exception as e:
+            log.error(f"Error counting users: {e}")
+            return 0

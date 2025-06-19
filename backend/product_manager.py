@@ -127,6 +127,14 @@ class ProductManager:
             return False
         return True
 
+    def num_products(self) -> int:
+        try:
+            products = self.__collection().get()
+            return len(list(products))
+        except Exception as err:
+            log.error("num_products(): Unable to count products: %s", err)
+            return 0
+
     def __collection(self):
         return self.__db.collection("products")
 

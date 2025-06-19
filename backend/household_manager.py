@@ -144,6 +144,14 @@ class HouseholdManager:
             return False
         return True
 
+    def num_households(self) -> int:
+        try:
+            households = self.__collection().get()
+            return len(list(households))
+        except Exception as err:
+            log.error("num_households(): Unable to count households: %s", err)
+            return 0
+
     def add_participant(self, id: str, uid: str, participant_id: str) -> bool:
         if id is None or id.isspace():
             log.error("add_participant(): id must not be empty")

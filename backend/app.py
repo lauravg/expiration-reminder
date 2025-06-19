@@ -15,7 +15,7 @@ import firebase_admin.messaging as messaging
 
 from firebase_admin import credentials, auth, firestore, storage
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, jsonify, redirect, request, render_template
 import flask_login
 from flask_login import (
     LoginManager,
@@ -1571,6 +1571,21 @@ def get_pending_invitations():
     except Exception as e:
         log.error(f"Error getting pending invitations: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/", methods=["GET"])
+@measure_time
+def index():
+    num_households = household_manager.num_households()
+    num_users = user_manager.num_users()
+    num_items = product_mgr.num_products()
+
+    return render_template(
+        "index.html",
+        num_households=num_households,
+        num_users=num_users,
+        num_items=num_items,
+    )
 
 
 # Run the Flask app
