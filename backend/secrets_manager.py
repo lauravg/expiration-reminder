@@ -82,7 +82,7 @@ class SecretsManager:
 
         raise SecretNotFoundException("Unable to read secret key for '%s'.", id)
 
-    def __get_from_env_file(self, env_name: str) -> str:
+    def __get_from_env_file(self, env_name: str) -> str | None:
         """Attempts to load a secret from a .env file."""
         try:
             load_dotenv()
@@ -91,9 +91,9 @@ class SecretsManager:
                 return key
         except Exception as err:
             log.info("Unable to read secret from .env file: %s", err)
-        return ""
+        return None
 
-    def __get_from_gcloud(self, secret_id) -> str:
+    def __get_from_gcloud(self, secret_id) -> str | None:
         # Create the Secret Manager client.
         client = secretmanager.SecretManagerServiceClient()
 
@@ -105,4 +105,4 @@ class SecretsManager:
         except Exception as err:
             log.warning(f"Secret not found in GCloud: '{secret_id}'")
             log.warning(f"Error: {err=}, {type(err)=}")
-            return ""
+            return None
