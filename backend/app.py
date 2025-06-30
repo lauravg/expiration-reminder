@@ -182,20 +182,6 @@ def register():
             return jsonify({"message": f"Registration failed: {str(e)}"}), 500
 
 
-@app.route("/logout", methods=["POST"])
-@token_required
-@measure_time
-def logout():
-    """
-    Logs out the currently logged-in user.
-    """
-    try:
-        flask_login.logout_user()
-        return jsonify({"success": True, "message": "Logged out successfully"}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
 @app.route("/auth", methods=["POST"])
 @measure_time
 def auth_route():
@@ -285,7 +271,7 @@ def list_products():
 
     if not household_manager.user_has_household(uid, household_id):
         log.warning("Permission denied for user to list_products for given household")
-        return jsonify([]), 401
+        return jsonify([]), 403
 
     products = product_mgr.get_household_products(household_id)
 
@@ -1111,7 +1097,7 @@ def search_products():
         # Check if user has access to this household
         uid = flask_login.current_user.get_id()
         if not household_manager.user_has_household(uid, household_id):
-            return jsonify({"error": "Permission denied"}), 401
+            return jsonify({"error": "Permission denied"}), 403
 
         # Get all products from the household
         products = product_mgr.get_household_products(household_id)
