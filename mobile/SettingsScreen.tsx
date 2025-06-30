@@ -153,8 +153,13 @@ const SettingsScreen = () => {
       try {
         const activeHouseholdId = await householdManager.getActiveHouseholdId();
         const householdsList = await householdManager.getHouseholds();
-        setHouseholds(householdsList);
-        
+        const activeHousehold = await householdManager.getActiveHouseholdId();
+        const householdsWithActive = householdsList.map(h => ({
+          ...h,
+          active: h.id === activeHousehold
+        }));
+        setHouseholds(householdsWithActive);
+
         if (activeHouseholdId) {
           const response = await requests.getLocationsAndCategories(activeHouseholdId);
           setLocations(response.locations || []);
@@ -173,7 +178,12 @@ const SettingsScreen = () => {
     const refreshHouseholds = async () => {
       try {
         const householdsList = await householdManager.getHouseholds();
-        setHouseholds(householdsList);
+        const activeHousehold = await householdManager.getActiveHouseholdId();
+        const householdsWithActive = householdsList.map(h => ({
+          ...h,
+          active: h.id === activeHousehold
+        }));
+        setHouseholds(householdsWithActive);
       } catch (error) {
         console.error("Error refreshing households:", error);
       }
@@ -381,21 +391,21 @@ const SettingsScreen = () => {
     try {
       // Set the new active household
       await householdManager.setActiveHousehold(id);
-      
+
       // Update the households list to reflect the change
       const updatedHouseholds = households.map(household => ({
         ...household,
         active: household.id === id
       }));
       setHouseholds(updatedHouseholds);
-      
+
       // Show success message
       Alert.alert(
         'Success',
         'Household activated successfully',
         [{ text: 'OK' }]
       );
-      
+
       // Refresh locations and categories for the new active household
       const response = await requests.getLocationsAndCategories(id);
       setLocations(response.locations || []);
@@ -438,7 +448,7 @@ const SettingsScreen = () => {
               if (success) {
                 // Remove the household from the list
                 setHouseholds(households.filter(h => h.id !== household.id));
-                
+
                 // If this was the active household, set another one as active
                 if (household.active) {
                   const remainingHouseholds = households.filter(h => h.id !== household.id);
@@ -451,7 +461,7 @@ const SettingsScreen = () => {
                     })));
                   }
                 }
-                
+
                 Alert.alert('Success', 'Household deleted successfully');
               } else {
                 Alert.alert('Error', 'Failed to delete household');
@@ -473,20 +483,20 @@ const SettingsScreen = () => {
       'Enter the email address of the person you want to invite:',
       async (email) => {
         if (!email) return;
-        
+
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
           Alert.alert('Invalid Email', 'Please enter a valid email address.');
           return;
         }
-        
+
         try {
           // Display loading indicator
           Alert.alert('Sending Invitation', 'Please wait...');
-          
+
           const result = await requests.inviteToHousehold(householdId, email);
-          
+
           if (result.success) {
             if (result.email_sent) {
               Alert.alert(
@@ -533,16 +543,16 @@ const SettingsScreen = () => {
         console.error('Error checking pending invitations:', error);
       }
     };
-    
+
     checkPendingInvitations();
   }, []);
-  
+
   const handleAcceptInvitation = async (invitationId: string) => {
     try {
       const result = await requests.acceptInvitation(invitationId);
       if (result.success) {
         Alert.alert('Success', 'You have successfully joined the household!');
-        
+
         // Refresh households list
         const householdsList = await householdManager.getHouseholds();
         setHouseholds(householdsList);
@@ -554,7 +564,7 @@ const SettingsScreen = () => {
       Alert.alert('Error', 'An unexpected error occurred');
     }
   };
-  
+
   const handleRejectInvitation = async (invitationId: string) => {
     try {
       const result = await requests.rejectInvitation(invitationId);
@@ -580,7 +590,7 @@ const SettingsScreen = () => {
   );
 
   return (
-    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>  
+    <View style={[GlobalStyles.containerWithHeader, GlobalStyles.background]}>
       {/* Settings List */}
       <FlatList
         data={settingsData}
@@ -597,7 +607,7 @@ const SettingsScreen = () => {
               {/* Chevron or Additional Icon */}
               {item.extra || <IconButton icon="chevron-down" size={20} iconColor={colors.secondary} />}
             </TouchableOpacity>
-  
+
             {/* Expandable Section for Notifications */}
             {item.key === 'notifications' && !collapsedSections.notifications && (
               <View style={styles.sectionContent}>
@@ -651,7 +661,7 @@ const SettingsScreen = () => {
                 )}
               </View>
             )}
-  
+
             {/* Expandable Section for Locations */}
             {item.key === 'locations' && !collapsedSections.locations && (
               <View style={styles.sectionContent}>
@@ -678,7 +688,7 @@ const SettingsScreen = () => {
                 </Button>
               </View>
             )}
-  
+
             {/* Expandable Section for Categories */}
             {item.key === 'categories' && !collapsedSections.categories && (
               <View style={styles.sectionContent}>
@@ -705,7 +715,7 @@ const SettingsScreen = () => {
                 </Button>
               </View>
             )}
-  
+
             {/* Expandable Section for Households */}
             {item.key === 'households' && !collapsedSections.households && (
               <View style={styles.sectionContent}>
@@ -743,7 +753,7 @@ const SettingsScreen = () => {
                 {households.map((household) => (
                   <View key={household.id} style={styles.householdCard}>
                     <View style={styles.householdHeader}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.householdTitleContainer}
                         onPress={() => toggleHousehold(household.id)}
                       >
@@ -761,37 +771,37 @@ const SettingsScreen = () => {
                         />
                       </TouchableOpacity>
                     </View>
-                    
+
                     {!collapsedHouseholds[household.id] && (
                       <>
                         <View style={styles.divider} />
-                        
+
                         <View style={styles.participantsContainer}>
                           <View style={styles.participantsHeaderRow}>
-                            <IconButton 
-                              icon="account-group" 
-                              size={16} 
-                              iconColor={colors.primary} 
-                              style={styles.participantsIcon} 
+                            <IconButton
+                              icon="account-group"
+                              size={16}
+                              iconColor={colors.primary}
+                              style={styles.participantsIcon}
                             />
                             <Text style={styles.participantsLabel}>Household Members</Text>
                           </View>
-                          
+
                           <View style={styles.participantsList}>
                             {household.participant_emails.map((email, index) => {
                               // Use display name if available, otherwise use email
                               const displayName = household.display_names[index] || email;
-                              
+
                               // Only show email separately if it's different from the display name
                               const showEmail = displayName !== email;
-                              
+
                               return (
                                 <View key={index} style={styles.participantRow}>
-                                  <IconButton 
-                                    icon="account" 
-                                    size={14} 
-                                    iconColor={household.owner && index === 0 ? colors.primary : colors.textSecondary} 
-                                    style={styles.participantIcon} 
+                                  <IconButton
+                                    icon="account"
+                                    size={14}
+                                    iconColor={household.owner && index === 0 ? colors.primary : colors.textSecondary}
+                                    style={styles.participantIcon}
                                   />
                                   <View style={styles.participantInfo}>
                                     <Text style={[

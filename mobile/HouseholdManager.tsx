@@ -23,13 +23,7 @@ export class HouseholdManager {
       return HouseholdManager.householdsCache;
     }
 
-    const activeId = await AsyncStorage.getItem("active-household");
     const households = await this.requests.listHouseholds();
-
-    for (let i = 0; i < households.length; ++i) {
-      households[i].active = households[i].id == activeId;
-    }
-
     HouseholdManager.householdsCache = households;
     return households;
   }
