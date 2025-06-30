@@ -43,6 +43,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   const [categories, setCategories] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [productImage, setProductImage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const requests = new Requests();
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -155,37 +156,44 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
 
   // Handle product submission
   const handleAddProduct = async () => {
-    // Validate the expiration date before proceeding
-    if (!validateExpirationDate(expirationDate) && expirationDate !== '') {
-      console.error("Invalid date format. Please use YYYY-MM-DD.");
+    // Prevent multiple submissions
+    if (isSubmitting) {
       return;
     }
 
-    let imageUrl = null;
-    if (productImage) {
-      try {
-        imageUrl = await requests.uploadProductImage(productImage);
-      } catch (error) {
-        console.error("Error uploading image:", error);
-      }
-    }
-
-    const newProduct: Product = {
-      product_name: productName,
-      barcode: barcode,
-      expiration_date: expirationDate,
-      location: location,
-      category: category,
-      product_id: '',
-      wasted: false,
-      creation_date: new Date().toISOString(),
-      note: note,
-      isExpired: false,
-      daysUntilExpiration: 0,
-      image_url: imageUrl || undefined,
-    };
+    setIsSubmitting(true);
 
     try {
+      // Validate the expiration date before proceeding
+      if (!validateExpirationDate(expirationDate) && expirationDate !== '') {
+        console.error("Invalid date format. Please use YYYY-MM-DD.");
+        return;
+      }
+
+      let imageUrl = null;
+      if (productImage) {
+        try {
+          imageUrl = await requests.uploadProductImage(productImage);
+        } catch (error) {
+          console.error("Error uploading image:", error);
+        }
+      }
+
+      const newProduct: Product = {
+        product_name: productName,
+        barcode: barcode,
+        expiration_date: expirationDate,
+        location: location,
+        category: category,
+        product_id: '',
+        wasted: false,
+        creation_date: new Date().toISOString(),
+        note: note,
+        isExpired: false,
+        daysUntilExpiration: 0,
+        image_url: imageUrl || undefined,
+      };
+
       console.log("Barcode check condition:", barcode, productName);
 
       // Attempt to fetch barcode data
@@ -222,6 +230,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
 
     } catch (error) {
       console.error("Error adding product:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -241,6 +251,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     setProductImage(null);
     setSuggestionSelected(false);
     setShowSuggestions(false);
+    setIsSubmitting(false);
   };
 
   // Update function to handle background press
@@ -416,6 +427,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
                   onPress={resetForm}
                   style={[styles.button, styles.clearButton]}
                   labelStyle={styles.clearButtonText}
+                  disabled={isSubmitting}
                 >
                   Clear
                 </Button>
@@ -425,8 +437,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
                   onPress={handleAddProduct} 
                   style={[styles.button, styles.submitButton]}
                   theme={{ colors: { primary: colors.primary } }}
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
                 >
-                  Add Product
+                  {isSubmitting ? 'Adding...' : 'Add Product'}
                 </Button>
               </View>
             </View>
