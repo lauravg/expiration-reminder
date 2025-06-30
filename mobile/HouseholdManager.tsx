@@ -25,7 +25,7 @@ export class HouseholdManager {
 
     const activeId = await AsyncStorage.getItem("active-household");
     const households = await this.requests.listHouseholds();
-    
+
     for (let i = 0; i < households.length; ++i) {
       households[i].active = households[i].id == activeId;
     }
@@ -93,7 +93,7 @@ export class HouseholdManager {
   async setActiveHousehold(id: string) {
     // Update local storage
     await AsyncStorage.setItem("active-household", id);
-    
+
     // Update server-side active household
     try {
       await this.requests.setActiveHousehold(id);

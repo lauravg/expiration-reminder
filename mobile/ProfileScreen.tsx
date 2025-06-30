@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SessionData } from './SessionData';
 import Requests from './Requests';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = () => {
   const sessionData = new SessionData();
@@ -47,17 +48,17 @@ const ProfileScreen = () => {
   const handleSave = async () => {
     try {
       const requests = new Requests();
-      
+
       // Update display name in the database
       const success = await requests.updateProfile(displayName);
-      
+
       if (success) {
         // Update local session data
         sessionData.setUserDisplayName(displayName);
         sessionData.setUserEmail(email);
-        
+
         Alert.alert('Success', 'Profile updated successfully!');
-        
+
         // Go back with a refresh parameter to trigger household list refresh
         navigation.navigate({
           name: 'Settings',
@@ -80,9 +81,9 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     try {
-      const requests = new Requests();
-      await requests.logout(); // Notify the server
-      sessionData.eraseAllData(); // Clear client-side session data
+      // Clear client-side session data
+      sessionData.eraseAllData();
+      AsyncStorage.clear();
       // Reset navigation state and navigate to Login
       navigation.reset({
         index: 0,
@@ -135,7 +136,7 @@ const ProfileScreen = () => {
     try {
       const requests = new Requests();
       const result = await requests.deleteAccount(deleteAccountPassword);
-      
+
       if (result.success) {
         sessionData.eraseAllData();
         navigation.reset({

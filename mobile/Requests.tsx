@@ -4,9 +4,10 @@ import { Product, Barcode } from './Product';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
 
-const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
+// const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
 // const BASE_URL = "http://127.0.0.1:5050";
-// const BASE_URL = "http://192.168.1.17:5050";
+const BASE_URL = "http://192.168.1.250:5050";
+
 
 interface ProductSuggestion {
   name: string;
@@ -40,22 +41,6 @@ class Requests {
     } catch (error) {
       console.error("Login failed:", error);
       throw new Error("Login failed: " + error);
-    }
-  }
-
-  async logout(): Promise<boolean> {
-    try {
-      const response = await this._make_request(this.sessionData.idToken, "logout");
-      if (response.status === 200 && response.data.success) {
-        console.log("Logout successful on server.");
-        return true;
-      } else {
-        console.error("Failed to log out on server.");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error during logout:", error);
-      return false;
     }
   }
 
@@ -444,11 +429,11 @@ class Requests {
     try {
       // Create form data
       const formData = new FormData();
-      
+
       // Get the file extension from the URI
       const fileExtension = imageUri.split('.').pop() || 'jpg';
       const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
-      
+
       formData.append('image', {
         uri: imageUri,
         type: mimeType,
@@ -493,8 +478,8 @@ class Requests {
       }
     } catch (error) {
       console.error('Delete account request failed:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error instanceof Error ? error.message : 'Failed to delete account'
       };
     }
@@ -512,9 +497,9 @@ class Requests {
       console.error('Password reset failed:', error);
       if (error instanceof Error) {
         if (error.message.includes('Network Error')) {
-          return { 
-            success: false, 
-            error: 'Unable to connect to the server. Please check your internet connection and try again.' 
+          return {
+            success: false,
+            error: 'Unable to connect to the server. Please check your internet connection and try again.'
           };
         }
         return { success: false, error: error.message };
@@ -582,7 +567,7 @@ class Requests {
         'update_profile',
         { display_name: displayName }
       );
-      
+
       if (response.status === 200 && response.data.success) {
         // Update the session data locally
         this.sessionData.setUserDisplayName(displayName);
@@ -606,24 +591,24 @@ class Requests {
         'invite_to_household',
         { household_id: householdId, email: email }
       );
-      
+
       if (response.status === 200 && response.data.success) {
         console.log('Household invitation sent successfully');
-        return { 
-          success: true, 
+        return {
+          success: true,
           email_sent: response.data.email_sent
         };
       } else {
         console.error('Failed to send household invitation:', response.data?.error || 'Unknown error');
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: response.data?.error || 'Failed to send invitation'
         };
       }
     } catch (error: any) {
       console.error('Error sending household invitation:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message || 'An unexpected error occurred'
       };
     }
@@ -637,7 +622,7 @@ class Requests {
         'get_pending_invitations',
         {}
       );
-      
+
       if (response.status === 200 && response.data.success) {
         console.log('Retrieved pending invitations:', response.data.invitations.length);
         return response.data.invitations || [];
@@ -659,24 +644,24 @@ class Requests {
         `accept_invitation/${invitationId}`,
         {}
       );
-      
+
       if (response.status === 200 && response.data.success) {
         console.log('Invitation accepted successfully');
-        return { 
-          success: true, 
+        return {
+          success: true,
           household_id: response.data.household_id
         };
       } else {
         console.error('Failed to accept invitation:', response.data?.error || 'Unknown error');
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: response.data?.error || 'Failed to accept invitation'
         };
       }
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message || 'An unexpected error occurred'
       };
     }
@@ -690,21 +675,21 @@ class Requests {
         `reject_invitation/${invitationId}`,
         {}
       );
-      
+
       if (response.status === 200 && response.data.success) {
         console.log('Invitation rejected successfully');
         return { success: true };
       } else {
         console.error('Failed to reject invitation:', response.data?.error || 'Unknown error');
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: response.data?.error || 'Failed to reject invitation'
         };
       }
     } catch (error: any) {
       console.error('Error rejecting invitation:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message || 'An unexpected error occurred'
       };
     }
@@ -724,7 +709,7 @@ class Requests {
     const authOrRegister = path === "auth" || path === "register";
     const resetPassword = path === "reset_password";
     let contentType = authOrRegister ? 'application/x-www-form-urlencoded' : 'application/json';
-    
+
     if (isFormData) {
       contentType = 'multipart/form-data';
     }
@@ -761,7 +746,7 @@ class Requests {
         console.error(`Error making request, response code: ${axiosError.response?.status}`);
         if (axiosError.response?.status === 401 && retry_if_auth_expired) {
           console.log("Token expired, attempting refresh...");
-          
+
           // If there's already a refresh in progress, wait for it
           if (this.refreshPromise) {
             console.log("Waiting for existing refresh to complete...");
