@@ -34,14 +34,17 @@ export class HouseholdManager {
     return households;
   }
 
-  invalidateHouseholdsCache() {
+  // Call this to ensure we update the cache on use changes and load
+  // the current household information if it needs updating.
+  static async invalidate() {
+    await AsyncStorage.setItem("active-household", "");
     HouseholdManager.householdsCache = null;
   }
 
   async getActiveHouseholdId(): Promise<string> {
     // First try to get the stored active household
     const activeId = await AsyncStorage.getItem("active-household");
-    if (activeId) {
+    if (activeId && activeId !== "") {
       // Verify that the stored household still exists
       const households = await this.getHouseholds();
       const householdExists = households.some(h => h.id === activeId);
@@ -56,7 +59,7 @@ export class HouseholdManager {
     // Try to get the last active household from the server
     try {
       const lastActiveHousehold = await this.requests.getLastActiveHousehold();
-      if (lastActiveHousehold) {
+      if (lastActiveHousehold && lastActiveHousehold !== "") {
         // Verify the household still exists and user has access
         const households = await this.getHouseholds();
         const householdExists = households.some(h => h.id === lastActiveHousehold);

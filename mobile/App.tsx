@@ -104,13 +104,12 @@ export default function App() {
   const [isExpiringModalVisible, setIsExpiringModalVisible] = useState(false);
   const [affectedProducts, setAffectedProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [expiringModalVisible, setExpiringModalVisible] = useState(false);
-  const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
-  
+
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
+  HouseholdManager.invalidate();
   const sessionData = new SessionData();
+  const initialRoute = sessionData.idToken ? 'Main' : 'Login';
   const navigationRef = useRef<any>(null);
 
   const toggleAddProductModal = () => {
@@ -133,7 +132,7 @@ export default function App() {
     console.log("Barcode added successfully:", success);
     return success;
   };
-  
+
   const handleGetBarcode = async (barcode: string): Promise<Barcode | null> => {
     const hid = await householdManager.getActiveHouseholdId();
     const barcodeData = await requests.getBarcodeData(barcode, hid);
@@ -182,10 +181,10 @@ export default function App() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       const idToken = sessionData.idToken;
-      setIsLoading(false);
       if (idToken) {
         handleLoginSuccess();
       }
+      setIsLoading(false);
     };
 
     checkAuthStatus();
@@ -203,37 +202,37 @@ export default function App() {
     const handleDeepLink = (event: { url: string }) => {
       handleUrl(event.url);
     };
-    
+
     // Add event listener for deep links when app is already running
     Linking.addEventListener('url', handleDeepLink);
-    
+
     // Handle deep links when app is opened from a link
     Linking.getInitialURL().then(url => {
       if (url) {
         handleUrl(url);
       }
     });
-    
+
     return () => {
       // Clean up the event listener when component unmounts
       // Note: Modern versions of React Native don't need the explicit removal
     };
   }, [isAuthenticated]);
-  
+
   // Function to handle deep link URLs
   const handleUrl = async (url: string) => {
     if (!url) return;
-    
+
     // Parse the URL to get invitation ID
     const invitationMatch = url.match(/pantryguardian:\/\/accept-invitation\?id=([^&]+)/);
-    
+
     if (invitationMatch && invitationMatch[1]) {
       const invitationId = invitationMatch[1];
       console.log('Deep link invitation ID:', invitationId);
-      
+
       // If user is not logged in, store the invitation ID and show a message
       if (!isAuthenticated) {
-        // Store the invitation ID temporarily 
+        // Store the invitation ID temporarily
         await sessionData.storeInvitationId(invitationId);
         Alert.alert(
           'Invitation Received',
@@ -242,17 +241,17 @@ export default function App() {
         );
         return;
       }
-      
+
       // If user is logged in, handle the invitation
       try {
         const result = await requests.acceptInvitation(invitationId);
         if (result.success) {
           Alert.alert(
-            'Success', 
+            'Success',
             'You have successfully joined the household!',
             [{ text: 'OK' }]
           );
-          
+
           // Navigate to settings to see the new household
           if (navigationRef.current) {
             navigationRef.current.navigate('Main', { screen: 'Settings' });
@@ -276,7 +275,7 @@ export default function App() {
         const result = await requests.acceptInvitation(invitationId);
         if (result.success) {
           Alert.alert(
-            'Success', 
+            'Success',
             'You have successfully joined the household!',
             [{ text: 'OK' }]
           );
@@ -320,16 +319,16 @@ export default function App() {
             translucent={true}
           />
           <NavigationContainer ref={navigationRef}>
-            <Stack.Navigator initialRouteName="Login">
+            <Stack.Navigator initialRouteName={initialRoute}>
               <Stack.Screen name="Login" options={{ headerShown: false }}>
                 {(props) => <Login {...props} onLoginSuccess={handleLoginSuccess} />}
               </Stack.Screen>
               <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
               <Stack.Screen name="Main" options={{ headerShown: false }}>
                 {() => (
-                  <MainTabs 
+                  <MainTabs
                     householdManager={householdManager}
-                    toggleAddProductModal={toggleAddProductModal} 
+                    toggleAddProductModal={toggleAddProductModal}
                     onAddProduct={handleAddProduct}
                     onAddBarcode={handleAddBarcode}
                     onGetBarcode={handleGetBarcode}
@@ -415,7 +414,7 @@ export default function App() {
               onUpdateProduct={async (product) => {
                 const success = await requests.updateProduct(product);
                 if (success) {
-                  setAffectedProducts(affectedProducts.map(p => 
+                  setAffectedProducts(affectedProducts.map(p =>
                     p.product_id === product.product_id ? product : p
                   ));
                 }

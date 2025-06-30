@@ -7,6 +7,7 @@ import GlobalStyles from './GlobalStyles';
 import Requests from './Requests';
 import { colors } from './theme';
 import { SessionData } from './SessionData';
+import { HouseholdManager } from './HouseholdManager';
 
 type LoginScreenProps = {
   onLoginSuccess: () => void;
@@ -40,15 +41,16 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
         setIsLoading(false);
       }
     };
-    
+
     checkSession();
   }, []);
 
   const handleLogin = async (email: string, password: string) => {
     try {
+      HouseholdManager.invalidate();
       setIsLoading(true);
-      const response = await requests.handleLogin(email, password);
-      if (response) {
+      const loginSuccess = await requests.handleLogin(email, password);
+      if (loginSuccess) {
         console.info('Login successful');
         onLoginSuccess();
         navigation.reset({
@@ -98,19 +100,19 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
   }
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[GlobalStyles.container, styles.container]}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.logoContainer}>
-          <MaterialCommunityIcons 
-            name="food-apple" 
-            size={64} 
-            color={colors.primary} 
+          <MaterialCommunityIcons
+            name="food-apple"
+            size={64}
+            color={colors.primary}
             style={styles.icon}
           />
           <Text style={styles.appName}>PantryGuardian</Text>
@@ -139,7 +141,7 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
             secureTextEntry={!showPassword}
             left={<TextInput.Icon icon="lock" color={colors.primary} />}
             right={
-              <TextInput.Icon 
+              <TextInput.Icon
                 icon={showPassword ? 'eye-off' : 'eye'}
                 onPress={() => setShowPassword(!showPassword)}
                 color={colors.primary}
@@ -149,7 +151,7 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
             autoCapitalize="none"
           />
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setIsForgotPasswordVisible(true)}
             style={styles.forgotPasswordContainer}
           >
@@ -158,8 +160,8 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
 
           {error ? <Text style={styles.errorMessage}>{error}</Text> : null}
 
-          <Button 
-            mode="contained" 
+          <Button
+            mode="contained"
             onPress={() => handleLogin(email, password)}
             style={styles.loginButton}
             contentStyle={styles.loginButtonContent}
@@ -168,7 +170,7 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
             Sign In
           </Button>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.navigate({ name: 'Registration', params: {} })}
             style={styles.registerContainer}
           >
@@ -193,7 +195,7 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Reset Password</Text>
-            
+
             {resetSuccess ? (
               <Text style={styles.successText}>
                 Password reset email sent! Please check your inbox.
@@ -226,9 +228,9 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
                 </View>
               </>
             )}
-            
+
             <View style={styles.modalButtonContainer}>
-              <Button 
+              <Button
                 onPress={() => {
                   setIsForgotPasswordVisible(false);
                   setResetEmail('');
@@ -240,8 +242,8 @@ const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
                 Cancel
               </Button>
               {!resetSuccess && (
-                <Button 
-                  onPress={handleResetPassword} 
+                <Button
+                  onPress={handleResetPassword}
                   disabled={isLoading || !resetEmail}
                   loading={isLoading}
                 >
