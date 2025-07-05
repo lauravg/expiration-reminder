@@ -18,7 +18,6 @@ interface ProductSuggestion {
 class Requests {
   private sessionData = new SessionData();
   private refreshPromise: Promise<boolean> | null = null;
-  private currentViewSettings: ViewSettings | null = null;
 
   // Helper method to set session data consistently
   private setSessionData(data: any): void {
@@ -370,28 +369,19 @@ class Requests {
 
   async saveViewSettings(settings: ViewSettings): Promise<boolean> {
     try {
-      if (JSON.stringify(settings) === JSON.stringify(this.currentViewSettings)) {
-        return true;
-      }
       const response = await this._make_request(this.sessionData.idToken, 'save_view_settings', settings);
       return response.status === 200;
     } catch (error) {
       console.error('Error saving view settings:', error);
       return false;
-    } finally {
-      this.currentViewSettings = settings;
     }
   }
 
   async getViewSettings(): Promise<ViewSettings | null> {
-    if (this.currentViewSettings) {
-      return this.currentViewSettings;
-    }
     try {
       const response = await this._make_request(this.sessionData.idToken, 'get_view_settings', {});
       if (response.status === 200) {
-        this.currentViewSettings = response.data;
-        return this.currentViewSettings;
+        return response.data;
       }
       return null;
     } catch (error) {
