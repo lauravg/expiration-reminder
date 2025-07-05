@@ -16,9 +16,6 @@ export type ViewSettingKey = keyof ViewSettings;
 
 interface ViewSettingsState extends ViewSettings {
   set: <K extends ViewSettingKey>(key: K, value: ViewSettings[K]) => void;
-  setMultiple: (updates: Partial<ViewSettings>) => void;
-  resetToDefaults: () => void;
-  refreshFromServer: () => void;
   initialize: () => Promise<void>;
 }
 
@@ -41,24 +38,6 @@ export const useViewSettings = create<ViewSettingsState>((set, get) => ({
   set: async <K extends ViewSettingKey>(key: K, value: ViewSettings[K]) => {
     set({ [key]: value } as Pick<ViewSettingsState, K>);
     await requests.saveViewSettings({ ...get(), [key]: value });
-  },
-
-  setMultiple: async (updates: Partial<ViewSettings>) => {
-    set(updates);
-    await requests.saveViewSettings({ ...get(), ...updates });
-  },
-
-  resetToDefaults: async () => {
-    const defaultSettings = getDefaultSettings();
-    set(defaultSettings);
-    await requests.saveViewSettings(defaultSettings);
-  },
-
-  refreshFromServer: async () => {
-    const settings = await requests.getViewSettings();
-    if (settings) {
-      set(settings);
-    }
   },
 
   initialize: async () => {
