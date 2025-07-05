@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, Animated } from 'react-native';
-import { Modal as PaperModal, Button, TextInput, IconButton, FAB, Menu } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker';
+
+import React, { useState, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated } from 'react-native';
+import { Modal as PaperModal, Button, IconButton, Menu } from 'react-native-paper';
 import { parse, isValid } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -10,8 +10,9 @@ import { colors } from './theme';
 import { Product } from './Product';
 import { calculateDaysLeft } from './utils/dateUtils';
 import EditProductModal from './EditProductModal';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Requests from './Requests';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+import { useViewSettings } from './ViewSettings';
 
 type ViewMode = 'grid' | 'list' | 'simple';
 
@@ -21,8 +22,6 @@ interface ProductListProps {
     onUpdateProduct: (product: Product) => Promise<void>;
     onWaste?: (product: Product) => Promise<void>;
     showWasteButton?: boolean;
-    viewMode: ViewMode;
-    onViewModeChange: (mode: ViewMode) => void;
     searchQuery: string;
     searchTerm: string;
     onSort: (option: string) => void;
@@ -38,19 +37,13 @@ interface ProductListProps {
     setActiveFilter: (filter: string) => void;
     hideExpired: boolean;
     setHideExpired: (hide: boolean) => void;
+    viewMode: ViewMode;
+    onViewModeChange: (mode: ViewMode) => void;
 }
 
 interface LocationItem {
     id: string;
     name: string;
-}
-
-interface EditProductModalProps {
-    visible: boolean;
-    onClose: () => void;
-    product: Product | null;
-    onUpdateProduct: (product: Product) => Promise<void>;
-    locations: string[];
 }
 
 const ProductList: React.FC<ProductListProps> = ({
@@ -59,8 +52,6 @@ const ProductList: React.FC<ProductListProps> = ({
     onUpdateProduct,
     showWasteButton = false,
     onWaste,
-    viewMode,
-    onViewModeChange,
     searchQuery,
     searchTerm,
     onSort,
@@ -76,7 +67,11 @@ const ProductList: React.FC<ProductListProps> = ({
     setActiveFilter,
     hideExpired,
     setHideExpired,
+    viewMode,
+    onViewModeChange,
 }) => {
+    const setViewMode = (mode: ViewMode) => onViewModeChange(mode);
+
     const [internalSelectedProduct, setInternalSelectedProduct] = React.useState<Product | null>(null);
     
     // Use either external or internal state based on whether onProductSelect is provided
@@ -237,7 +232,7 @@ const ProductList: React.FC<ProductListProps> = ({
             { id: 'filter-all', name: 'All' }
         ];
         
-        locationStrings.forEach(loc => {
+        locationStrings.forEach((loc: string) => {
             if (loc !== 'All') {
                 items.push({
                     id: `filter-${loc.toLowerCase().replace(/\s+/g, '-')}`,
@@ -516,7 +511,7 @@ const ProductList: React.FC<ProductListProps> = ({
         if (viewMode === 'grid') {
             return renderProductGrid();
         }
-        return filteredProducts.map((product) => renderProductCard(product));
+        return filteredProducts.map((product: Product) => renderProductCard(product));
     };
 
     return (
@@ -639,7 +634,7 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Menu.Item
                                     leadingIcon="view-grid-outline"
                                     onPress={() => {
-                                        onViewModeChange('grid');
+                                        setViewMode('grid');
                                         setMenuVisible(false);
                                     }}
                                     title="Grid View"
@@ -647,7 +642,7 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Menu.Item
                                     leadingIcon="view-list-outline"
                                     onPress={() => {
-                                        onViewModeChange('list');
+                                        setViewMode('list');
                                         setMenuVisible(false);
                                     }}
                                     title="List View"
@@ -655,7 +650,7 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Menu.Item
                                     leadingIcon="format-list-text"
                                     onPress={() => {
-                                        onViewModeChange('simple');
+                                        setViewMode('simple');
                                         setMenuVisible(false);
                                     }}
                                     title="Simple List"
@@ -668,7 +663,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             showsHorizontalScrollIndicator={false} 
                             style={GlobalStyles.categoriesContainer}
                         >
-                            {locationItems.map((location) => (
+                            {locationItems.map((location: LocationItem) => (
                                 <TouchableOpacity
                                     key={location.id}
                                     onPress={() => setActiveFilter(location.name)}

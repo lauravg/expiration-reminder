@@ -3,10 +3,11 @@ import qs from 'qs';
 import { Product, Barcode } from './Product';
 import { SessionData } from './SessionData';
 import { Household, HouseholdManager } from './HouseholdManager';
+import { ViewSettings } from './ViewSettings';
 
-const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
+// const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
 // const BASE_URL = "http://127.0.0.1:5050";
-// const BASE_URL = "http://192.168.1.250:5050";
+const BASE_URL = "http://192.168.1.37:5050";
 
 
 interface ProductSuggestion {
@@ -17,6 +18,7 @@ interface ProductSuggestion {
 class Requests {
   private sessionData = new SessionData();
   private refreshPromise: Promise<boolean> | null = null;
+  private currentViewSettings: ViewSettings | null = null;
 
   // Helper method to set session data consistently
   private setSessionData(data: any): void {
@@ -366,39 +368,30 @@ class Requests {
     }
   }
 
-  async saveViewSettings(settings: {
-    sortByProductList: string;
-    hideExpiredProductList: boolean;
-    activeFilterProductList: string;
-    viewModeProductList: 'grid' | 'list' | 'simple';
-    sortByWastedList: string;
-    hideExpiredWastedList: boolean;
-    activeFilterWastedList: string;
-    viewModeWastedList: 'grid' | 'list' | 'simple';
-  }): Promise<boolean> {
+  async saveViewSettings(settings: ViewSettings): Promise<boolean> {
     try {
+      if (JSON.stringify(settings) === JSON.stringify(this.currentViewSettings)) {
+        return true;
+      }
       const response = await this._make_request(this.sessionData.idToken, 'save_view_settings', settings);
       return response.status === 200;
     } catch (error) {
       console.error('Error saving view settings:', error);
       return false;
+    } finally {
+      this.currentViewSettings = settings;
     }
   }
 
-  async getViewSettings(): Promise<{
-    sortByProductList: string;
-    hideExpiredProductList: boolean;
-    activeFilterProductList: string;
-    viewModeProductList: 'grid' | 'list' | 'simple';
-    sortByWastedList: string;
-    hideExpiredWastedList: boolean;
-    activeFilterWastedList: string;
-    viewModeWastedList: 'grid' | 'list' | 'simple';
-  } | null> {
+  async getViewSettings(): Promise<ViewSettings | null> {
+    if (this.currentViewSettings) {
+      return this.currentViewSettings;
+    }
     try {
       const response = await this._make_request(this.sessionData.idToken, 'get_view_settings', {});
       if (response.status === 200) {
-        return response.data;
+        this.currentViewSettings = response.data;
+        return this.currentViewSettings;
       }
       return null;
     } catch (error) {

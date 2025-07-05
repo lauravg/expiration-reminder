@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Platform } from 'react-native';
-import { IconButton, Menu, FAB, Modal as PaperModal, Button } from 'react-native-paper';
-import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
-import { format, isValid, parse, addDays, differenceInDays } from 'date-fns';
+import React, { useState } from 'react';
+import { View, TextInput, Platform } from 'react-native';
+import { IconButton } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
+import { isValid, parse, addDays, differenceInDays } from 'date-fns';
 import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,11 +11,10 @@ import { colors } from './theme';
 import Requests from './Requests';
 import { Product } from './Product';
 import ProductList from './ProductList';
-import { SessionData } from './SessionData';
 import { HouseholdManager } from './HouseholdManager';
 import { StyleSheet } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ExpiringProductsModal from './ExpiringProductsModal';
+import { useViewSettings } from './ViewSettings';
 
 type SortOption = 'name' | 'expiration' | 'location' | 'category';
 
@@ -25,83 +24,34 @@ interface HomepageProps {
   onProductSelect: (product: Product | null) => void;
 }
 
-const Homepage: React.FC<HomepageProps> = ({ 
+const Homepage: React.FC<HomepageProps> = ({
   onAddProduct,
   selectedProduct: externalSelectedProduct,
-  onProductSelect: externalOnProductSelect
+  onProductSelect: externalOnProductSelect,
 }) => {
-  const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const [products, setProducts] = useState<Product[]>([]);
-  const sessionData = new SessionData();
-  const displayName = sessionData.userDisplayName;
-
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
 
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'simple'>('grid');
+  const {
+    viewModeProductList: viewMode,
+    sortByProductList: sortBy,
+    activeFilterProductList: activeFilter,
+    hideExpiredProductList: hideExpired,
+    set: setViewSetting,
+  } = useViewSettings();
+
   const [menuVisible, setMenuVisible] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('name');
   const [sortAscending, setSortAscending] = useState(true);
   const [isExpiringModalVisible, setIsExpiringModalVisible] = useState(false);
   const [expiringProducts, setExpiringProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [hideExpired, setHideExpired] = useState(false);
-
-  // Load view settings on mount and when screen gains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      const loadViewSettings = async () => {
-        try {
-          const settings = await requests.getViewSettings();
-          if (settings) {
-            console.log('Loading product list settings:', settings);
-            setViewMode(settings.viewModeProductList as 'grid' | 'list' | 'simple');
-            setSortBy(settings.sortByProductList as SortOption);
-            setActiveFilter(settings.activeFilterProductList);
-            setHideExpired(settings.hideExpiredProductList);
-          }
-        } catch (error) {
-          console.error('Error loading view settings:', error);
-        }
-      };
-      loadViewSettings();
-    }, [])
-  );
-
-  // Save view settings whenever they change
-  useEffect(() => {
-    const saveViewSettings = async () => {
-      try {
-        const currentSettings = await requests.getViewSettings();
-        if (!currentSettings) return;
-        
-        console.log('Saving product list settings:', {
-          viewMode,
-          sortBy,
-          activeFilter,
-          hideExpired
-        });
-        
-        await requests.saveViewSettings({
-          sortByProductList: sortBy,
-          hideExpiredProductList: hideExpired,
-          activeFilterProductList: activeFilter,
-          viewModeProductList: viewMode,
-          sortByWastedList: currentSettings.sortByWastedList,
-          hideExpiredWastedList: currentSettings.hideExpiredWastedList,
-          activeFilterWastedList: currentSettings.activeFilterWastedList,
-          viewModeWastedList: currentSettings.viewModeWastedList
-        });
-      } catch (error) {
-        console.error('Error saving view settings:', error);
-      }
-    };
-    saveViewSettings();
-  }, [viewMode, sortBy, activeFilter, hideExpired]);
+  
+  const setActiveFilter = (filter: string) => setViewSetting('activeFilterProductList', filter);
+  const setHideExpired = (hide: boolean) => setViewSetting('hideExpiredProductList', hide);
+  const setViewMode = (mode: 'list' | 'grid' | 'simple') => setViewSetting('viewModeProductList', mode);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
@@ -237,7 +187,7 @@ const Homepage: React.FC<HomepageProps> = ({
     if (sortBy === option) {
       setSortAscending(!sortAscending);
     } else {
-      setSortBy(option);
+      setViewSetting('sortByProductList', option);
       setSortAscending(true);
     }
     setSortMenuVisible(false);
@@ -365,8 +315,6 @@ const Homepage: React.FC<HomepageProps> = ({
         onUpdateProduct={handleUpdateProduct}
         showWasteButton={true}
         onWaste={handleWaste}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
         searchQuery={searchQuery}
         searchTerm={searchTerm}
         onSort={(option: string) => handleSort(option as SortOption)}
@@ -382,6 +330,8 @@ const Homepage: React.FC<HomepageProps> = ({
         setActiveFilter={setActiveFilter}
         hideExpired={hideExpired}
         setHideExpired={setHideExpired}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       <ExpiringProductsModal

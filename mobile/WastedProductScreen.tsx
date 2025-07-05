@@ -1,5 +1,5 @@
 import { format, isValid, parse } from 'date-fns';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Platform, TextInput, Text } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import GlobalStyles from './GlobalStyles';
@@ -10,72 +10,31 @@ import { colors } from './theme';
 import { HouseholdManager } from './HouseholdManager';
 import { useFocusEffect } from '@react-navigation/native';
 import { getViewIcon } from './iconUtils';
+import { useViewSettings } from './ViewSettings';
 
 const WastedProductScreen = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'simple'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [sortBy, setSortBy] = useState('name');
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [hideExpired, setHideExpired] = useState(false);
 
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
 
-  // Load view settings on mount and when screen gains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      const loadViewSettings = async () => {
-        try {
-          const settings = await requests.getViewSettings();
-          if (settings) {
-            console.log('Loading wasted list settings:', settings);
-            setViewMode(settings.viewModeWastedList as 'list' | 'grid' | 'simple');
-            setSortBy(settings.sortByWastedList);
-            setActiveFilter(settings.activeFilterWastedList);
-            setHideExpired(settings.hideExpiredWastedList);
-          }
-        } catch (error) {
-          console.error('Error loading view settings:', error);
-        }
-      };
-      loadViewSettings();
-    }, [])
-  );
+  const {
+    viewModeWastedList: viewMode,
+    sortByWastedList: sortBy,
+    activeFilterWastedList: activeFilter,
+    hideExpiredWastedList: hideExpired,
+    set: setViewSetting,
+  } = useViewSettings();
 
-  // Save view settings whenever they change
-  useEffect(() => {
-    const saveViewSettings = async () => {
-      try {
-        const currentSettings = await requests.getViewSettings();
-        if (!currentSettings) return;
+  const setViewMode = (mode: 'list' | 'grid' | 'simple') => setViewSetting('viewModeWastedList', mode);
+  const setSortBy = (sort: string) => setViewSetting('sortByWastedList', sort);
+  const setActiveFilter = (filter: string) => setViewSetting('activeFilterWastedList', filter);
+  const setHideExpired = (hide: boolean) => setViewSetting('hideExpiredWastedList', hide);
 
-        console.log('Saving wasted list settings:', {
-          viewMode,
-          sortBy,
-          activeFilter,
-          hideExpired
-        });
-
-        await requests.saveViewSettings({
-          sortByProductList: currentSettings.sortByProductList,
-          hideExpiredProductList: currentSettings.hideExpiredProductList,
-          activeFilterProductList: currentSettings.activeFilterProductList,
-          viewModeProductList: currentSettings.viewModeProductList,
-          sortByWastedList: sortBy,
-          hideExpiredWastedList: hideExpired,
-          activeFilterWastedList: activeFilter,
-          viewModeWastedList: viewMode
-        });
-      } catch (error) {
-        console.error('Error saving view settings:', error);
-      }
-    };
-    saveViewSettings();
-  }, [viewMode, sortBy, activeFilter, hideExpired]);
 
   const handleDelete = async (product: Product) => {
     const success = await requests.deleteProduct(product.product_id);
