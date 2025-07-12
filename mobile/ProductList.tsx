@@ -412,9 +412,16 @@ const ProductList: React.FC<ProductListProps> = ({
                         <Text style={GlobalStyles.productNameGrid} numberOfLines={1}>
                             {product.product_name || 'Unnamed Product'}
                         </Text>
-                        <Text style={GlobalStyles.productLocationGrid} numberOfLines={1}>
-                            {displayLocation}
-                        </Text>
+                        <View style={GlobalStyles.locationContainerGrid}>
+                            <Text style={GlobalStyles.productLocationGrid} numberOfLines={1}>
+                                {displayLocation}
+                            </Text>
+                            {product.opened && (
+                                <View style={GlobalStyles.openedBadge}>
+                                    <Text style={GlobalStyles.openedText}>Opened</Text>
+                                </View>
+                            )}
+                        </View>
                         <View style={GlobalStyles.expirationContainerGrid}>
                             <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
                                 <Text style={[GlobalStyles.expirationText, expirationStyles.text]}>
@@ -449,16 +456,23 @@ const ProductList: React.FC<ProductListProps> = ({
                             <Text style={GlobalStyles.productNameList} numberOfLines={1}>
                                 {product.product_name || 'Unnamed Product'}
                             </Text>
-                            <View style={GlobalStyles.productLocationList}>
-                                <Icon 
-                                    name="map-marker-outline" 
-                                    size={16} 
-                                    color={colors.textSecondary} 
-                                    style={GlobalStyles.locationIcon} 
-                                />
-                                <Text style={GlobalStyles.productLocationList} numberOfLines={1}>
-                                    {displayLocation}
-                                </Text>
+                            <View style={GlobalStyles.locationContainerList}>
+                                <View style={GlobalStyles.productLocationList}>
+                                    <Icon 
+                                        name="map-marker-outline" 
+                                        size={16} 
+                                        color={colors.textSecondary} 
+                                        style={GlobalStyles.locationIcon} 
+                                    />
+                                    <Text style={GlobalStyles.productLocationList} numberOfLines={1}>
+                                        {displayLocation}
+                                    </Text>
+                                </View>
+                                {product.opened && (
+                                    <View style={GlobalStyles.openedBadge}>
+                                        <Text style={GlobalStyles.openedText}>Opened</Text>
+                                    </View>
+                                )}
                             </View>
                             <View style={GlobalStyles.expirationContainerList}>
                                 <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
@@ -484,16 +498,23 @@ const ProductList: React.FC<ProductListProps> = ({
                         <Text style={GlobalStyles.productNameSimple} numberOfLines={1}>
                             {product.product_name || 'Unnamed Product'}
                         </Text>
-                        <View style={GlobalStyles.productLocationSimple}>
-                            <Icon 
-                                name="map-marker-outline" 
-                                size={14} 
-                                color={colors.textSecondary} 
-                                style={GlobalStyles.locationIcon} 
-                            />
-                            <Text numberOfLines={1}>
-                                {displayLocation}
-                            </Text>
+                        <View style={GlobalStyles.locationContainerSimple}>
+                            <View style={GlobalStyles.productLocationSimple}>
+                                <Icon 
+                                    name="map-marker-outline" 
+                                    size={14} 
+                                    color={colors.textSecondary} 
+                                    style={GlobalStyles.locationIcon} 
+                                />
+                                <Text numberOfLines={1}>
+                                    {displayLocation}
+                                </Text>
+                            </View>
+                            {product.opened && (
+                                <View style={GlobalStyles.openedBadge}>
+                                    <Text style={GlobalStyles.openedText}>Opened</Text>
+                                </View>
+                            )}
                         </View>
                     </View>
                     <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
@@ -762,6 +783,15 @@ const ProductList: React.FC<ProductListProps> = ({
                                 <Text style={GlobalStyles.detailValue}>{effectiveSelectedProduct.note}</Text>
                             </View>
                         )}
+                        <View style={GlobalStyles.detailRow}>
+                            <View style={GlobalStyles.detailIcon}>
+                                <Icon name="package-variant" size={20} color={colors.textSecondary} />
+                            </View>
+                            <Text style={GlobalStyles.detailLabel}>Status</Text>
+                            <Text style={GlobalStyles.detailValue}>
+                                {effectiveSelectedProduct.opened ? 'Opened' : 'Unopened'}
+                            </Text>
+                        </View>
                     </ScrollView>
 
                     <View style={GlobalStyles.actionButtonContainer}>

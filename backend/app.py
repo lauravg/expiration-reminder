@@ -294,6 +294,7 @@ def list_products():
                 "wasted": product.wasted,
                 "note": product.note or "",
                 "image_url": product.image_url,
+                "opened": product.opened,
             }
         )
     return jsonify(result)
@@ -463,6 +464,7 @@ def add_product():
             wasted=False,
             wasted_timestamp=0,
             note=product_data.get("note", ""),
+            opened=product_data.get("opened", False),
         )
 
         if not product_mgr.add_product(product):
@@ -552,6 +554,7 @@ def update_product(id):
         product.category = data.get("category", product.category)
         product.note = data.get("note", product.note)
         product.image_url = new_image_url
+        product.opened = data.get("opened", product.opened)
         expiration_date = data.get("expiration_date")
         if expiration_date:
             product.expires = ProductManager.parse_import_date(expiration_date)

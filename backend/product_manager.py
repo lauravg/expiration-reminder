@@ -22,6 +22,7 @@ class Product:
         wasted_timestamp: int,
         note: str,
         image_url: str | None = None,
+        opened: bool = False,
     ) -> None:
         self.id = id
         self.barcode = barcode
@@ -35,6 +36,7 @@ class Product:
         self.wasted_timestamp = wasted_timestamp
         self.note = note
         self.image_url = image_url
+        self.opened = opened
 
     @property
     def does_expire(self) -> bool:
@@ -53,6 +55,7 @@ class Product:
         yield "wasted_timestamp", self.wasted_timestamp
         yield "note", self.note
         yield "image_url", self.image_url
+        yield "opened", self.opened
 
     def creation_str(self, format="%b %d %Y") -> str:
         return datetime.utcfromtimestamp(self.created / 1000).strftime(format)
@@ -146,6 +149,7 @@ class ProductManager:
         wasted_timestamp = dict_data.get("wasted_timestamp", 0)
         household_id = dict_data.get("household_id", "")
         image_url = dict_data.get("image_url")
+        opened = dict_data.get("opened", False)
 
         return Product(
             doc.id,
@@ -160,6 +164,7 @@ class ProductManager:
             wasted_timestamp,
             dict_data["note"],
             image_url,
+            opened,
         )
 
     @classmethod

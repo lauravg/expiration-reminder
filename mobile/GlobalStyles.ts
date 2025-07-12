@@ -243,6 +243,24 @@ const GlobalStyles = StyleSheet.create({
     opacity: 0.6,
   },
 
+  locationContainerGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  locationContainerList: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  locationContainerSimple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
   expirationContainerGrid: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -601,6 +619,21 @@ const GlobalStyles = StyleSheet.create({
   expirationTextWarning: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  
+  openedBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: colors.info,
+    marginTop: 4,
+    marginLeft: 8,
+  },
+  
+  openedText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 export default GlobalStyles;

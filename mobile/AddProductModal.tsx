@@ -44,6 +44,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
   const [note, setNote] = useState('');
   const [productImage, setProductImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [opened, setOpened] = useState(false);
   const requests = new Requests();
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -192,6 +193,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
         isExpired: false,
         daysUntilExpiration: 0,
         image_url: imageUrl || undefined,
+        opened: opened,
       };
 
       console.log("Barcode check condition:", barcode, productName);
@@ -252,6 +254,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
     setSuggestionSelected(false);
     setShowSuggestions(false);
     setIsSubmitting(false);
+    setOpened(false);
   };
 
   // Update function to handle background press
@@ -417,6 +420,23 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ visible, onClose, onA
                 multiline
                 numberOfLines={3}
               />
+              
+              <View style={styles.openedContainer}>
+                <Text style={styles.openedLabel}>Product Status</Text>
+                <TouchableOpacity
+                  style={[styles.openedToggle, opened && styles.openedToggleActive]}
+                  onPress={() => setOpened(!opened)}
+                >
+                  <Icon 
+                    name={opened ? "package-variant-closed" : "package-variant"} 
+                    size={20} 
+                    color={opened ? colors.primary : colors.textSecondary} 
+                  />
+                  <Text style={[styles.openedText, opened && styles.openedTextActive]}>
+                    {opened ? 'Opened' : 'Unopened'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Action Buttons Section */}
@@ -632,6 +652,37 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: colors.primary,
     flex: 1,
+  },
+  openedContainer: {
+    marginBottom: 10,
+  },
+  openedLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  openedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  openedToggleActive: {
+    backgroundColor: colors.surfaceVariant,
+    borderColor: colors.primary,
+  },
+  openedText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  openedTextActive: {
+    color: colors.primary,
+    fontWeight: '500',
   },
 });
 

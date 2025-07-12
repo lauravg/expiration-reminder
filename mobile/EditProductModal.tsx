@@ -33,6 +33,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
   const [note, setNote] = useState<string>('');
   const [productImage, setProductImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [opened, setOpened] = useState<boolean>(false);
+  const [showExpirationPrompt, setShowExpirationPrompt] = useState<boolean>(false);
+  const [previousOpenedState, setPreviousOpenedState] = useState<boolean>(false);
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
 
@@ -89,6 +92,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
       setCategory(product.category || '');
       setNote(product.note || '');
       setProductImage(product.image_url || null);
+      setOpened(product.opened || false);
     }
   }, [product]);
 
@@ -152,6 +156,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
         category: trimmedCategory || undefined,
         note: trimmedNote || undefined,
         image_url: imageUrl,
+        opened: opened,
         wasted: product.wasted,
         isExpired: product.isExpired,
         daysUntilExpiration: product.daysUntilExpiration
@@ -175,6 +180,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
       setCategory(product.category || '');
       setNote(product.note || '');
       setProductImage(product.image_url || null);
+      setOpened(product.opened || false);
     }
   };
 
@@ -265,6 +271,33 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
               multiline
               numberOfLines={2}
             />
+            
+            <View style={styles.openedContainer}>
+              <Text style={styles.openedLabel}>Product Status</Text>
+              <TouchableOpacity
+                style={[styles.openedToggle, opened && styles.openedToggleActive]}
+                onPress={() => {
+                  const newOpenedState = !opened;
+                  if (!opened && newOpenedState) {
+                    // Changing from unopened to opened
+                    setPreviousOpenedState(opened);
+                    setOpened(newOpenedState);
+                    setShowExpirationPrompt(true);
+                  } else {
+                    setOpened(newOpenedState);
+                  }
+                }}
+              >
+                <Icon 
+                  name={opened ? "package-variant-closed" : "package-variant"} 
+                  size={20} 
+                  color={opened ? colors.primary : colors.textSecondary} 
+                />
+                <Text style={[styles.openedText, opened && styles.openedTextActive]}>
+                  {opened ? 'Opened' : 'Unopened'}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.buttonContainer}>
               <Button
                 mode="outlined"
@@ -330,6 +363,44 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ visible, onClose, p
               <Picker.Item key={cat} label={cat} value={cat} />
             ))}
           </Picker>
+        </View>
+      </PaperModal>
+
+      {/* Expiration Date Prompt Modal */}
+      <PaperModal
+        visible={showExpirationPrompt}
+        onDismiss={() => setShowExpirationPrompt(false)}
+        contentContainerStyle={[GlobalStyles.modalContent, styles.expirationPromptContainer]}
+      >
+        <View style={styles.expirationPromptContent}>
+          <Icon name="calendar-clock" size={48} color={colors.primary} style={styles.promptIcon} />
+          <Text style={styles.promptTitle}>Update Expiration Date</Text>
+          <Text style={styles.promptMessage}>
+            Since you've opened this product, you may want to update the expiration date. 
+            Many products have different shelf lives once opened.
+          </Text>
+          
+          <View style={styles.promptButtons}>
+            <Button
+              mode="outlined"
+              onPress={() => {
+                setShowExpirationPrompt(false);
+                setIsDatePickerVisible(true);
+              }}
+              style={styles.promptButton}
+            >
+              Update Expiration Date
+            </Button>
+            <Button
+              mode="text"
+              onPress={() => {
+                setShowExpirationPrompt(false);
+              }}
+              style={styles.promptButton}
+            >
+              Keep Current Date
+            </Button>
+          </View>
         </View>
       </PaperModal>
     </PaperModal>
@@ -446,6 +517,69 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 8,
     overflow: 'hidden',
+  },
+  openedContainer: {
+    marginBottom: 10,
+  },
+  openedLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  openedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  openedToggleActive: {
+    backgroundColor: colors.surfaceVariant,
+    borderColor: colors.primary,
+  },
+  openedText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  openedTextActive: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  expirationPromptContainer: {
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  expirationPromptContent: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  promptIcon: {
+    marginBottom: 16,
+  },
+  promptTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  promptMessage: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  promptButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  promptButton: {
+    marginVertical: 4,
   },
 });
 
