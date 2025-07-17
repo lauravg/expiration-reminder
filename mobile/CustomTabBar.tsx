@@ -45,8 +45,8 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, descriptors, navigat
           iconName = 'list';
         } else if (route.name === 'Recipe') {
           iconName = 'restaurant';
-        } else if (route.name === 'Wasted') {
-          iconName = 'compost';
+        } else if (route.name === 'Shopping') {
+          iconName = 'shopping-cart';
         } else if (route.name === 'Settings') {
           iconName = 'settings';
         }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Platform } from 'react-native';
-import { IconButton } from 'react-native-paper';
-import { useFocusEffect } from '@react-navigation/native';
+import { IconButton, FAB } from 'react-native-paper';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { isValid, parse, addDays, differenceInDays } from 'date-fns';
 import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
@@ -14,6 +14,7 @@ import ProductList from './ProductList';
 import { HouseholdManager } from './HouseholdManager';
 import { StyleSheet } from 'react-native';
 import ExpiringProductsModal from './ExpiringProductsModal';
+import ShoppingListModal from './ShoppingListModal';
 import { useViewSettings } from './ViewSettings';
 
 type SortOption = 'name' | 'expiration' | 'location' | 'category';
@@ -29,6 +30,7 @@ const Homepage: React.FC<HomepageProps> = ({
   selectedProduct: externalSelectedProduct,
   onProductSelect: externalOnProductSelect,
 }) => {
+  const navigation = useNavigation();
   const [products, setProducts] = useState<Product[]>([]);
   const requests = new Requests();
   const householdManager = new HouseholdManager(requests);
@@ -57,6 +59,8 @@ const Homepage: React.FC<HomepageProps> = ({
     const success = await requests.deleteProduct(product.product_id);
     if (success) {
       setProducts(products.filter(p => p.product_id !== product.product_id));
+      // Show shopping list modal
+      showShoppingListModal(product);
     } else {
       console.error('Failed to delete product');
     }
@@ -66,8 +70,41 @@ const Homepage: React.FC<HomepageProps> = ({
     const success = await requests.wasteProduct(product.product_id);
     if (success) {
       setProducts(products.filter(p => p.product_id !== product.product_id));
+      // Show shopping list modal
+      showShoppingListModal(product);
     } else {
       console.error('Failed to mark product as wasted');
+    }
+  };
+
+  const handleUse = async (product: Product) => {
+    const success = await requests.useProduct(product.product_id);
+    if (success) {
+      setProducts(products.filter(p => p.product_id !== product.product_id));
+      // Show shopping list modal
+      showShoppingListModal(product);
+    } else {
+      console.error('Failed to mark product as used');
+    }
+  };
+
+  const [shoppingListModalVisible, setShoppingListModalVisible] = useState(false);
+  const [productForShoppingList, setProductForShoppingList] = useState<Product | null>(null);
+
+  const showShoppingListModal = (product: Product) => {
+    setProductForShoppingList(product);
+    setShoppingListModalVisible(true);
+  };
+
+  const handleAddToShoppingList = async (productName: string, note?: string, quantity?: number) => {
+    const hid = await householdManager.getActiveHouseholdId();
+    if (hid) {
+      const success = await requests.addToShoppingList(productName, hid, note, quantity);
+      if (success) {
+        console.log('Product added to shopping list successfully');
+      } else {
+        console.error('Failed to add product to shopping list');
+      }
     }
   };
 
@@ -111,12 +148,12 @@ const Homepage: React.FC<HomepageProps> = ({
       householdManager.getActiveHouseholdId().then((hid) => {
         console.log('Active Household ID (Homepage):', hid); // Debug household ID
         requests.listProducts(hid).then((products) => {
-          const nonWastedProducts = products.filter((product) => !product.wasted);
+          const activeProducts = products.filter((product) => !product.wasted && !product.used);
           // Schedule notifications for each product
-          nonWastedProducts.forEach(product => {
+          activeProducts.forEach(product => {
             scheduleNotification(product);
           });
-          setProducts(nonWastedProducts);
+          setProducts(activeProducts);
         }).catch((error) => {
           console.error('Error fetching products on Homepage:', error);
         });
@@ -314,7 +351,9 @@ const Homepage: React.FC<HomepageProps> = ({
         onDelete={handleDelete}
         onUpdateProduct={handleUpdateProduct}
         showWasteButton={true}
+        showUseButton={true}
         onWaste={handleWaste}
+        onUse={handleUse}
         searchQuery={searchQuery}
         searchTerm={searchTerm}
         onSort={(option: string) => handleSort(option as SortOption)}
@@ -347,7 +386,19 @@ const Homepage: React.FC<HomepageProps> = ({
         onUpdateProduct={handleUpdateProduct}
       />
 
+      <ShoppingListModal
+        visible={shoppingListModalVisible}
+        onClose={() => {
+          setShoppingListModalVisible(false);
+          setProductForShoppingList(null);
+        }}
+        onConfirm={handleAddToShoppingList}
+        productName={productForShoppingList?.product_name || ''}
+      />
+
       {/* Product details modal is handled by ProductList component */}
+      
+      {/* Remove the FAB for the cart */}
     </View>
   );
 };
@@ -411,6 +462,13 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: colors.error,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 80,
+    backgroundColor: colors.primary,
   },
 });
 

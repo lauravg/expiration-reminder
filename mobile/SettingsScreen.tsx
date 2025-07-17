@@ -59,6 +59,18 @@ const SettingsScreen = () => {
       onPress: () => navigation.navigate({ name: 'Profile', params: {} }),
     },
     {
+      key: 'shopping-list',
+      title: 'Shopping List',
+      icon: 'cart',
+      onPress: () => navigation.navigate({ name: 'ShoppingList', params: {} }),
+    },
+    {
+      key: 'used-products',
+      title: 'Used Products',
+      icon: 'check-circle',
+      onPress: () => navigation.navigate({ name: 'UsedProducts', params: {} }),
+    },
+    {
       key: 'notifications',
       title: 'Notifications',
       icon: 'bell',
@@ -122,6 +134,12 @@ const SettingsScreen = () => {
           iconColor={colors.secondary}
         />
       ),
+    },
+    {
+      key: 'wasted-products',
+      title: 'Wasted Products',
+      icon: 'trash-can-outline',
+      onPress: () => navigation.navigate({ name: 'WastedProducts', params: {} }),
     },
   ];
 

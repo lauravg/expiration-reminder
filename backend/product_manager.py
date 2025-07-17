@@ -23,6 +23,8 @@ class Product:
         note: str,
         image_url: str | None = None,
         opened: bool = False,
+        used: bool = False,
+        used_timestamp: int = 0,
     ) -> None:
         self.id = id
         self.barcode = barcode
@@ -37,6 +39,8 @@ class Product:
         self.note = note
         self.image_url = image_url
         self.opened = opened
+        self.used = used
+        self.used_timestamp = used_timestamp
 
     @property
     def does_expire(self) -> bool:
@@ -56,6 +60,8 @@ class Product:
         yield "note", self.note
         yield "image_url", self.image_url
         yield "opened", self.opened
+        yield "used", self.used
+        yield "used_timestamp", self.used_timestamp
 
     def creation_str(self, format="%b %d %Y") -> str:
         return datetime.utcfromtimestamp(self.created / 1000).strftime(format)
@@ -69,6 +75,16 @@ class Product:
         if self.wasted_timestamp == 0:
             return None
         return datetime.utcfromtimestamp(self.wasted_timestamp / 1000).strftime(format)
+
+    def used_date_str(self, format="%b %d %Y") -> str | None:
+        if self.used_timestamp == 0:
+            return None
+        return datetime.utcfromtimestamp(self.used_timestamp / 1000).strftime(format)
+
+    def used_timestamp_str(self, format="%b %d %Y") -> str | None:
+        if self.used_timestamp == 0:
+            return None
+        return datetime.utcfromtimestamp(self.used_timestamp / 1000).strftime(format)
 
 
 class ProductManager:
@@ -147,9 +163,11 @@ class ProductManager:
             raise ValueError(f"Document {doc.id} has no data")
 
         wasted_timestamp = dict_data.get("wasted_timestamp", 0)
+        used_timestamp = dict_data.get("used_timestamp", 0)
         household_id = dict_data.get("household_id", "")
         image_url = dict_data.get("image_url")
         opened = dict_data.get("opened", False)
+        used = dict_data.get("used", False)
 
         return Product(
             doc.id,
@@ -165,6 +183,8 @@ class ProductManager:
             dict_data["note"],
             image_url,
             opened,
+            used,
+            used_timestamp,
         )
 
     @classmethod

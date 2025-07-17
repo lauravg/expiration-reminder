@@ -6,8 +6,8 @@ import { Household, HouseholdManager } from './HouseholdManager';
 import { ViewSettings } from './ViewSettings';
 
 // const BASE_URL = "https://expiration-reminder-105128604631.us-central1.run.app";
-// const BASE_URL = "http://127.0.0.1:5050";
-const BASE_URL = "http://192.168.1.37:5050";
+const BASE_URL = "http://127.0.0.1:5050";
+// const BASE_URL = "http://192.168.1.37:5050";
 
 
 interface ProductSuggestion {
@@ -148,6 +148,22 @@ class Requests {
       }
     } catch (error) {
       console.error('Failed to mark product as wasted', error);
+      return false;
+    }
+  }
+
+  async useProduct(productId: string): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, `use_product/${productId}`, {});
+      if (response.status === 200) {
+        console.log('Product marked as used successfully');
+        return true;
+      } else {
+        console.error('Failed to mark product as used', response.data.error || response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to mark product as used', error);
       return false;
     }
   }
@@ -675,6 +691,78 @@ class Requests {
         success: false,
         error: error.message || 'An unexpected error occurred'
       };
+    }
+  }
+
+  // Shopping list methods
+  async addToShoppingList(productName: string, householdId: string, note?: string, quantity?: number): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'add_to_shopping_list', {
+        product_name: productName,
+        household_id: householdId,
+        note: note || '',
+        quantity: quantity || 1
+      });
+      if (response.status === 200) {
+        console.log('Item added to shopping list successfully');
+        return true;
+      } else {
+        console.error('Failed to add item to shopping list', response.data.error || response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to add item to shopping list', error);
+      return false;
+    }
+  }
+
+  async getShoppingList(householdId: string): Promise<any[]> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, 'get_shopping_list', {
+        household_id: householdId
+      });
+      if (response.status === 200) {
+        console.log('Shopping list retrieved successfully');
+        return response.data.items || [];
+      } else {
+        console.error('Failed to get shopping list', response.data.error || response.statusText);
+        return [];
+      }
+    } catch (error) {
+      console.error('Failed to get shopping list', error);
+      return [];
+    }
+  }
+
+  async markShoppingItemCompleted(itemId: string): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, `mark_shopping_item_completed/${itemId}`, {});
+      if (response.status === 200) {
+        console.log('Shopping item marked as completed successfully');
+        return true;
+      } else {
+        console.error('Failed to mark shopping item as completed', response.data.error || response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to mark shopping item as completed', error);
+      return false;
+    }
+  }
+
+  async deleteShoppingItem(itemId: string): Promise<boolean> {
+    try {
+      const response = await this._make_request(this.sessionData.idToken, `delete_shopping_item/${itemId}`, {});
+      if (response.status === 200) {
+        console.log('Shopping item deleted successfully');
+        return true;
+      } else {
+        console.error('Failed to delete shopping item', response.data.error || response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to delete shopping item', error);
+      return false;
     }
   }
 

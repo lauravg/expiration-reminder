@@ -20,6 +20,8 @@ export interface Product {
   daysUntilExpiration: number;
   image_url?: string;
   opened?: boolean;
+  used?: boolean;
+  used_timestamp?: string;
 }
 
 interface ProductProps {

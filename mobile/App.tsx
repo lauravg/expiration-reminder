@@ -19,6 +19,8 @@ import Recipes from './RecipeScreen';
 import Settings from './SettingsScreen';
 import SubscriptionScreen from './SubscriptionScreen';
 import WastedProducts from './WastedProductScreen';
+import UsedProducts from './UsedProductScreen';
+import ShoppingListScreen from './ShoppingListScreen';
 import { fetchExpiringProducts, registerForPushNotificationsAsync, scheduleDailyNotification } from './Notifications';
 import { SessionData } from './SessionData';
 import Requests from './Requests';
@@ -48,7 +50,7 @@ function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProd
           let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
           if (route.name === 'Inventory') iconName = 'kitchen';
           else if (route.name === 'Recipe') iconName = 'restaurant';
-          else if (route.name === 'Wasted') iconName = 'compost';
+          else if (route.name === 'Shopping') iconName = 'shopping-cart';
           else if (route.name === 'Settings') iconName = 'settings';
           else if (route.name === 'AddProduct') iconName = 'add';
 
@@ -65,33 +67,164 @@ function MainTabs({ toggleAddProductModal, onAddProduct, selectedProduct, onProd
       <Tab.Screen name="AddProduct" options={{ headerShown: false }}>
         {() => null}
       </Tab.Screen>
-      <Tab.Screen name="Wasted" component={WastedProducts} options={{ headerShown: false }} />
-      <Tab.Screen
-        name="Settings"
-        component={Settings}
-        options={({ navigation }) => ({
-          headerLeft: () => (
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              iconColor={colors.textPrimary}
-              onPress={() => navigation.goBack()}
+      <Tab.Screen name="Shopping" component={ShoppingListScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Settings" options={{ headerShown: false }}>
+        {() => (
+          <Stack.Navigator>
+            <Stack.Screen
+              name="SettingsMain"
+              component={Settings}
+              options={({ navigation }) => ({
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Settings',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0,
+                  shadowOpacity: 0
+                },
+                statusBarStyle: 'dark-content',
+                statusBarColor: colors.background,
+              })}
             />
-          ),
-          headerTitle: 'Settings',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            color: colors.primary
-          },
-          headerStyle: {
-            backgroundColor: colors.background,
-            elevation: 0,
-            shadowOpacity: 0
-          },
-          statusBarStyle: 'dark-content',
-          statusBarColor: colors.background,
-        })}
-      />
+            <Stack.Screen
+              name="WastedProducts"
+              component={WastedProducts}
+              options={({ navigation }) => ({
+                headerShown: false,
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Wasted Products',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0,
+                  shadowOpacity: 0
+                },
+              })}
+            />
+            <Stack.Screen
+              name="UsedProducts"
+              component={UsedProducts}
+              options={({ navigation }) => ({
+                headerShown: false,
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Used Products',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0,
+                  shadowOpacity: 0
+                },
+              })}
+            />
+                          <Stack.Screen
+                name="ShoppingList"
+                component={ShoppingListScreen}
+                options={({ navigation }) => ({
+                  headerShown: false,
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      size={24}
+                      iconColor={colors.textPrimary}
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                  headerTitle: 'Shopping List',
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                    color: colors.primary
+                  },
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                    elevation: 0,
+                    shadowOpacity: 0
+                  },
+                })}
+              />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={({ navigation }) => ({
+                headerShown: false,
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Profile',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0,
+                  shadowOpacity: 0
+                },
+              })}
+            />
+            <Stack.Screen
+              name="SubscriptionScreen"
+              component={SubscriptionScreen}
+              options={({ navigation }) => ({
+                headerShown: false,
+                headerLeft: () => (
+                  <IconButton
+                    icon="arrow-left"
+                    size={24}
+                    iconColor={colors.textPrimary}
+                    onPress={() => navigation.goBack()}
+                  />
+                ),
+                headerTitle: 'Subscription',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                  color: colors.primary
+                },
+                headerStyle: {
+                  backgroundColor: colors.background,
+                  elevation: 0,
+                  shadowOpacity: 0
+                },
+              })}
+            />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -337,54 +470,7 @@ export default function App() {
                   />
                 )}
               </Stack.Screen>
-              <Stack.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={({ navigation }) => ({
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      size={24}
-                      iconColor={colors.textPrimary}
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                  headerTitle: 'Profile',
-                  headerTitleStyle: {
-                    fontWeight: 'bold',
-                    color: colors.primary
-                  },
-                  headerStyle: {
-                    backgroundColor: colors.background,
-                    elevation: 0, // Remove shadow on Android
-                    shadowOpacity: 0, // Remove shadow on iOS
-                  },
-                })}
-              />
-              <Stack.Screen
-                name="SubscriptionScreen"
-                component={SubscriptionScreen}
-                options={({ navigation }) => ({
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      size={24}
-                      iconColor={colors.textPrimary}
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                  headerTitle: 'Subscription',
-                  headerTitleStyle: {
-                    fontWeight: 'bold',
-                    color: colors.primary,
-                  },
-                  headerStyle: {
-                    backgroundColor: colors.background,
-                    elevation: 0, // Remove shadow on Android
-                    shadowOpacity: 0, // Remove shadow on iOS
-                  },
-                })}
-              />
+
             </Stack.Navigator>
             <StatusBar />
             <AddProductModal

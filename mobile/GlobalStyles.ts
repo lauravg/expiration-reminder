@@ -386,34 +386,57 @@ const GlobalStyles = StyleSheet.create({
   actionButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 16,
+    gap: 10,
   },
 
   actionButton: {
     flex: 1,
-    marginHorizontal: 4,
-    borderRadius: 12,
+    marginHorizontal: 2,
+    borderRadius: 16,
     paddingVertical: 12,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.surfaceVariant,
     elevation: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   actionButtonPrimary: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  actionButtonSuccess: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+
+  actionButtonWarning: {
+    backgroundColor: colors.warning,
+    borderColor: colors.warning,
   },
 
   actionButtonDanger: {
     backgroundColor: 'rgba(255, 75, 75, 0.1)',
+    borderColor: colors.error,
   },
 
   actionButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.2,
     textAlign: 'center',
   },
 
   actionButtonTextPrimary: {
+    color: colors.textInverse,
+  },
+
+  actionButtonTextSuccess: {
+    color: colors.textInverse,
+  },
+
+  actionButtonTextWarning: {
     color: colors.textInverse,
   },
 

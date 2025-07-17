@@ -10,6 +10,7 @@ import { colors } from './theme';
 import { Product } from './Product';
 import { calculateDaysLeft } from './utils/dateUtils';
 import EditProductModal from './EditProductModal';
+import ShoppingListModal from './ShoppingListModal';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useViewSettings } from './ViewSettings';
@@ -21,7 +22,9 @@ interface ProductListProps {
     onDelete: (product: Product) => Promise<void>;
     onUpdateProduct: (product: Product) => Promise<void>;
     onWaste?: (product: Product) => Promise<void>;
+    onUse?: (product: Product) => Promise<void>;
     showWasteButton?: boolean;
+    showUseButton?: boolean;
     searchQuery: string;
     searchTerm: string;
     onSort: (option: string) => void;
@@ -51,7 +54,9 @@ const ProductList: React.FC<ProductListProps> = ({
     onDelete,
     onUpdateProduct,
     showWasteButton = false,
+    showUseButton = false,
     onWaste,
+    onUse,
     searchQuery,
     searchTerm,
     onSort,
@@ -87,6 +92,8 @@ const ProductList: React.FC<ProductListProps> = ({
     const [editProductModalVisible, setEditProductModalVisible] = React.useState(false);
     const [filterMenuVisible, setFilterMenuVisible] = useState(false);
     const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+    const [shoppingListModalVisible, setShoppingListModalVisible] = useState(false);
+    const [productForShoppingList, setProductForShoppingList] = useState<Product | null>(null);
 
     const parseDateString = (dateStr: string): Date | null => {
         if (!dateStr || dateStr === 'No Expiration') {
@@ -256,6 +263,13 @@ const ProductList: React.FC<ProductListProps> = ({
         }
     };
 
+    const handleUse = async (product: Product) => {
+        if (onUse) {
+            await onUse(product);
+            setEffectiveSelectedProduct(null);
+        }
+    };
+
     const handleUpdateProduct = async (updatedProduct: Product) => {
         await onUpdateProduct(updatedProduct);
         setEditProductModalVisible(false);
@@ -263,27 +277,36 @@ const ProductList: React.FC<ProductListProps> = ({
         setEffectiveSelectedProduct(null);
     };
 
-    // SwipeableProductCard component for swipe-to-delete functionality
+    const handleShowShoppingListModal = (product: Product) => {
+        setProductForShoppingList(product);
+        setShoppingListModalVisible(true);
+        setEffectiveSelectedProduct(null);
+    };
+
+    const handleAddToShoppingList = async (productName: string, note?: string, quantity?: number) => {
+        // This will be implemented in the parent component
+        console.log('Adding to shopping list:', productName, note, quantity);
+    };
+
+    // SwipeableProductCard component for swipe-to-delete and swipe-to-waste/shopping-list functionality
     const SwipeableProductCard: React.FC<{ 
         product: Product; 
         children: React.ReactNode;
         viewMode: ViewMode;
     }> = ({ product, children, viewMode }) => {
+        // Left swipe (right actions): Delete
         const renderRightAction = (
             text: string,
             color: string,
+            icon: string,
             x: number,
-            progress: Animated.AnimatedAddition<number>
+            progress: Animated.AnimatedAddition<number>,
+            onPress: () => void
         ) => {
             const trans = progress.interpolate({
                 inputRange: [0, 1],
                 outputRange: [x, 0],
             });
-
-            const pressHandler = () => {
-                handleDelete(product);
-            };
-
             return (
                 <Animated.View style={{ 
                     flex: 1, 
@@ -299,10 +322,10 @@ const ProductList: React.FC<ProductListProps> = ({
                             height: '100%',
                             backgroundColor: color,
                         }}
-                        onPress={pressHandler}
+                        onPress={onPress}
                     >
-                        <MaterialCommunityIcons 
-                            name="delete" 
+                        <Icon 
+                            name={icon} 
                             size={24} 
                             color="white" 
                         />
@@ -310,7 +333,57 @@ const ProductList: React.FC<ProductListProps> = ({
                             color: 'white', 
                             fontSize: 12, 
                             fontWeight: '600',
-                            marginTop: 4 
+                            marginTop: 4,
+                            textAlign: 'center'
+                        }}>
+                            {text}
+                        </Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            );
+        };
+
+        // Right swipe (left actions): Waste, Add to Shopping List
+        const renderLeftAction = (
+            text: string,
+            color: string,
+            icon: string,
+            x: number,
+            progress: Animated.AnimatedAddition<number>,
+            onPress: () => void
+        ) => {
+            const trans = progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-x, 0],
+            });
+            return (
+                <Animated.View style={{ 
+                    flex: 1, 
+                    transform: [{ translateX: trans }],
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                    <TouchableOpacity
+                        style={{
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 80,
+                            height: '100%',
+                            backgroundColor: color,
+                        }}
+                        onPress={onPress}
+                    >
+                        <Icon 
+                            name={icon} 
+                            size={24} 
+                            color="white" 
+                        />
+                        <Text style={{ 
+                            color: 'white', 
+                            fontSize: 12, 
+                            fontWeight: '600',
+                            marginTop: 4,
+                            textAlign: 'center'
                         }}>
                             {text}
                         </Text>
@@ -321,16 +394,31 @@ const ProductList: React.FC<ProductListProps> = ({
 
         const renderRightActions = (progress: Animated.AnimatedAddition<number>) => (
             <View style={{ 
+                width: 160, 
+                flexDirection: 'row',
+                height: viewMode === 'grid' ? 'auto' : undefined,
+            }}>
+                {renderRightAction('Delete', '#ff4444', 'delete', 80, progress, () => handleDelete(product))}
+                {renderRightAction('Waste', '#ff9900', 'delete-alert', 80, progress, () => handleWaste && handleWaste(product))}
+            </View>
+        );
+
+        const renderLeftActions = (progress: Animated.AnimatedAddition<number>) => (
+            <View style={{ 
                 width: 80, 
                 flexDirection: 'row',
                 height: viewMode === 'grid' ? 'auto' : undefined,
             }}>
-                {renderRightAction('Delete', '#ff4444', 80, progress)}
+                {renderLeftAction('Shopping List', '#4caf50', 'cart-plus', 80, progress, () => handleShowShoppingListModal(product))}
             </View>
         );
 
+        // Use the imported Icon component for swipe action icons
         return (
-            <Swipeable renderRightActions={renderRightActions}>
+            <Swipeable
+                renderRightActions={renderRightActions}
+                renderLeftActions={renderLeftActions}
+            >
                 {children}
             </Swipeable>
         );
@@ -421,6 +509,11 @@ const ProductList: React.FC<ProductListProps> = ({
                                     <Text style={GlobalStyles.openedText}>Opened</Text>
                                 </View>
                             )}
+                            {product.used && (
+                                <View style={[GlobalStyles.openedBadge, { backgroundColor: colors.success }]}>
+                                    <Text style={GlobalStyles.openedText}>Used</Text>
+                                </View>
+                            )}
                         </View>
                         <View style={GlobalStyles.expirationContainerGrid}>
                             <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
@@ -473,6 +566,11 @@ const ProductList: React.FC<ProductListProps> = ({
                                         <Text style={GlobalStyles.openedText}>Opened</Text>
                                     </View>
                                 )}
+                                {product.used && (
+                                    <View style={[GlobalStyles.openedBadge, { backgroundColor: colors.success }]}>
+                                        <Text style={GlobalStyles.openedText}>Used</Text>
+                                    </View>
+                                )}
                             </View>
                             <View style={GlobalStyles.expirationContainerList}>
                                 <View style={[GlobalStyles.expirationBadge, expirationStyles.badge]}>
@@ -513,6 +611,11 @@ const ProductList: React.FC<ProductListProps> = ({
                             {product.opened && (
                                 <View style={GlobalStyles.openedBadge}>
                                     <Text style={GlobalStyles.openedText}>Opened</Text>
+                                </View>
+                            )}
+                            {product.used && (
+                                <View style={[GlobalStyles.openedBadge, { backgroundColor: colors.success }]}>
+                                    <Text style={GlobalStyles.openedText}>Used</Text>
                                 </View>
                             )}
                         </View>
@@ -802,7 +905,6 @@ const ProductList: React.FC<ProductListProps> = ({
                             onPress={() => {
                                 setProductToEdit(effectiveSelectedProduct);
                                 setEditProductModalVisible(true);
-                                // Small delay to create smoother transition
                                 setTimeout(() => {
                                     setEffectiveSelectedProduct(null);
                                 }, 100);
@@ -813,21 +915,23 @@ const ProductList: React.FC<ProductListProps> = ({
                         {showWasteButton && onWaste && (
                             <Button
                                 mode="contained"
-                                style={GlobalStyles.actionButton}
-                                labelStyle={GlobalStyles.actionButtonText}
+                                style={[GlobalStyles.actionButton, GlobalStyles.actionButtonWarning]}
+                                labelStyle={[GlobalStyles.actionButtonText, GlobalStyles.actionButtonTextWarning]}
                                 onPress={() => handleWaste(effectiveSelectedProduct)}
                             >
                                 Waste
                             </Button>
                         )}
-                        <Button
-                            mode="contained"
-                            style={[GlobalStyles.actionButton, GlobalStyles.actionButtonDanger]}
-                            labelStyle={[GlobalStyles.actionButtonText, GlobalStyles.actionButtonTextDanger]}
-                            onPress={() => handleDelete(effectiveSelectedProduct)}
-                        >
-                            Delete
-                        </Button>
+                        {showUseButton && onUse && (
+                            <Button
+                                mode="contained"
+                                style={[GlobalStyles.actionButton, GlobalStyles.actionButtonSuccess]}
+                                labelStyle={[GlobalStyles.actionButtonText, GlobalStyles.actionButtonTextSuccess]}
+                                onPress={() => handleUse(effectiveSelectedProduct)}
+                            >
+                                Used
+                            </Button>
+                        )}
                     </View>
                 </PaperModal>
             )}
@@ -840,6 +944,16 @@ const ProductList: React.FC<ProductListProps> = ({
                 }}
                 product={productToEdit}
                 onUpdateProduct={handleUpdateProduct}
+            />
+
+            <ShoppingListModal
+                visible={shoppingListModalVisible}
+                onClose={() => {
+                    setShoppingListModalVisible(false);
+                    setProductForShoppingList(null);
+                }}
+                onConfirm={handleAddToShoppingList}
+                productName={productForShoppingList?.product_name || ''}
             />
         </>
     );
