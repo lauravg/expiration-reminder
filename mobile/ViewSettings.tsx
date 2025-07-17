@@ -10,6 +10,10 @@ export interface ViewSettings {
   hideExpiredWastedList: boolean;
   activeFilterWastedList: string;
   viewModeWastedList: 'grid' | 'list' | 'simple';
+  sortByUsedList: string;
+  hideExpiredUsedList: boolean;
+  activeFilterUsedList: string;
+  viewModeUsedList: 'grid' | 'list' | 'simple';
 }
 
 export type ViewSettingKey = keyof ViewSettings;
@@ -30,6 +34,10 @@ const getDefaultSettings = (): ViewSettings => ({
   hideExpiredWastedList: false,
   activeFilterWastedList: 'all',
   viewModeWastedList: 'list',
+  sortByUsedList: 'name',
+  hideExpiredUsedList: false,
+  activeFilterUsedList: 'all',
+  viewModeUsedList: 'list',
 });
 
 export const useViewSettings = create<ViewSettingsState>((set, get) => {

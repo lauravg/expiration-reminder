@@ -737,7 +737,7 @@ def get_shopping_list():
             return jsonify({"success": False, "error": "Access denied to this household"}), 403
 
         items = shopping_list_mgr.get_household_shopping_list(household_id)
-        
+
         # Convert items to dictionaries for JSON serialization
         items_data = []
         for item in items:

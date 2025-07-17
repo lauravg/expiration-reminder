@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from absl import logging as log
 from google.cloud.firestore_v1 import Query, DocumentSnapshot
@@ -126,7 +126,7 @@ class ShoppingListManager:
         item = self.get_shopping_list_item(id)
         if item is None:
             return False
-        
+
         item.completed = True
         item.completed_timestamp = int(datetime.now().timestamp() * 1000)
         return self.update_shopping_list_item(item)
@@ -153,4 +153,4 @@ class ShoppingListManager:
             completed_timestamp,
             note,
             quantity,
-        ) 
+        )
